@@ -1,0 +1,6 @@
+_BASE_: "Base-RCNN-FPN.yaml"
+MODEL:
+  MASK_ON: True
+  DEVICE: cpu
+  RESNETS:
+    DEPTH: 50

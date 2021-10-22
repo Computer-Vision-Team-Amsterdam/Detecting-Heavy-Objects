@@ -1,0 +1,93 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+trigger:
+- main
+
+jobs:
+  - job: Linux
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      matrix:
+        Python3.7:
+          python.version: '3.7'
+        Python3.8:
+          python.version: '3.8'
+        Python3.9:
+          python.version: '3.9'
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '$(python.version)'
+        displayName: 'Use Python $(python.version)'
+
+      - script: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+          poetry run python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+        displayName: 'Install dependencies'
+
+  - job: OSX
+    pool:
+      vmImage: macOS-latest
+    strategy:
+      matrix:
+        Python3.7:
+          python.version: '3.7'
+        Python3.8:
+          python.version: '3.8'
+        Python3.9:
+          python.version: '3.9'
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '$(python.version)'
+        displayName: 'Use Python $(python.version)'
+
+      - script: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+          poetry run python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+        displayName: 'Install dependencies'
+
+
+  - job: Style
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      matrix:
+        Python3.9:
+          python.version: '3.9'
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '$(python.version)'
+        displayName: 'Use Python $(python.version)'
+
+      - script: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+          poetry run python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+        displayName: 'Install dependencies'
+
+      - script: |
+          poetry run isort .
+        displayName: 'isort'
+
+      - script: |
+          poetry run black .
+        displayName: 'black'
+
+      - script: |
+          poetry run mypy --ignore-missing-imports --config-file=.mypyrc .
+        displayName: 'mypy'
+
+      - script: |
+          poetry run pylint --jobs=0 --rcfile=.pylintrc *.py
+        displayName: 'pylint'
