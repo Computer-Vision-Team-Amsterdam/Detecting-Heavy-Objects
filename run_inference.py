@@ -59,3 +59,7 @@ def run(minibatch: Iterable[Union[Path, str]]) -> List[Dict[Union[Path, str], An
         outputs = CONTAINER_DETECTION_MODEL(input_tensors)  # type: ignore
 
     return [{path: outputs[idx]} for idx, path in enumerate(minibatch)]
+
+
+if __name__ == "__main__":
+    pass

@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Intellij project settings
+.idea/
+
+# training and validation data
+data/
+
+# model output files
+output/
