@@ -1,28 +1,31 @@
-# check pytorch installation:
-import torch, torchvision
-
-# Some basic setup:
-# Setup detectron2 logger
-import detectron2
-from detectron2.utils.logger import setup_logger
-
-setup_logger()
-
 # import some common libraries
+import json
+import os
+import random
+from pathlib import Path
+from typing import Any, Dict, List, Union
+
+import cv2
 import numpy as np
-import os, json, cv2, random
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.structures import BoxMode
+from detectron2.utils.logger import setup_logger
+from detectron2.utils.visualizer import Visualizer
 from matplotlib import pyplot
 
 # import some common detectron2 utilities
-from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import MetadataCatalog, DatasetCatalog
-from detectron2.structures import BoxMode
 
 
-def get_container_dicts(img_dir):
+setup_logger()
+
+
+def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
+    """
+    Parse annotations json
+
+    :param img_dir: path to directory with images and annotations
+    :return: images metadata
+    """
     json_file = os.path.join(img_dir, "containers-annotated.json")
     with open(json_file) as f:
         imgs_anns = json.load(f)
@@ -30,7 +33,7 @@ def get_container_dicts(img_dir):
 
     dataset_dicts = []
     for idx, v in enumerate(imgs_anns.values()):
-        record = {}
+        record = {}  # type: Dict[str, Any]
 
         filename = os.path.join(img_dir, v["filename"])
         height, width = cv2.imread(filename).shape[:2]
@@ -62,9 +65,12 @@ def get_container_dicts(img_dir):
     return dataset_dicts
 
 
-def check_data_loading(dataset_dicts):
+def check_data_loading(dataset_dicts: List[Dict[str, Any]]) -> None:
     """
-    Vizualize the annotations of randomly selected samples in the training set
+    Visualize the annotations of randomly selected samples in the training set
+
+    :param dataset_dicts: images metadata
+
     """
     for d in random.sample(dataset_dicts, 3):
         img = cv2.imread(d["file_name"])
@@ -74,9 +80,14 @@ def check_data_loading(dataset_dicts):
         pyplot.show()
 
 
-def register_dataset():
+def register_dataset() -> None:
+    """
+    Update detectron2 dataset catalog with our custom dataset.
+    """
     for d in ["train", "val"]:
-        DatasetCatalog.register("container_" + d, lambda d=d: get_container_dicts("data/" + d))
+        DatasetCatalog.register(
+            "container_" + d, lambda d=d: get_container_dicts("data/" + d)
+        )
         MetadataCatalog.get("container_" + d).set(thing_classes=["data"])
 
 
@@ -86,8 +97,3 @@ if __name__ == "__main__":
     container_metadata = MetadataCatalog.get("container_train")
     dataset_dicts = get_container_dicts("data/train")
     check_data_loading(dataset_dicts)
-
-
-
-
-

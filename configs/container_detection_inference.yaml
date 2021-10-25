@@ -1,0 +1,5 @@
+_BASE_: "container_detection_train.yaml"
+MODEL:
+  WEIGHTS: output/model_final.pth
+  ROI_HEADS:
+    SCORE_THRESH_TEST: 0.4
