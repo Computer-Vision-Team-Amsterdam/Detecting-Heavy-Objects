@@ -8,6 +8,8 @@ authors = ["Laurens Samson <l.samson@amsterdam.nl>"]
 python = "^3.7"
 torch = "1.8.0"
 torchvision = "0.9.0"
+azureml-defaults = "^1.35.0"
+azureml-core = "^1.35.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"

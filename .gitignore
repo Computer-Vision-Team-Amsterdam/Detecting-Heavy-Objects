@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Azure config dir
+.azure/
+
+# Images and weights dirs
+images/
+weights/
+
+# IDE stuff
+.idea/
