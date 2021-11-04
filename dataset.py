@@ -26,6 +26,7 @@ def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
     :param img_dir: path to directory with images and annotations
     :return: images metadata
     """
+
     json_file = os.path.join(img_dir, "containers-annotated.json")
     with open(json_file) as f:
         imgs_anns = json.load(f)
@@ -84,6 +85,8 @@ def register_dataset() -> None:
     """
     Update detectron2 dataset catalog with our custom dataset.
     """
+    print(os.getcwd())
+    print(os.system("ls data"))
     for d in ["train", "val"]:
         DatasetCatalog.register(
             "container_" + d, lambda d=d: get_container_dicts("data/" + d)
