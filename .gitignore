@@ -131,8 +131,15 @@ dmypy.json
 # Intellij project settings
 .idea/
 
-# training and validation data_local
+# training and validation data
+data/
 data_local/
+
 
 # model output files
 output/
+output_local/
+
+# test folders with dummy data
+tests/test_download_images/*
+tests/filtering_output/*

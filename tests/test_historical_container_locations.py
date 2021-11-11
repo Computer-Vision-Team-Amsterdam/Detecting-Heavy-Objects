@@ -2,13 +2,21 @@ import fnmatch
 import os
 import shutil
 from datetime import date
+from pathlib import Path
 from typing import List
 from unittest import TestCase
 
 from panorama import models
 from panorama.client import PanoramaClient
 
-from historical_container_locations import Coordinate, download_images, filter_panoramas
+from historical_container_locations import (
+    Coordinate,
+    download_images,
+    evaluate_images_filtering,
+    filter_panoramas,
+)
+
+ROOT = "./"
 
 
 class Test(TestCase):
@@ -64,3 +72,25 @@ class Test(TestCase):
             f"The output folder contains {actual_image_count} images, but it was expected to contain "
             f"{expected_image_count} images.",
         )
+
+    def test_evaluate_images_filtering(self) -> None:
+
+        output_location = Path("filtering_output", "dummy_evaluation")
+        try:
+            # create output folder for the images
+            os.makedirs(output_location)
+        except FileExistsError:
+            # if folder exists it must be deleted before running the test again
+            if len(os.listdir(output_location)) == 0:
+                os.rmdir(output_location)
+            else:
+                shutil.rmtree(output_location)
+        response: models.PagedPanoramasResponse = PanoramaClient.list_panoramas()
+        panoramas: List[models.Panorama] = response.panoramas[:10]
+        download_images(
+            panoramas,
+            image_size=models.ImageSize.MEDIUM,
+            output_location=output_location,
+        )
+
+        evaluate_images_filtering(output_location, subset_size=3)

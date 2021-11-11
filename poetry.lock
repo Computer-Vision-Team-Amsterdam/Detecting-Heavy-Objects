@@ -361,6 +361,7 @@ idna = {version = "*", optional = true, markers = "extra == \"idna2008\""}
 [package.extras]
 idna2008 = ["idna"]
 
+
 [[package]]
 name = "sniffio"
 version = "1.2.0"
@@ -460,7 +461,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "6ff48a2e6357d6984120246746354274576f92426e82bb5f5098e80b20742b1a"
+content-hash = "212e3a70d7edd503d0a4781680a8b6fb0d6c74c30ceeccbe65ed85ede001c1e4"
 
 [metadata.files]
 anyio = [
@@ -752,6 +753,10 @@ regex = [
 rfc3986 = [
     {file = "rfc3986-1.5.0-py2.py3-none-any.whl", hash = "sha256:a86d6e1f5b1dc238b218b012df0aa79409667bb209e58da56d0b94704e712a97"},
     {file = "rfc3986-1.5.0.tar.gz", hash = "sha256:270aaf10d87d0d4e095063c65bf3ddbc6ee3d0b226328ce21e036f946e421835"},
+]
+slideshow = [
+    {file = "slideshow-0.1.0-py3-none-any.whl", hash = "sha256:ff6253a8e03c56975495587c0320601fb45b5945597b6c8d6e42aecffd666f70"},
+    {file = "slideshow-0.1.0.tar.gz", hash = "sha256:7023a2e0d2a5ef3b0385e47dbc2e22a7536d89c04430d4cce0192be17e9c96a6"},
 ]
 sniffio = [
     {file = "sniffio-1.2.0-py3-none-any.whl", hash = "sha256:471b71698eac1c2112a40ce2752bb2f4a4814c22a54a3eed3676bc0f5ca9f663"},

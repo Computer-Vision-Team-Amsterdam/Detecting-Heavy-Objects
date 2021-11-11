@@ -1,4 +1,7 @@
+import glob
 import os
+import random
+import shutil
 from datetime import date
 from pathlib import Path
 from typing import List, Tuple, Union
@@ -76,3 +79,43 @@ def download_images(
         PanoramaClient.download_image(
             image, size=image_size, output_location=output_location
         )
+
+
+def find_container_images() -> None:
+    """
+    Pipeline that searches and stores container images starting from Decos permit requests.
+    """
+    coordinates, radius, time_intervals = parse_file_from_Decos()
+    images = filter_panoramas(coordinates, radius, time_intervals)
+
+    # TODO: find more meaningful name for output folder. We will compare several versions against each other
+    output_location = f"filter_radius_{radius}"
+    download_images(images, models.ImageSize.MEDIUM, output_location)
+
+
+def evaluate_images_filtering(
+    output_location: Union[Path, str], subset_size: int
+) -> None:
+    """
+    Helper method to visualize a sample of images that are queried from the panorama API.
+
+    :param output_location: path to the directory where the downloaded images are stored
+    :param subset_size: number of images to visualize from the output_location
+    """
+
+    filtered_panorama_files = glob.glob(f"{output_location}/*.jpg")
+
+    if len(filtered_panorama_files) < subset_size:
+        raise Exception("The sample size exceeds the number of available images.")
+    sample = random.sample(filtered_panorama_files, subset_size)
+
+    print(f"INFO: Creating folder with subset of {subset_size} images...")
+    temporary_dir = Path(output_location, "temporary")
+    os.makedirs(temporary_dir)
+
+    for file in sample:
+        shutil.copy(file, temporary_dir)
+    os.system(f"labelImg {temporary_dir}")
+
+    print(f"INFO: Deleting folder with subset of {subset_size} images...")
+    shutil.rmtree(temporary_dir)
