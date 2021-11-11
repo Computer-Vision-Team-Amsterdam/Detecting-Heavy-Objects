@@ -1,5 +1,7 @@
-#FROM mcr.microsoft.com/azureml/openmpi4.1.0-cuda11.1-cudnn8-ubuntu20.04 AS base-image
-FROM mcr.microsoft.com/azureml/openmpi3.1.2-ubuntu18.04 AS base-image
+FROM mcr.microsoft.com/azureml/openmpi4.1.0-cuda11.1-cudnn8-ubuntu18.04 AS base-image
+# FROM mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04 AS base-image
+# FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu18.04  ## what they use in detectron2 dockerfile
+
 
 ENV APP_USER=www \
     # Suppress OS prompts

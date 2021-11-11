@@ -10,22 +10,18 @@ from run_inference import setup_cfg
 
 CONTAINER_DETECTION_MODEL = None
 
-import sys
 import argparse
+import sys
 
-print("############### CWD")
-
-print(os.getcwd())
 
 def init() -> None:
     """
-    Loads a pre-trained model and fine-tunes it on the data_local dataset
+    Loads a pre-trained model and fine-tunes it on the data dataset
     """
     global CONTAINER_DETECTION_MODEL  # pylint: disable=global-statement
-    config_file = Path("/opt/pysetup/configs/container_detection_train.yaml")
+    config_file = Path("configs/container_detection_train.yaml")
 
     cfg = setup_cfg(config_file)
-
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     CONTAINER_DETECTION_MODEL = DefaultTrainer(cfg)
@@ -34,9 +30,9 @@ def init() -> None:
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str)
+    parser.add_argument("--dataset")
     opt = parser.parse_args()
-    print("2")
-    #register_dataset()
-    #init()
+    register_dataset(opt)
+    init()

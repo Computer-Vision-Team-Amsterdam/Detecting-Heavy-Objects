@@ -72,10 +72,10 @@ def run(minibatch: Iterable[Union[Path, str]]) -> List[Dict[Union[Path, str], An
 
 
 def visualize_predictions() -> None:
-    dataset_dicts = get_container_dicts("data_local/val")
+    dataset_dicts = get_container_dicts("data/val")
     container_metadata = MetadataCatalog.get("container_train")
 
-    for d in random.sample(dataset_dicts, 3):
+    for d in random.sample(dataset_dicts, 1):
         im = cv2.imread(d["file_name"])
         outputs = CONTAINER_DETECTION_MODEL(im)
         v = Visualizer(

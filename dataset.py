@@ -2,6 +2,7 @@
 import json
 import os
 import random
+from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
@@ -81,22 +82,23 @@ def check_data_loading(dataset_dicts: List[Dict[str, Any]]) -> None:
         pyplot.show()
 
 
-def register_dataset() -> None:
+def register_dataset(opt) -> None:
     """
     Update detectron2 dataset catalog with our custom dataset.
     """
-    print(os.getcwd())
-    print(os.system("ls data"))
+    # print(os.getcwd())
+    # print(os.system("ls"))
+    # print(os.system("ls data"))
     for d in ["train", "val"]:
         DatasetCatalog.register(
             "container_" + d, lambda d=d: get_container_dicts("data/" + d)
         )
-        MetadataCatalog.get("container_" + d).set(thing_classes=["data"])
+        MetadataCatalog.get("container_" + d).set(thing_classes=["container"])
 
 
 if __name__ == "__main__":
 
-    register_dataset()
+    register_dataset("")
     container_metadata = MetadataCatalog.get("container_train")
     dataset_dicts = get_container_dicts("data/train")
     check_data_loading(dataset_dicts)
