@@ -27,13 +27,10 @@ if __name__ == "__main__":
     env.python.conda_dependencies.set_python_version("3.8.5")
     """
 
-    env = Environment.from_docker_image(
-        name="test-heavy",
-        image="bc4a4503f5dc4f37b696e129c206fbc8.azurecr.io/test-heavy",
-    )
+    env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 
-    env.inferencing_stack_version = "latest"
-    env.python.user_managed_dependencies = True
+    # env.inferencing_stack_version = "latest"
+    # env.python.user_managed_dependencies = False
 
     # Get datastore path
     default_ds: Datastore = ws.get_default_datastore()
