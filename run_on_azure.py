@@ -33,7 +33,7 @@ if __name__ == "__main__":
     )
 
     env.inferencing_stack_version = "latest"
-    env.python.user_managed_dependencies = True
+    env.python.user_managed_dependencies = False
 
     # Get datastore path
     default_ds: Datastore = ws.get_default_datastore()
