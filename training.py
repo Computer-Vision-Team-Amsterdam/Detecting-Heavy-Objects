@@ -6,7 +6,7 @@ from detectron2.config import CfgNode, get_cfg
 from detectron2.engine import DefaultTrainer
 
 from dataset import register_dataset
-from run_inference import setup_cfg
+from inference import setup_cfg
 
 CONTAINER_DETECTION_MODEL = None
 
