@@ -34,5 +34,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset")
     opt = parser.parse_args()
-    register_dataset(opt)
+    register_dataset("container")
     init()

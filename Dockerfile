@@ -16,5 +16,3 @@ RUN git clone https://github.com/facebookresearch/detectron2.git
 RUN python -m pip install -e detectron2
 
 
-# Continue from clean Python base image
-FROM base-image AS final

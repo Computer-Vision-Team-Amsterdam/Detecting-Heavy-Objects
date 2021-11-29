@@ -17,7 +17,7 @@ from detectron2.utils.visualizer import ColorMode, Visualizer
 from matplotlib import pyplot
 from PIL import Image
 
-from dataset import get_container_dicts
+# from dataset import get_container_dicts, visualize_images
 
 CONTAINER_DETECTION_MODEL = None
 
@@ -71,25 +71,8 @@ def run(minibatch: Iterable[Union[Path, str]]) -> List[Dict[Union[Path, str], An
     return [{path: outputs[idx]} for idx, path in enumerate(minibatch)]
 
 
-def visualize_predictions() -> None:
-    dataset_dicts = get_container_dicts("data/val")
-    container_metadata = MetadataCatalog.get("container_train")
-
-    for d in random.sample(dataset_dicts, 1):
-        im = cv2.imread(d["file_name"])
-        outputs = CONTAINER_DETECTION_MODEL(im)
-        v = Visualizer(
-            im[:, :, ::-1],
-            metadata=container_metadata,
-            scale=0.5,
-            instance_mode=ColorMode.IMAGE_BW
-            # remove the colors of unsegmented pixels. This option is only available for segmentation models
-        )
-        out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
-        pyplot.imshow(out.get_image()[:, :, ::-1])
-        pyplot.show()
-
-
 if __name__ == "__main__":
     init()
-    visualize_predictions()
+    # dataset_dicts = get_container_dicts("data/val")
+    # metadata = MetadataCatalog.get("container_train")
+    # visualize_images(dataset_dicts, metadata, mode="pred", n_sample=3)

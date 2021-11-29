@@ -2,20 +2,19 @@
 import json
 import os
 import random
-from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
 import cv2
 import numpy as np
 from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.engine import DefaultPredictor
 from detectron2.structures import BoxMode
 from detectron2.utils.logger import setup_logger
-from detectron2.utils.visualizer import Visualizer
+from detectron2.utils.visualizer import ColorMode, Visualizer
 from matplotlib import pyplot
 
-# import some common detectron2 utilities
-
+from inference import CONTAINER_DETECTION_MODEL
 
 setup_logger()
 
@@ -56,7 +55,7 @@ def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
             poly = [p for x in poly for p in x]
 
             obj = {
-                "bbox": [np.min(px), np.min(py), np.max(px), np.max(py)],
+                "bbox": [np.amin(px), np.amin(py), np.amax(px), np.amax(py)],
                 "bbox_mode": BoxMode.XYXY_ABS,
                 "segmentation": [poly],
                 "category_id": 0,
@@ -67,38 +66,58 @@ def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
     return dataset_dicts
 
 
-def check_data_loading(dataset_dicts: List[Dict[str, Any]]) -> None:
+def visualize_images(
+    dataset_dicts: List[Dict[str, Any]],
+    metadata: Dict[Any, Any],
+    mode: str,
+    n_sample: int,
+) -> None:
     """
-    Visualize the annotations of randomly selected samples in the training set
+    Visualize the annotations of randomly selected samples in the dataset.
+    Additionally, you can specify a trained model to display the confidence score for each annotation
 
     :param dataset_dicts: images metadata
-
+    :param mode: the type of visualization, i.e. whether to view the object annotations or the confidence scores.
+                 For the second option, there must be a trained model specified in the configurations.
+                 Options: [ann, pred]
+    :param n_sample: number of samples to be visualized
+    :
     """
-    for d in random.sample(dataset_dicts, 3):
+
+    for d in random.sample(dataset_dicts, n_sample):
         img = cv2.imread(d["file_name"])
-        visualizer = Visualizer(img[:, :, ::-1], metadata=container_metadata, scale=0.5)
-        out = visualizer.draw_dataset_dict(d)
+        visualizer = Visualizer(
+            img[:, :, ::-1],
+            metadata=metadata,
+            scale=0.5,
+            instance_mode=ColorMode.IMAGE_BW,
+        )
+        out: DefaultPredictor = None
+        if mode == "pred":
+            outputs = CONTAINER_DETECTION_MODEL(img)
+            out = visualizer.draw_instance_predictions(outputs["instances"].to("cpu"))
+        if mode == "ann":
+            out = visualizer.draw_dataset_dict(d)
         pyplot.imshow(out.get_image()[:, :, ::-1])
         pyplot.show()
 
 
-def register_dataset(opt) -> None:
+def register_dataset(name: str) -> None:
     """
     Update detectron2 dataset catalog with our custom dataset.
     """
-    # print(os.getcwd())
-    # print(os.system("ls"))
-    # print(os.system("ls data"))
+
     for d in ["train", "val"]:
         DatasetCatalog.register(
-            "container_" + d, lambda d=d: get_container_dicts("data/" + d)
+            f"{name}_" + d, lambda d=d: get_container_dicts("data/" + d)
         )
-        MetadataCatalog.get("container_" + d).set(thing_classes=["container"])
+        MetadataCatalog.get(f"{name}_" + d).set(thing_classes=[f"{name}"])
 
 
 if __name__ == "__main__":
 
-    register_dataset("")
-    container_metadata = MetadataCatalog.get("container_train")
+    dataset_name = "container"
+    register_dataset(name=dataset_name)
+    metadata = MetadataCatalog.get(f"{dataset_name}_train")
     dataset_dicts = get_container_dicts("data/train")
-    check_data_loading(dataset_dicts)
+    visualize_images(dataset_dicts, metadata, mode="ann", n_sample=3)

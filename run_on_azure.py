@@ -8,7 +8,6 @@ from azureml.core import (
     ScriptRunConfig,
     Workspace,
 )
-from azureml.widgets import RunDetails
 
 if __name__ == "__main__":
     ws = Workspace.from_config()
@@ -19,13 +18,14 @@ if __name__ == "__main__":
     default_ds: Datastore = ws.get_default_datastore()
 
     # Register a dataset for the input data
-    data_set = Dataset.File.from_files(
-        path=(default_ds, "UI/11-03-2021_070053_UTC/data/train/"), validate=False
-    )
+    # data_set = Dataset.File.from_files(
+    #    path=(default_ds, "UI/11-03-2021_070053_UTC/data/train/"), validate=False
+    # )
 
     dataset = Dataset.get_by_name(ws, "container-data")
 
-    downloaded = dataset.as_download(path_on_compute="data/")
+    # downloaded = dataset.as_download(path_on_compute="data/")
+    downloaded = dataset.as_mount(path_on_compute="data/")
 
     compute_target = ComputeTarget(ws, "detectron2")
 

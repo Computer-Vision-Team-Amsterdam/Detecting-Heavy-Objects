@@ -143,3 +143,6 @@ output_local/
 # test folders with dummy data
 tests/test_download_images/*
 tests/filtering_output/*
+
+# config files
+config.json
