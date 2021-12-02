@@ -1,14 +1,17 @@
+"""
+This module contains functionality to train a default detectron2 model.
+"""
+
+import argparse
 import os
 from pathlib import Path
 
 from detectron2.engine import DefaultTrainer
 
-from dataset import register_dataset
+from dataset import DATASET_NAME, register_dataset
 from inference import setup_cfg
 
 CONTAINER_DETECTION_MODEL = None
-
-import argparse
 
 
 def init() -> None:
@@ -31,5 +34,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset")
     opt = parser.parse_args()
-    register_dataset("container")
+    register_dataset(DATASET_NAME)
     init()

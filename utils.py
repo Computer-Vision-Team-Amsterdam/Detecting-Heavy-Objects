@@ -20,15 +20,15 @@ def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
     """
 
     json_file = os.path.join(img_dir, "containers-annotated.json")
-    with open(json_file) as f:
-        imgs_anns = json.load(f)
+    with open(json_file) as file:
+        imgs_anns = json.load(file)
         imgs_anns = imgs_anns["_via_img_metadata"]
 
     dataset_dicts = []
-    for idx, v in enumerate(imgs_anns.values()):
+    for idx, value in enumerate(imgs_anns.values()):
         record = {}  # type: Dict[str, Any]
 
-        filename = os.path.join(img_dir, v["filename"])
+        filename = os.path.join(img_dir, value["filename"])
         height, width = cv2.imread(filename).shape[:2]
 
         record["file_name"] = filename
@@ -36,18 +36,18 @@ def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
         record["height"] = height
         record["width"] = width
 
-        annos = v["regions"]
+        annos = value["regions"]
         objs = []
         for anno in annos:
             # assert not anno["region_attributes"]
             anno = anno["shape_attributes"]
-            px = anno["all_points_x"]
-            py = anno["all_points_y"]
-            poly = [(x + 0.5, y + 0.5) for x, y in zip(px, py)]
+            p_x = anno["all_points_x"]
+            p_y = anno["all_points_y"]
+            poly = [(x + 0.5, y + 0.5) for x, y in zip(p_x, p_y)]
             poly = [p for x in poly for p in x]
 
             obj = {
-                "bbox": [np.amin(px), np.amin(py), np.amax(px), np.amax(py)],
+                "bbox": [np.amin(p_x), np.amin(p_y), np.amax(p_x), np.amax(p_y)],
                 "bbox_mode": BoxMode.XYXY_ABS,
                 "segmentation": [poly],
                 "category_id": 0,

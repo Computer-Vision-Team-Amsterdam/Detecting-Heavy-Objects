@@ -1,15 +1,13 @@
 """This module contains functionality to load a model and run predictions that can be
 incorparated into the Azure batch processing pipeline"""
-
 import random
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Union
 
 import cv2
-import joblib as joblib
 import numpy as np
 import torch
-from azureml.core import Model, Run, Workspace
+from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
@@ -20,6 +18,8 @@ from PIL import Image
 from utils import get_container_dicts
 
 CONTAINER_DETECTION_MODEL = None
+MODEL_NAME = "dummy_detectron"
+VERSION = 2
 
 
 def setup_cfg(config_file: Union[Path, str]) -> CfgNode:
@@ -68,27 +68,30 @@ def run(minibatch: Iterable[Union[Path, str]]) -> List[Dict[Union[Path, str], An
 
 def visualize_images(
     dataset_dicts: List[Dict[str, Any]],
-    metadata: Dict[Any, Any],
+    dataset_metadata: Dict[Any, Any],
     mode: str,
     n_sample: int,
 ) -> None:
     """
     Visualize the annotations of randomly selected samples in the dataset.
-    Additionally, you can specify a trained model to display the confidence score for each annotation
+    Additionally, you can specify a trained model to display
+    the confidence score for each annotation
 
     :param dataset_dicts: images metadata
-    :param mode: the type of visualization, i.e. whether to view the object annotations or the confidence scores.
-                 For the second option, there must be a trained model specified in the configurations.
-                 Options: [ann, pred]
+    :param dataset_metadata: dataset metadata
+    :param mode: the type of visualization, i.e. whether to view the object annotations
+                or the confidence scores.
+                 For the second option, there must be a trained model specified
+                 in the configurations. Options: [ann, pred]
     :param n_sample: number of samples to be visualized
     :
     """
 
-    for d in random.sample(dataset_dicts, n_sample):
-        img = cv2.imread(d["file_name"])
+    for dataset_dict in random.sample(dataset_dicts, n_sample):
+        img = cv2.imread(dataset_dict["file_name"])
         visualizer = Visualizer(
             img[:, :, ::-1],
-            metadata=metadata,
+            metadata=dataset_metadata,
             scale=0.5,
             instance_mode=ColorMode.IMAGE_BW,
         )
@@ -97,19 +100,16 @@ def visualize_images(
             outputs = CONTAINER_DETECTION_MODEL(img)  # type: ignore
             out = visualizer.draw_instance_predictions(outputs["instances"].to("cpu"))
         if mode == "ann":
-            out = visualizer.draw_dataset_dict(d)
+            out = visualizer.draw_dataset_dict(dataset_dict)
         pyplot.imshow(out.get_image()[:, :, ::-1])
         pyplot.show()
 
 
 if __name__ == "__main__":
 
-    model_name = "dummy_detectron"
-    version = 2
-
     # download model from Azure
     ws = Workspace.from_config()
-    model = Model(ws, model_name, version=version)
+    model = Model(ws, MODEL_NAME, version=VERSION)
     _ = model.download(target_dir="output", exist_ok=True)
 
     init()
