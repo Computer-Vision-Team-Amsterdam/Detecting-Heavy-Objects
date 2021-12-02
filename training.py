@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
-from typing import Union
 
-from detectron2.config import CfgNode, get_cfg
 from detectron2.engine import DefaultTrainer
 
 from dataset import register_dataset
@@ -11,7 +9,6 @@ from inference import setup_cfg
 CONTAINER_DETECTION_MODEL = None
 
 import argparse
-import sys
 
 
 def init() -> None:
