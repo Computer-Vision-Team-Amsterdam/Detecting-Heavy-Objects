@@ -1,5 +1,5 @@
-"""This module contains functionality to search for images containers based on the Decos dataset and
-evaluate the quality of the search"""
+"""This module contains functionality to search for images containers based on
+the Decos dataset and evaluate the quality of the search"""
 
 import glob
 import os
@@ -16,7 +16,7 @@ from panorama.models import Panorama
 from tqdm import tqdm
 
 
-class Coordinate():
+class Coordinate:
     """
     Class to encode the geolocation of a panorama
     """
@@ -55,10 +55,11 @@ def filter_panoramas(
     coordinates: List[Coordinate], radius: int, time_intervals: List[Tuple[date, date]]
 ) -> List[Panorama]:
     """
-    This method queries the Panorama API for images based on list of locations and times.
+    This method queries the Panorama API for images based on list of locations and times
 
     :param coordinates: latitudes and longitudes for each panorama we are interested in
-    :param radius: area of search around the coordinates. All images with coordinates within radius are retrieved
+    :param radius: area of search around the coordinates. All images with coordinates
+                   within radius are retrieved
     :param time_intervals: start and end period for each coordinate.
 
     returns: List of len(coordinates) panorama objects
@@ -113,7 +114,8 @@ def download_images(
 
 def find_container_images() -> None:
     """
-    Pipeline that searches and stores container images starting from Decos permit requests.
+    Pipeline that searches and stores container images starting from
+    Decos permit requests.
     """
     coordinates, radius, time_intervals = parse_file_from_decos("Decos.xlsx")
     images = filter_panoramas(coordinates, radius, time_intervals)
@@ -127,7 +129,7 @@ def evaluate_images_filtering(
     output_location: Union[Path, str], subset_size: int
 ) -> None:
     """
-    Helper method to visualize a sample of images that are queried from the panorama API.
+    Helper method to visualize sample of images that are queried from the panorama API.
 
     :param output_location: path to the directory where the downloaded images are stored
     :param subset_size: number of images to visualize from the output_location
