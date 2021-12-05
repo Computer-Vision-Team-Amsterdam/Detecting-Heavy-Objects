@@ -36,8 +36,8 @@ def parse_file_from_decos(
     data = pd.read_excel(path_to_file)
 
     radius = 100
-    coords = list()
-    intervals = list()
+    coords = []
+    intervals = []
     for _, row in tqdm(data.iterrows(), total=len(data), desc="Parsing Decos file..."):
         start, end, long, lat = (
             row["DATUM_VAN"],
@@ -65,7 +65,7 @@ def filter_panoramas(
     returns: List of len(coordinates) panorama objects
 
     """
-    query_results = list()
+    query_results = []
     for i in tqdm(range(len(coordinates)), desc="Filtering images from API..."):
         coord = coordinates[i]
         location = models.LocationQuery(
@@ -81,7 +81,7 @@ def filter_panoramas(
                 timestamp_after=timestamp_after,
                 timestamp_before=timestamp_before,
             )
-        except:
+        except TimeoutError:
             print(f"Time after {timestamp_after}, time before {timestamp_before}")
 
         query_results.extend(query_result.panoramas)
@@ -108,7 +108,7 @@ def download_images(
             PanoramaClient.download_image(
                 image, size=image_size, output_location=output_location
             )
-        except:
+        except TimeoutError:
             print("Timed out downloading operation...Skipping.")
 
 
