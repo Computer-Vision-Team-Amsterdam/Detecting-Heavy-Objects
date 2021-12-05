@@ -13,6 +13,7 @@ from azureml.core import (
 
 EXPERIMENT_NAME = "train_dummy_detectron2"
 
+
 if __name__ == "__main__":
     ws = Workspace.from_config()
 

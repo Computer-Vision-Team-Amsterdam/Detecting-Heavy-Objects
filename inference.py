@@ -113,6 +113,6 @@ if __name__ == "__main__":
     _ = model.download(target_dir="output", exist_ok=True)
 
     init()
-    dataset_dicts = get_container_dicts("data/val")
+    container_dicts = get_container_dicts("data/val")
     metadata = MetadataCatalog.get("container_train")
-    visualize_images(dataset_dicts, metadata, mode="pred", n_sample=3)
+    visualize_images(container_dicts, metadata, mode="pred", n_sample=3)
