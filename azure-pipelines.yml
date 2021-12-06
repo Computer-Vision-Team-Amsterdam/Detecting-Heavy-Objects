@@ -29,10 +29,7 @@ jobs:
           source activate det2
           python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
         displayName: 'Install detectron2'
-      - script: |
-          source activate det2
-          pip install git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.0
-        displayName: 'Install panorama'
+
       - script: |
           source activate det2
           isort .
