@@ -28,6 +28,9 @@ jobs:
       - bash:
           source activate det2
         displayName: 'Activate conda environment'
+      -bash:
+          python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+        displayName: "Install detectron2 in the conda environment"
       - script: |
           poetry run isort .
         displayName: 'isort'

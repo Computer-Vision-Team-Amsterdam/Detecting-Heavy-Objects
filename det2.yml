@@ -80,7 +80,6 @@ dependencies:
   - zlib=1.2.11
   - zstd=1.4.9
   - pip:
-    - llvm-openmp=12.0.0
     - absl-py==1.0.0
     - adal==1.2.7
     - antlr4-python3-runtime==4.8
@@ -109,7 +108,6 @@ dependencies:
     - cryptography==3.4.8
     - cycler==0.11.0
     - cython==0.29.24
-    - detectron2==0.6
     - docker==5.0.3
     - flatbuffers==2.0
     - fonttools==4.28.2
