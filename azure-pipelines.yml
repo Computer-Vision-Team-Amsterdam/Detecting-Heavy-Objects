@@ -55,7 +55,7 @@ jobs:
 
       - script: |
           conda env create -f det2.yml
-          source activate det2
+          conda activate det2
           CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
         displayName: 'Install dependencies'
 
@@ -85,6 +85,7 @@ jobs:
         displayName: 'Install detectron2'
 
       - script: |
+          source activate det2
           isort .
         displayName: 'isort'
 
