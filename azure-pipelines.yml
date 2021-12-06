@@ -54,45 +54,45 @@ jobs:
         displayName: 'Install dependencies'
 
   - job: Style
-      pool:
-        vmImage: ubuntu-latest
-      strategy:
-        matrix:
-          Python3.9:
-            python.version: '3.9'
-      steps:
-        - task: UsePythonVersion@0
-          inputs:
-            versionSpec: '$(python.version)'
-          displayName: 'Use Python $(python.version)'
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      matrix:
+        Python3.9:
+          python.version: '3.9'
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '$(python.version)'
+        displayName: 'Use Python $(python.version)'
 
-        - bash: echo "##vso[task.prependpath]$CONDA/bin"
-          displayName: 'Add conda to PATH'
+      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+        displayName: 'Add conda to PATH'
 
-        - script: |
-            conda env create -f det2.yml
-          displayName: 'Create conda environment from yml file'
+      - script: |
+          conda env create -f det2.yml
+        displayName: 'Create conda environment from yml file'
 
-        - script: |
-            source activate det2
-            python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-          displayName: 'Install detectron2'
+      - script: |
+          source activate det2
+          python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+        displayName: 'Install detectron2'
 
-        - script: |
-            isort .
-          displayName: 'isort'
+      - script: |
+          isort .
+        displayName: 'isort'
 
-        - script: |
-            source activate det2
-            black .
-          displayName: 'black'
+      - script: |
+          source activate det2
+          black .
+        displayName: 'black'
 
-        - script: |
-            source activate det2
-            mypy --ignore-missing-imports --config-file=.mypyrc .
-          displayName: 'mypy'
+      - script: |
+          source activate det2
+          mypy --ignore-missing-imports --config-file=.mypyrc .
+        displayName: 'mypy'
 
-        - script: |
-            source activate det2
-            pylint --jobs=0 --rcfile=.pylintrc *.py
-          displayName: 'pylint'
+      - script: |
+          source activate det2
+          pylint --jobs=0 --rcfile=.pylintrc *.py
+        displayName: 'pylint'
