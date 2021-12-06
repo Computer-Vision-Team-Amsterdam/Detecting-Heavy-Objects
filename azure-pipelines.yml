@@ -24,7 +24,7 @@ jobs:
         displayName: 'Add conda to PATH'
       - script: |
           conda env create -f det2.yml
-          conda activate det2
+          source activate det2
         displayName: 'Install dependencies'
 
       - script: |
