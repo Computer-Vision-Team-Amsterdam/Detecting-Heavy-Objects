@@ -34,7 +34,6 @@ jobs:
 
       - script: |
           source activate det2
-          export MACOSX_DEPLOYMENT_TARGET=10.9
           CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
         displayName: 'Install dependencies'
 
