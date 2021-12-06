@@ -24,11 +24,13 @@ jobs:
           versionSpec: '$(python.version)'
         displayName: 'Use Python $(python.version)'
 
+      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+        displayName: 'Add conda to PATH'
+
       - script: |
-          python -m pip install --upgrade pip
-          pip install poetry
-          poetry install
-          poetry run python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+          conda env create -f det2.yml
+          source activate det2
+          python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
         displayName: 'Install dependencies'
 
   - job: OSX
@@ -48,13 +50,19 @@ jobs:
           versionSpec: '$(python.version)'
         displayName: 'Use Python $(python.version)'
 
-      - script: |
-          python -m pip install --upgrade pip
-          pip install poetry
-          poetry install
-          poetry run python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-        displayName: 'Install dependencies'
+      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+        displayName: 'Add conda to PATH'
 
+        # On Hosted macOS, the agent user doesn't have ownership of Miniconda's installation directory/
+        # We need to take ownership if we want to update conda or install packages globally
+      - bash: sudo chown -R $USER $CONDA
+        displayName: 'Take ownership of conda installation'
+
+      - script: |
+          conda env create -f det2.yml
+          conda activate det2
+          CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+        displayName: 'Install dependencies'
 
   - job: Style
     pool:
@@ -69,25 +77,34 @@ jobs:
           versionSpec: '$(python.version)'
         displayName: 'Use Python $(python.version)'
 
-      - script: |
-          python -m pip install --upgrade pip
-          pip install poetry
-          poetry install
-          poetry run python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-        displayName: 'Install dependencies'
+      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+        displayName: 'Add conda to PATH'
 
       - script: |
-          poetry run isort .
+          conda env create -f det2.yml
+        displayName: 'Create conda environment from yml file'
+
+      - script: |
+          source activate det2
+          python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+        displayName: 'Install detectron2'
+
+      - script: |
+          source activate det2
+          isort .
         displayName: 'isort'
 
       - script: |
-          poetry run black .
+          source activate det2
+          black .
         displayName: 'black'
 
       - script: |
-          poetry run mypy --ignore-missing-imports --config-file=.mypyrc .
+          source activate det2
+          mypy --ignore-missing-imports --config-file=.mypyrc .
         displayName: 'mypy'
 
       - script: |
-          poetry run pylint --jobs=0 --rcfile=.pylintrc *.py
+          source activate det2
+          pylint --jobs=0 --rcfile=.pylintrc *.py
         displayName: 'pylint'
