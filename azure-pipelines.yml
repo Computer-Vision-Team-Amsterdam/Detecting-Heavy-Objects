@@ -7,7 +7,6 @@ trigger:
 - main
 
 jobs:
-  """
   - job: Linux
     pool:
       vmImage: ubuntu-latest
