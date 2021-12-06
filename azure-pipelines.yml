@@ -25,7 +25,7 @@ jobs:
       - script: |
           conda env create -f det2.yml
         displayName: 'Create conda environment from yml file'
-      - bash:
+      - script: |
           source activate det2
           python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
         displayName: 'Activate conda environment and install detectron2'
