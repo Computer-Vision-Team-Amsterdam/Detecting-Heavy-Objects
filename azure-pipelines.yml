@@ -27,10 +27,8 @@ jobs:
         displayName: 'Create conda environment from yml file'
       - bash:
           source activate det2
-        displayName: 'Activate conda environment'
-      - bash:
           python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-        displayName: "Install detectron2 in the conda environment"
+        displayName: 'Activate conda environment and install detectron2'
       - script: |
           poetry run isort .
         displayName: 'isort'
