@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import List, Tuple, Union
 
 import pandas as pd
-from panorama import models # pylint: disable=import-error
-from panorama.client import PanoramaClient # pylint: disable=import-error
-from panorama.models import Panorama # pylint: disable=import-error
+from panorama import models  # pylint: disable=import-error
+from panorama.client import PanoramaClient  # pylint: disable=import-error
+from panorama.models import Panorama  # pylint: disable=import-error
 from tqdm import tqdm
 
 
