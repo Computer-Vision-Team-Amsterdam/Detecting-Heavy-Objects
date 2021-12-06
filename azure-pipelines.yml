@@ -28,21 +28,25 @@ jobs:
       - script: |
           source activate det2
           python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-        displayName: 'Activate conda environment and install detectron2'
+        displayName: 'Install detectron2'
       - script: |
-          poetry run isort .
+          source activate det2
+          isort .
         displayName: 'isort'
 
       - script: |
-          poetry run black .
+          source activate det2
+          black .
         displayName: 'black'
 
       - script: |
-          poetry run mypy --ignore-missing-imports --config-file=.mypyrc .
+          source activate det2
+          mypy --ignore-missing-imports --config-file=.mypyrc .
         displayName: 'mypy'
 
       - script: |
-          poetry run pylint --jobs=0 --rcfile=.pylintrc *.py
+          source activate det2
+          pylint --jobs=0 --rcfile=.pylintrc *.py
         displayName: 'pylint'
 
 
