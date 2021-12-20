@@ -14,7 +14,7 @@ from inference import setup_cfg
 CONTAINER_DETECTION_MODEL = None
 
 
-def init() -> None:
+def init_train() -> None:
     """
     Loads a pre-trained model and fine-tunes it on the data dataset
     """
@@ -35,4 +35,4 @@ if __name__ == "__main__":
     parser.add_argument("--dataset")
     opt = parser.parse_args()
     register_dataset(DATASET_NAME)
-    init()
+    init_train()

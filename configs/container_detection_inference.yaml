@@ -3,4 +3,4 @@ MODEL:
   DEVICE: cpu
   WEIGHTS: output/model_final.pth
   ROI_HEADS:
-    SCORE_THRESH_TEST: 0.9
+    SCORE_THRESH_TEST: 0.5

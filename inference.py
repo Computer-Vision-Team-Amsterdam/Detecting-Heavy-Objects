@@ -1,5 +1,6 @@
 """This module contains functionality to load a model and run predictions that can be
 incorparated into the Azure batch processing pipeline"""
+import json
 import random
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Union
@@ -9,12 +10,15 @@ import numpy as np
 import torch
 from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
-from detectron2.data import MetadataCatalog
+from detectron2.data import MetadataCatalog, build_detection_test_loader
 from detectron2.engine import DefaultPredictor
+from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from matplotlib import pyplot
 from PIL import Image
 
+from dataset import DATASET_NAME, register_dataset
+from evaluation import CustomCOCOEvaluator
 from utils import get_container_dicts
 
 CONTAINER_DETECTION_MODEL = None
@@ -33,9 +37,11 @@ def setup_cfg(config_file: Union[Path, str]) -> CfgNode:
     return cfg
 
 
-def init() -> None:
+def init_inference() -> CfgNode:
     """
     Initializes the trained model
+
+    Returns the configuration object
     """
     global CONTAINER_DETECTION_MODEL  # pylint: disable=global-statement
 
@@ -44,6 +50,8 @@ def init() -> None:
     cfg = setup_cfg(config_file)
 
     CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
+
+    return cfg
 
 
 def run(minibatch: Iterable[Union[Path, str]]) -> List[Dict[Union[Path, str], Any]]:
@@ -66,7 +74,7 @@ def run(minibatch: Iterable[Union[Path, str]]) -> List[Dict[Union[Path, str], An
     return [{path: outputs[idx]} for idx, path in enumerate(minibatch)]
 
 
-def visualize_images(
+def plot_instance_segm(
     dataset_dicts: List[Dict[str, Any]],
     dataset_metadata: Dict[Any, Any],
     mode: str,
@@ -105,14 +113,38 @@ def visualize_images(
         pyplot.show()
 
 
-if __name__ == "__main__":
+def visualize_predictions():
+    """
+    This method takes a trained model from Azure, downloads it locally and plots
+    visualization of randomly selected images from the validation folder
 
+    """
+    # TODO: make sure the correct model is downloaded from Azure.
     # download model from Azure
     ws = Workspace.from_config()
     model = Model(ws, MODEL_NAME, version=VERSION)
-    _ = model.download(target_dir="output", exist_ok=True)
+    # _ = model.download(target_dir="output", exist_ok=True)
 
-    init()
+    _ = init_inference()
     container_dicts = get_container_dicts("data/val")
-    metadata = MetadataCatalog.get("container_train")
-    visualize_images(container_dicts, metadata, mode="pred", n_sample=3)
+    metadata = MetadataCatalog.get(f"{DATASET_NAME}_train")
+    plot_instance_segm(container_dicts, metadata, mode="pred", n_sample=3)
+
+
+def evaluate_model():
+    """
+    This method calculates evaluation metrics for the trained model.
+    """
+    register_dataset(name=DATASET_NAME)
+    cfg = init_inference()
+    CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
+
+    evaluator = CustomCOCOEvaluator(
+        f"{DATASET_NAME}_val", output_dir="output"
+    )  # we evaluate on the validation set
+    val_loader = build_detection_test_loader(cfg, f"{DATASET_NAME}_val")
+    inference_on_dataset(CONTAINER_DETECTION_MODEL.model, val_loader, evaluator)
+
+
+if __name__ == "__main__":
+    evaluate_model()
