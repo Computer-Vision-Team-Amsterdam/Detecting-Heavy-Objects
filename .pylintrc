@@ -3,7 +3,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
-extension-pkg-whitelist=pydantic
+extension-pkg-whitelist=pydantic, cv2
 
 # Specify a score threshold to be exceeded before program exits with error.
 fail-under=10.0
@@ -60,7 +60,8 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=print-statement,
+disable=abstract-class-instantiated,
+        print-statement,
         parameter-unpacking,
         unpacking-in-except,
         old-raise-syntax,
@@ -371,7 +372,7 @@ function-naming-style=snake_case
 # naming-style.
 #function-rgx=
 
-# Good variable names which should always be accepted, separated by a comma.
+# Good names which should always be accepted, separated by a comma.
 good-names=i,
            j,
            k,
@@ -562,7 +563,7 @@ max-bool-expr=5
 max-branches=12
 
 # Maximum number of locals for function / method body.
-max-locals=15
+max-locals=20
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7

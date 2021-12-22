@@ -127,3 +127,22 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Intellij project settings
+.idea/
+
+# training and validation data
+data/
+data_local/
+
+
+# model output files
+output/
+output_local/
+
+# test folders with dummy data
+tests/test_download_images/*
+tests/filtering_output/*
+
+# config files
+config.json
