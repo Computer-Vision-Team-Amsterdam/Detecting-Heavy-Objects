@@ -126,9 +126,9 @@ def visualize_predictions():
     # _ = model.download(target_dir="output", exist_ok=True)
 
     _ = init_inference()
-    container_dicts = get_container_dicts("data/val")
+    container_dicts = get_container_dicts("data/train")
     metadata = MetadataCatalog.get(f"{DATASET_NAME}_train")
-    plot_instance_segm(container_dicts, metadata, mode="pred", n_sample=3)
+    plot_instance_segm(container_dicts, metadata, mode="pred", n_sample=10)
 
 
 def evaluate_model():
@@ -140,11 +140,12 @@ def evaluate_model():
     CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
 
     evaluator = CustomCOCOEvaluator(
-        f"{DATASET_NAME}_val", output_dir="output"
+        f"{DATASET_NAME}_train", output_dir="output"
     )  # we evaluate on the validation set
-    val_loader = build_detection_test_loader(cfg, f"{DATASET_NAME}_val")
-    inference_on_dataset(CONTAINER_DETECTION_MODEL.model, val_loader, evaluator)
+    val_loader = build_detection_test_loader(cfg, f"{DATASET_NAME}_train")
+    print(inference_on_dataset(CONTAINER_DETECTION_MODEL.model, val_loader, evaluator))
 
 
 if __name__ == "__main__":
-    evaluate_model()
+    #evaluate_model()
+    visualize_predictions()
