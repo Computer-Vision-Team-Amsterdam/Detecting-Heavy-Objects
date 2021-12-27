@@ -8,7 +8,7 @@ from utils import get_container_dicts
 
 
 class Test(TestCase):
-    def test_register_dataset(self):
+    def test_register_dataset(self) -> None:
         """
         This test checks whether a new dataset is succesfully registered in the dataset catalog from detectron2
         We plot some instances from the newly registered dataset to check if everything works as expected.

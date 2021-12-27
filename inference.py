@@ -1,5 +1,5 @@
 """This module contains functionality to load a model and run predictions that can be
-incorparated into the Azure batch processing pipeline"""
+incorporated into the Azure batch processing pipeline"""
 import json
 import random
 from pathlib import Path
@@ -18,8 +18,9 @@ from matplotlib import pyplot
 from PIL import Image
 
 from dataset import DATASET_NAME, register_dataset
-from evaluation import CustomCOCOEvaluator
+from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import get_container_dicts
+from configs.config_parser import arg_parser
 
 CONTAINER_DETECTION_MODEL = None
 MODEL_NAME = "dummy_detectron"
@@ -113,16 +114,18 @@ def plot_instance_segm(
         pyplot.show()
 
 
-def visualize_predictions():
+def visualize_predictions(model_name: str, version: int) -> None:
     """
     This method takes a trained model from Azure, downloads it locally and plots
     visualization of randomly selected images from the validation folder
 
+    :param model_name: name of the trained model
+    :param version: version of the trained model
     """
     # TODO: make sure the correct model is downloaded from Azure.
     # download model from Azure
     ws = Workspace.from_config()
-    model = Model(ws, MODEL_NAME, version=VERSION)
+    model = Model(ws, model_name, version=version)
     # _ = model.download(target_dir="output", exist_ok=True)
 
     _ = init_inference()
@@ -131,21 +134,26 @@ def visualize_predictions():
     plot_instance_segm(container_dicts, metadata, mode="pred", n_sample=10)
 
 
-def evaluate_model():
+def evaluate_model() -> None:
     """
     This method calculates evaluation metrics for the trained model.
     """
+    # pylint: disable=too-many-function-args
+    # note to self: pylint wrongly detects that build_detection_test_loader is called with too many positional args
+    #  but the method has a decorator with which we can use the constructor from another method
+    # i.e. _test_loader_from_config
     register_dataset(name=DATASET_NAME)
     cfg = init_inference()
     CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
 
     evaluator = CustomCOCOEvaluator(
-        f"{DATASET_NAME}_train", output_dir="output"
+        f"{DATASET_NAME}_val", output_dir="output"
     )  # we evaluate on the validation set
-    val_loader = build_detection_test_loader(cfg, f"{DATASET_NAME}_train")
+    val_loader = build_detection_test_loader(cfg, f"{DATASET_NAME}_val", mapper=None)
     print(inference_on_dataset(CONTAINER_DETECTION_MODEL.model, val_loader, evaluator))
 
 
 if __name__ == "__main__":
+    flags = arg_parser()
     #evaluate_model()
-    visualize_predictions()
+    visualize_predictions(flags.name, flags.version)

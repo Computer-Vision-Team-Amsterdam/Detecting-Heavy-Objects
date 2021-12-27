@@ -1,3 +1,10 @@
+# type: ignore
+"""
+This module contains implementation of a custom COCO evaluator.
+Most of the code is taken from source code of detectron2 evaluation
+For more details, see https://detectron2.readthedocs.io/en/latest/modules/evaluation.html
+"""
+
 # coco evaluator imports
 import contextlib
 import copy
@@ -15,6 +22,7 @@ import detectron2.utils.comm as comm
 
 # coco eval imports
 import numpy as np
+import pycocotools.coco
 import pycocotools.mask as mask_util
 import torch
 from detectron2.config import CfgNode
@@ -82,7 +90,7 @@ class CustomCOCOeval:
     # Data, paper, and tutorials available at:  http://mscoco.org/
     # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
     # Licensed under the Simplified BSD License [see coco/license.txt]
-    def __init__(self, cocoGt=None, cocoDt=None, iouType="segm") -> None:
+    def __init__(self, cocoGt=None, cocoDt=None, iouType: str = "segm") -> None:
         """
         Initialize CocoEval using coco APIs for gt and dt
         :param cocoGt: coco object with ground truth annotations
@@ -1215,7 +1223,7 @@ def _evaluate_predictions_on_coco(
             c.pop("bbox", None)
 
     coco_dt = coco_gt.loadRes(coco_results)
-    # TODO: modified line below to use the custom coco eval instead of the one from pycocotools
+    # TODO [what was changed]: modified line below to use the custom coco eval instead of the one from pycocotools
     # coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
     coco_eval = (CustomCOCOeval if use_fast_impl else COCOeval)(
         coco_gt, coco_dt, iou_type
