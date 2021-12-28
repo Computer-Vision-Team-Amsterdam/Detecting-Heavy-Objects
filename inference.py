@@ -17,10 +17,10 @@ from detectron2.utils.visualizer import ColorMode, Visualizer
 from matplotlib import pyplot
 from PIL import Image
 
+from configs.config_parser import arg_parser
 from dataset import DATASET_NAME, register_dataset
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import get_container_dicts
-from configs.config_parser import arg_parser
 
 CONTAINER_DETECTION_MODEL = None
 MODEL_NAME = "dummy_detectron"
@@ -155,5 +155,4 @@ def evaluate_model() -> None:
 
 if __name__ == "__main__":
     flags = arg_parser()
-    #evaluate_model()
     visualize_predictions(flags.name, flags.version)
