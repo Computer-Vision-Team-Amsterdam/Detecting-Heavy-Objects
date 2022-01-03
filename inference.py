@@ -155,5 +155,4 @@ def evaluate_model() -> None:
 
 if __name__ == "__main__":
     flags = arg_parser()
-    # evaluate_model()
     visualize_predictions(flags.name, flags.version)
