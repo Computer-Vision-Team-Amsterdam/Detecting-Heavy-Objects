@@ -22,7 +22,10 @@ def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
     json_file = os.path.join(img_dir, "containers-annotated.json")
     with open(json_file) as file:
         imgs_anns = json.load(file)
-        imgs_anns = imgs_anns["_via_img_metadata"]
+        try:
+            imgs_anns = imgs_anns["_via_img_metadata"]
+        except KeyError:
+            print("Annotation file has no metadata.")
 
     dataset_dicts = []
     for idx, value in enumerate(imgs_anns.values()):

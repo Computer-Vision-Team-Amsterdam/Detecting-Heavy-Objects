@@ -14,3 +14,10 @@ Clone this repository and install the dependencies:
 git clone https://github.com/Computer-Vision-Team-Amsterdam/Detecting-Heavy-Objects.git
 poetry install
 poetry run python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+```
+## Training the model 
+
+To vizualize training loss curves, accuracies, run
+```shell
+python -m tensorboard.main --logdir $PWD/output
+```
