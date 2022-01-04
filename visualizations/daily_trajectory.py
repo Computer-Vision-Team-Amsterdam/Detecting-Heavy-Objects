@@ -7,7 +7,7 @@ import json
 import re
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 
 import folium
 from folium.plugins import MarkerCluster
@@ -16,7 +16,7 @@ from panorama.client import PanoramaClient
 
 
 def unify_model_output(
-    coco_format: Union[Path, str], instances_results: Union[Path, str]
+        coco_format: Union[Path, str], instances_results: Union[Path, str]
 ) -> Dict[Any, Any]:
     """
     This method merges information from output files of the model.
@@ -97,7 +97,7 @@ def get_daily_panoramas(target_date: date) -> models.PagedPanoramasResponse:
 
 
 def get_panorama_coords(
-    daily_panoramas: models.PagedPanoramasResponse,
+        daily_panoramas: models.PagedPanoramasResponse,
 ) -> List[List[float]]:
     """
     This method collects the coordinates of the panorama objects stored at a specific date
@@ -127,46 +127,63 @@ def get_panorama_coords(
     return scan_coords
 
 
-def generate_map(trajectory: List[List[float]], predictions: Dict[Any, Any]) -> None:
+def generate_map(trajectory: Optional[List[List[float]]] = None,
+                 predictions: Optional[Dict[Any, Any]] = None,
+                 name: Optional[str] = None) -> None:
     """
     This method generates an HTML page with a map containing a path line and randomly chosen points on the line
     corresponding to detected containers on the path.
 
     :param trajectory: list of coordinates that define the path.
     :param predictions: model predictions dict (with information about file names and coordinates).
+    :param name: custom name for the map. If not passed, name is created based on what the map contains.
     """
     # Amsterdam coordinates
     latitude = 52.377956
     longitude = 4.897070
 
+    # create empty map zoomed on Amsterdam
     Map = folium.Map(location=[latitude, longitude], zoom_start=12)
 
-    marker_cluster = MarkerCluster().add_to(Map)
+    # add container locations to the map
+    if predictions:
+        marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
+        for i in range(0, len(predictions)):
+            folium.Marker(
+                location=[predictions[i]["coords"][0], predictions[i]["coords"][1]],
+                popup="Confidence score: {:.0%}".format(predictions[i]["score"]),
+                icon=folium.Icon(
+                    color="lightgreen",
+                    icon_color="darkgreen",
+                    icon="square",
+                    angle=0,
+                    prefix="fa",
+                ),
+                radius=15,
+            ).add_to(marker_cluster)
 
-    for i in range(0, len(predictions)):
-        folium.Marker(
-            location=[predictions[i]["coords"][0], predictions[i]["coords"][1]],
-            popup="Confidence score: {:.0%}".format(predictions[i]["score"]),
-            icon=folium.Icon(
-                color="lightgreen",
-                icon_color="darkgreen",
-                icon="square",
-                angle=0,
-                prefix="fa",
-            ),
-            radius=15,
-        ).add_to(marker_cluster)
+    # add line with car trajectory on the map
+    if trajectory:
+        folium.PolyLine(trajectory, color="green", weight=10, opacity=0.8).add_to(Map)
 
-    # Create the map and add the line
-    folium.PolyLine(trajectory, color="green", weight=10, opacity=0.8).add_to(Map)
+    # create name for the map
+    if not name:
+        if predictions and trajectory:
+            name = "Daily trajectory and predicted containers"
+        if predictions and not trajectory:
+            name = "Daily predicted containers"
+        if not predictions and trajectory:
+            name = "Daily trajectory"
+        if not predictions and not trajectory:
+            name = "Empty map"
 
-    Map.save("Daily Trajectory.html")
+    Map.save(f"{name}.html")
 
 
 def run(
-    day_to_plot: datetime.date,
-    coco_format: Union[Path, str],
-    instances_results: Union[Path, str],
+        day_to_plot: datetime.date,
+        coco_format: Union[Path, str],
+        instances_results: Union[Path, str],
 ) -> None:
     """
     This method creates visualization of a path and detected containers based on trajectory on a specific date.
@@ -175,7 +192,7 @@ def run(
     :param coco_format: path to coco format output file.
     :param instances_results: path to model predictions/instances results output file.
     """
-    # dummy trajectory coordinates which map the dummy containers coodinates
+    # dummy trajectory coordinates which map the dummy containers coordinates
     coords = [
         [52.337909, 4.892184],
         [52.340400, 4.892549],
@@ -211,7 +228,7 @@ def run(
         coco_format=coco_format, instances_results=instances_results
     )
     append_prediction_coordinates(model_predictions)
-    generate_map(coords, model_predictions)
+    generate_map(trajectory=coords, predictions=model_predictions)
 
 
 if __name__ == "__main__":
