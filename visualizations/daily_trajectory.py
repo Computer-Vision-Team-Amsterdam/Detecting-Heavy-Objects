@@ -127,9 +127,14 @@ def get_panorama_coords(
     return scan_coords
 
 
+def color(cluster_id, colors):
+    return colors[cluster_id]
+
+
 def generate_map(trajectory: Optional[List[List[float]]] = None,
                  predictions: Optional[Dict[Any, Any]] = None,
-                 name: Optional[str] = None) -> None:
+                 name: Optional[str] = None,
+                 colors: Optional[List[str]] = None) -> None:
     """
     This method generates an HTML page with a map containing a path line and randomly chosen points on the line
     corresponding to detected containers on the path.
@@ -137,6 +142,7 @@ def generate_map(trajectory: Optional[List[List[float]]] = None,
     :param trajectory: list of coordinates that define the path.
     :param predictions: model predictions dict (with information about file names and coordinates).
     :param name: custom name for the map. If not passed, name is created based on what the map contains.
+    :param colors: TODO
     """
     # Amsterdam coordinates
     latitude = 52.377956
@@ -151,10 +157,10 @@ def generate_map(trajectory: Optional[List[List[float]]] = None,
         for i in range(0, len(predictions)):
             folium.Marker(
                 location=[predictions[i]["coords"][0], predictions[i]["coords"][1]],
-                popup="Confidence score: {:.0%}".format(predictions[i]["score"]),
+                popup="Score: {:.0%}. \n Cluster: {}".format(predictions[i]["score"], predictions[i]["cluster"]),
                 icon=folium.Icon(
                     color="lightgreen",
-                    icon_color="darkgreen",
+                    icon_color=color(predictions[i]["cluster"], colors),
                     icon="square",
                     angle=0,
                     prefix="fa",
