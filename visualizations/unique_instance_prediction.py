@@ -5,7 +5,7 @@ we plot/register the same container instance multiple time on the map/result fil
 """
 import random
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import geohash as gh
 import pandas as pd
@@ -76,8 +76,8 @@ def color_generator(nr_colors: int) -> List[str]:
 
 
 def geo_clustering(
-    container_locations: List[Dict[str, List[float]]], prefix_length: int
-) -> Tuple[List[Dict[str, List[float]]], int]:
+    container_locations: List[Dict[str, Any]], prefix_length: int
+) -> Tuple[List[Dict[str, Any]], int]:
     """
     This method looks at all container geocodes and clusters them based on the first prefix_length digits.
     For example: We have 2 geocodes u173yffw8qjy and u173yffvndbb.
@@ -91,14 +91,14 @@ def geo_clustering(
     if prefix_length < 0 or prefix_length > 12:
         raise ValueError("Prefix must be an integer in [0, 12] interval.")
 
-    unique_prefixes: Dict[str, int] = dict()
+    unique_prefixes: Dict[str, int] = {}
     cluster_id = 0
     for container_loc in container_locations:
         geohash = container_loc["geohash"]
         geo_prefix = geohash[:prefix_length]
         if geo_prefix in unique_prefixes:
             container_loc["cluster"] = unique_prefixes[geo_prefix]
-        if geo_prefix not in unique_prefixes:
+        else:
             unique_prefixes[geo_prefix] = cluster_id
             container_loc["cluster"] = cluster_id
             cluster_id = cluster_id + 1

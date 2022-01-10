@@ -127,7 +127,15 @@ def get_panorama_coords(
     return scan_coords
 
 
-def color(cluster_id, colors):
+def color(cluster_id: int, colors: List[str]) -> str:
+    """
+    Helper method to assign colors to clusters so we can visually distinguish them.
+
+    :param cluster_id: id of the cluster
+    :param colors: sequence of non-unique colors
+
+    :returns: hex code for specific cluster
+    """
     return colors[cluster_id]
 
 
@@ -164,7 +172,9 @@ def generate_map(
                 ),
                 icon=folium.Icon(
                     color="lightgreen",
-                    icon_color=color(predictions[i]["cluster"], colors),
+                    icon_color=color(predictions[i]["cluster"], colors)
+                    if colors
+                    else "darkgreen",
                     icon="square",
                     angle=0,
                     prefix="fa",

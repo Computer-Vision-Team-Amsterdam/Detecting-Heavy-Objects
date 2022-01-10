@@ -4,7 +4,7 @@ from visualizations.unique_instance_prediction import geo_clustering
 
 
 class Test(TestCase):
-    def test_geo_clustering(self):
+    def test_geo_clustering(self) -> None:
         container_metadata_with_geohash = [
             {
                 "coords": [52.3508179052329, 5.0029046131412],
