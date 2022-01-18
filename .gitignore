@@ -138,7 +138,7 @@ data_local/
 
 # model output files
 output/
-output_local/
+outputs/
 
 # test folders with dummy data
 tests/test_download_images/*
@@ -146,3 +146,14 @@ tests/filtering_output/*
 
 # config files
 config.json
+
+# jupyter notebooks
+*.ipynb
+
+# generated html and pickle files
+*.html
+visualizations/*.html
+*.pickle
+
+# input excel files
+*.xlsx
