@@ -33,6 +33,12 @@ jobs:
           python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
         displayName: 'Install dependencies'
 
+      - script: |
+          conda env create -f det2.yml
+          source activate det2
+          poetry run pytest -s --cov=Detecting-Heavy-Objects --cov-report term-missing
+        displayName: 'pytest'
+
   - job: OSX
     pool:
       vmImage: macOS-latest
@@ -67,6 +73,11 @@ jobs:
           export MACOSX_DEPLOYMENT_TARGET=10.9
           CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
         displayName: 'Install dependencies'
+
+      - script: |
+          source activate det2
+          poetry run pytest -s --cov=Detecting-Heavy-Objects --cov-report term-missing
+        displayName: 'pytest'
 
 
   - job: Style
@@ -113,3 +124,4 @@ jobs:
           source activate det2
           pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
         displayName: 'pylint'
+

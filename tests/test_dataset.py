@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from unittest import TestCase
 
 from detectron2.data import MetadataCatalog
@@ -5,6 +7,8 @@ from detectron2.data import MetadataCatalog
 from dataset import DATASET_NAME, register_dataset
 from inference import plot_instance_segm
 from utils import get_container_dicts
+
+ROOT = Path(__file__).parent.parent
 
 
 class Test(TestCase):
@@ -21,5 +25,5 @@ class Test(TestCase):
         self.assertCountEqual(expected_diff, actual_diff)
 
         metadata = MetadataCatalog.get(f"{DATASET_NAME}_train")
-        dataset_dicts = get_container_dicts("../data/train")
-        plot_instance_segm(dataset_dicts, metadata, mode="ann", n_sample=3)
+        dataset_dicts = get_container_dicts(os.path.join(ROOT, "data/train"))
+        # plot_instance_segm(dataset_dicts, metadata, mode="ann", n_sample=3)
