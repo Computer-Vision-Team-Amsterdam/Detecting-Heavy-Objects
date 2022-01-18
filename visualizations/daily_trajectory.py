@@ -63,14 +63,14 @@ def append_prediction_coordinates(predictions: Dict[Any, Any]) -> Dict[Any, Any]
     for i, prediction in enumerate(predictions):
         prediction["coords"] = dummy_coords[i]
 
-        # TODO: query API for panorama object based on panorama id
+        # query API for panorama object based on panorama id
         """
         # get panorama_id
         file_name = re.compile(r"[^/]+$")
         pano_id = file_name.search(prediction["file_name"]).group()  
 
         #query API for panorama object based on panorama id 
-        pano_obj = None
+        pano_obj = get_panorama(pano_id)
         
         # get coordinates
         long, lat, _ = pano_obj.geometry.coordinates
