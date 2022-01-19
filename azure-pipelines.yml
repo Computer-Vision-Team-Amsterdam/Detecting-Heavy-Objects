@@ -36,7 +36,7 @@ jobs:
       - script: |
           conda env create -f det2.yml
           source activate det2
-          run pytest -s --cov=. --cov-report html --cov-report term-missing
+          pytest -s --cov=. --cov-report html --cov-report term-missing
         displayName: 'pytest'
 
   - job: OSX
@@ -76,7 +76,7 @@ jobs:
 
       - script: |
           source activate det2
-          run pytest -s --cov=. --cov-report html --cov-report term-missing
+          pytest -s --cov=. --cov-report html --cov-report term-missing
         displayName: 'pytest'
 
 
