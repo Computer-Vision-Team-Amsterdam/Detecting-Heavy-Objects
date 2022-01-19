@@ -17,7 +17,7 @@ from panorama.client import PanoramaClient
 
 def unify_model_output(
     coco_format: Union[Path, str], instances_results: Union[Path, str]
-) -> List[Dict[str, Any]]:
+) -> Dict[Any, Any]:
     """
     This method merges information from output files of the model.
     Rationale: The instances results do not have file_name, therefore we cannot map
@@ -34,7 +34,7 @@ def unify_model_output(
     data_format = json.load(coco_file)
 
     instances_file = open(instances_results)
-    predictions: List[Dict[str, Any]] = json.load(instances_file)
+    predictions: Dict[Any, Any] = json.load(instances_file)
 
     # get file_name for each prediction
     for prediction in predictions:
@@ -48,7 +48,7 @@ def unify_model_output(
     return predictions
 
 
-def append_prediction_coordinates(predictions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def append_prediction_coordinates(predictions: Dict[Any, Any]) -> Dict[Any, Any]:
     """
     This method adds an extra entry in the predictions dicts with information about coordinates.
     Rationale: We want to plot the predictions of the model on a map, therefore we need to retrieve
@@ -141,7 +141,7 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
 def generate_map(
     trajectory: Optional[List[List[float]]] = None,
-    predictions: Optional[List[Dict[Any, Any]]] = None,
+    predictions: Optional[Dict[Any, Any]] = None,
     name: Optional[str] = None,
     colors: Optional[List[str]] = None,
 ) -> None:
@@ -247,8 +247,7 @@ def run(
     model_predictions = unify_model_output(
         coco_format=coco_format, instances_results=instances_results
     )
-    # TODO use this variable when model is trained instead of the temporary dummy
-    model_predictions_with_coords = append_prediction_coordinates(model_predictions)
+    append_prediction_coordinates(model_predictions)
     generate_map(trajectory=coords, predictions=model_predictions)
 
 

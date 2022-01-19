@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-#isort .
-#black .
+isort .
+black .
 mypy --ignore-missing-imports --config-file=.mypyrc .
 pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
-pytest -s --cov=. --cov-report html --cov-report term-missing
+pytest -s --cov=Detecting-Heavy-Objects --cov-report html --cov-report term-missing
