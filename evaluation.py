@@ -525,7 +525,7 @@ class CustomCOCOeval:
             else:
                 mean_s = np.mean(s[s > -1])
             string = iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s)
-            with open("output/metrics.txt", "a") as f:
+            with open("output/eval_metrics.txt", "a") as f:
                 f.write(string)
                 f.write("\n")
 
