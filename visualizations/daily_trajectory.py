@@ -5,9 +5,10 @@ Show the containers that were found on the particular trajectory that was driven
 import datetime
 import json
 import re
+from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import folium
 from folium.plugins import MarkerCluster
@@ -15,9 +16,18 @@ from panorama import models
 from panorama.client import PanoramaClient
 
 
+@dataclass
+class ModelPrediction:
+    filename: str
+    coords: Tuple[float, float] = (-1, -1)
+    geohash: str = ""
+    cluster: int = 0
+    score: float = 0.85
+
+
 def unify_model_output(
     coco_format: Union[Path, str], instances_results: Union[Path, str]
-) -> List[Dict[str, Any]]:
+) -> List[ModelPrediction]:
     """
     This method merges information from output files of the model.
     Rationale: The instances results do not have file_name, therefore we cannot map
@@ -34,21 +44,23 @@ def unify_model_output(
     data_format = json.load(coco_file)
 
     instances_file = open(instances_results)
-    predictions: List[Dict[str, Any]] = json.load(instances_file)
-
+    predictions_loaded = json.load(instances_file)
+    predictions = []
     # get file_name for each prediction
-    for prediction in predictions:
+    for prediction in predictions_loaded:
         # get id of prediction
         pred_id = prediction["image_id"]
         # extract corresponding file_name from data_format
         file_name = data_format["images"][pred_id]["file_name"]
         # append it to prediction dictionary
-        prediction["file_name"] = file_name
+        predictions.append(ModelPrediction(filename=file_name))
 
     return predictions
 
 
-def append_prediction_coordinates(predictions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def append_prediction_coordinates(
+    predictions: List[ModelPrediction],
+) -> List[ModelPrediction]:
     """
     This method adds an extra entry in the predictions dicts with information about coordinates.
     Rationale: We want to plot the predictions of the model on a map, therefore we need to retrieve
@@ -59,15 +71,15 @@ def append_prediction_coordinates(predictions: List[Dict[str, Any]]) -> List[Dic
     :returns: predictions dict with information about coordinates
     """
     # add dummy coordinates for containers locations for now
-    dummy_coords = [[52.352158, 4.908507], [52.359169, 4.906641]]
+    dummy_coords = [(52.352158, 4.908507), (52.359169, 4.906641)]
     for i, prediction in enumerate(predictions):
-        prediction["coords"] = dummy_coords[i]
+        prediction.coords = dummy_coords[i]
 
         # query API for panorama object based on panorama id
         """
         # get panorama_id
         file_name = re.compile(r"[^/]+$")
-        pano_id = file_name.search(prediction["file_name"]).group()  
+        pano_id = file_name.search(prediction.filename).group()  
 
         #query API for panorama object based on panorama id 
         pano_obj = get_panorama(pano_id)
@@ -76,7 +88,7 @@ def append_prediction_coordinates(predictions: List[Dict[str, Any]]) -> List[Dic
         long, lat, _ = pano_obj.geometry.coordinates
         
         # update predictions dict with coordinates
-        prediction["coords"] = [lat, long]
+        prediction.coords = [lat, long]
         """
 
     return predictions
@@ -141,7 +153,7 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
 def generate_map(
     trajectory: Optional[List[List[float]]] = None,
-    predictions: Optional[List[Dict[Any, Any]]] = None,
+    predictions: Optional[List[ModelPrediction]] = None,
     name: Optional[str] = None,
     colors: Optional[List[str]] = None,
 ) -> None:
@@ -166,13 +178,15 @@ def generate_map(
         marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
         for i in range(0, len(predictions)):
             folium.Marker(
-                location=[predictions[i]["coords"][0], predictions[i]["coords"][1]],
+                location=[predictions[i].coords[0], predictions[i].coords[1]],
                 popup="Score: {:.0%}. \n Cluster: {}".format(
-                    predictions[i]["score"], predictions[i]["cluster"]
-                ),
+                    predictions[i].score, predictions[i].cluster
+                )
+                if colors
+                else "Score: {:.0%}.".format(predictions[i].score),
                 icon=folium.Icon(
                     color="lightgreen",
-                    icon_color=color(predictions[i]["cluster"], colors)
+                    icon_color=color(predictions[i].cluster, colors)
                     if colors
                     else "darkgreen",
                     icon="square",

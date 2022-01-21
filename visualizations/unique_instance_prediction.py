@@ -4,16 +4,17 @@ It is likely that the same container is detected in multiple images, thus we wan
 we plot/register the same container instance multiple time on the map/result file.
 """
 import random
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geohash as gh
 import pandas as pd
 
-from visualizations.daily_trajectory import generate_map
+from visualizations.daily_trajectory import ModelPrediction, generate_map
 
 
-def read_coordinates(decos_file: Union[Path, str]) -> List[Dict[str, List[float]]]:
+def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
     """
     This method reads data from Decos.xlsx. We run the clustering algorithm on the geocoordinates from Decos
     until we have a trained model whose output coordinates we can use.
@@ -30,7 +31,7 @@ def read_coordinates(decos_file: Union[Path, str]) -> List[Dict[str, List[float]
     for c in coordinates:
         # create dict
         # we store the coordinate in this format to be consistent with detectron output files.
-        container_loc = {"coords": c, "score": 0.85}
+        container_loc = ModelPrediction(filename="", coords=c)
         # append it to output list
         container_locations.append(container_loc)
 
@@ -38,8 +39,8 @@ def read_coordinates(decos_file: Union[Path, str]) -> List[Dict[str, List[float]
 
 
 def append_geohash(
-    container_locations: List[Dict[str, List[float]]]
-) -> List[Dict[str, List[float]]]:
+    container_locations: List[ModelPrediction],
+) -> List[ModelPrediction]:
     """
     This method takes each coordinate pair, computes and stores its geohash alongside with the coordinates.
 
@@ -50,11 +51,11 @@ def append_geohash(
 
     for container_loc in container_locations:
         # get coordinates
-        coords = container_loc["coords"]
+        coords = container_loc.coords
         # compute geohash
         geohash = gh.encode(coords[0], coords[1])
         # store geohash
-        container_loc["geohash"] = geohash
+        container_loc.geohash = geohash
 
     return container_locations
 
@@ -76,8 +77,8 @@ def color_generator(nr_colors: int) -> List[str]:
 
 
 def geo_clustering(
-    container_locations: List[Dict[str, Any]], prefix_length: int
-) -> Tuple[List[Dict[str, Any]], int]:
+    container_locations: List[ModelPrediction], prefix_length: int
+) -> Tuple[List[ModelPrediction], int]:
     """
     This method looks at all container geocodes and clusters them based on the first prefix_length digits.
     For example: We have 2 geocodes u173yffw8qjy and u173yffvndbb.
@@ -94,13 +95,13 @@ def geo_clustering(
     unique_prefixes: Dict[str, int] = {}
     cluster_id = 0
     for container_loc in container_locations:
-        geohash = container_loc["geohash"]
+        geohash = container_loc.geohash
         geo_prefix = geohash[:prefix_length]
         if geo_prefix in unique_prefixes:
-            container_loc["cluster"] = unique_prefixes[geo_prefix]
+            container_loc.cluster = unique_prefixes[geo_prefix]
         else:
             unique_prefixes[geo_prefix] = cluster_id
-            container_loc["cluster"] = cluster_id
+            container_loc.cluster = cluster_id
             cluster_id = cluster_id + 1
 
     nr_clusters = cluster_id
