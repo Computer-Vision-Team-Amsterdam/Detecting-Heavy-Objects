@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 """
 This module is responsible for visualizing the trajectory and container found on a day.
 Show the containers that were found on the particular trajectory that was driven for a particular day.
