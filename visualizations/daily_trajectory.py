@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import folium
 from folium.plugins import MarkerCluster
-from panorama import models # type: ignore
-from panorama.client import PanoramaClient # type: ignore
+from panorama import models  # pylint: disable=import-error
+from panorama.client import PanoramaClient  # pylint: disable=import-error
 
 
 @dataclass
