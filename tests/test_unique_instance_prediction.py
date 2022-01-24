@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from visualizations.daily_trajectory import ModelPrediction
+from visualizations.model import ModelPrediction
 from visualizations.unique_instance_prediction import geo_clustering
 
 

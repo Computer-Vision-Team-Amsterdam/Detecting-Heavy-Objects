@@ -7,10 +7,12 @@ import random
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import folium
 import geohash as gh
 import pandas as pd
+from folium.plugins import MarkerCluster
 
-from visualizations.daily_trajectory import ModelPrediction, generate_map
+from visualizations.model import ModelPrediction
 
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
@@ -73,6 +75,81 @@ def color_generator(nr_colors: int) -> List[str]:
     ]
 
     return colors
+
+
+def color(cluster_id: int, colors: List[str]) -> str:
+    """
+    Helper method to assign colors to clusters so we can visually distinguish them.
+
+    :param cluster_id: id of the cluster
+    :param colors: sequence of non-unique colors
+
+    :returns: hex code for specific cluster
+    """
+    return colors[cluster_id]
+
+
+def generate_map(
+    trajectory: Optional[List[List[float]]] = None,
+    predictions: Optional[List[ModelPrediction]] = None,
+    name: Optional[str] = None,
+    colors: Optional[List[str]] = None,
+) -> None:
+    """
+    This method generates an HTML page with a map containing a path line and randomly chosen points on the line
+    corresponding to detected containers on the path.
+
+    :param trajectory: list of coordinates that define the path.
+    :param predictions: model predictions dict (with information about file names and coordinates).
+    :param name: custom name for the map. If not passed, name is created based on what the map contains.
+    :param colors: colors to be assigned to each cluster
+    """
+    # Amsterdam coordinates
+    latitude = 52.377956
+    longitude = 4.897070
+
+    # create empty map zoomed on Amsterdam
+    Map = folium.Map(location=[latitude, longitude], zoom_start=12)
+
+    # add container locations to the map
+    if predictions:
+        marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
+        for i in range(0, len(predictions)):
+            folium.Marker(
+                location=[predictions[i].coords[0], predictions[i].coords[1]],
+                popup="Score: {:.0%}. \n Cluster: {}".format(
+                    predictions[i].score, predictions[i].cluster
+                )
+                if colors
+                else "Score: {:.0%}.".format(predictions[i].score),
+                icon=folium.Icon(
+                    color="lightgreen",
+                    icon_color=color(predictions[i].cluster, colors)
+                    if colors
+                    else "darkgreen",
+                    icon="square",
+                    angle=0,
+                    prefix="fa",
+                ),
+                radius=15,
+            ).add_to(marker_cluster)
+
+    # add line with car trajectory on the map
+    if trajectory:
+        folium.PolyLine(trajectory, color="green", weight=10, opacity=0.8).add_to(Map)
+
+    # create name for the map
+    if not name:
+        if predictions and trajectory:
+            name = "Daily trajectory and predicted containers"
+        if predictions and not trajectory:
+            name = "Daily predicted containers"
+        if not predictions and trajectory:
+            name = "Daily trajectory"
+        if not predictions and not trajectory:
+            name = "Empty map"
+
+    Map.save(f"{name}.html")
 
 
 def geo_clustering(
