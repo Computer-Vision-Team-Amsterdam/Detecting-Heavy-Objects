@@ -4,7 +4,6 @@ It is likely that the same container is detected in multiple images, thus we wan
 we plot/register the same container instance multiple time on the map/result file.
 """
 import random
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
