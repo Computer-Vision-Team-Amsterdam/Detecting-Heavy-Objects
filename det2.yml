@@ -15,6 +15,7 @@ dependencies:
   - dpcpp-cpp-rt=2021.4.0
   - dpcpp_cpp_rt=2021.4.0
   - ffmpeg=4.2.2
+  - folium=0.12.1.post1
   - freetype=2.11.0
   - gettext=0.21.0
   - gmp=6.2.1
