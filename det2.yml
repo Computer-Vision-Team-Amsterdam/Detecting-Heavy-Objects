@@ -15,6 +15,7 @@ dependencies:
   - dpcpp-cpp-rt=2021.4.0
   - dpcpp_cpp_rt=2021.4.0
   - ffmpeg=4.2.2
+  - folium=0.12.1.post1
   - freetype=2.11.0
   - gettext=0.21.0
   - gmp=6.2.1
@@ -67,6 +68,7 @@ dependencies:
   - python=3.7.11
   - python-dateutil=2.8.2
   - python_abi=3.7
+  - python-geohash=0.8.5
   - pytorch=1.8.0
   - readline=8.1
   - setuptools=58.0.4
@@ -160,6 +162,8 @@ dependencies:
     - pydot==1.4.2
     - pyjwt==2.3.0
     - pyopenssl==20.0.1
+    - pytest==6.2.5
+    - pytest-cov==3.0.0
     - pyparsing==3.0.6
     - python-resize-image==1.1.20
     - pytz==2021.3
@@ -186,3 +190,4 @@ dependencies:
     - yacs==0.1.8
     - zipp==3.6.0
 prefix: /Users/dianaepureanu/opt/miniconda3/envs/det2
+

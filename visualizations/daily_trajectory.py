@@ -7,17 +7,18 @@ import json
 import re
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import folium
-from folium.plugins import MarkerCluster
-from panorama import models
-from panorama.client import PanoramaClient
+from panorama import models  # pylint: disable=import-error
+from panorama.client import PanoramaClient  # pylint: disable=import-error
+
+from visualizations.model import ModelPrediction
+from visualizations.unique_instance_prediction import generate_map
 
 
 def unify_model_output(
     coco_format: Union[Path, str], instances_results: Union[Path, str]
-) -> Dict[Any, Any]:
+) -> List[ModelPrediction]:
     """
     This method merges information from output files of the model.
     Rationale: The instances results do not have file_name, therefore we cannot map
@@ -34,21 +35,23 @@ def unify_model_output(
     data_format = json.load(coco_file)
 
     instances_file = open(instances_results)
-    predictions: Dict[Any, Any] = json.load(instances_file)
-
+    predictions_loaded = json.load(instances_file)
+    predictions = []
     # get file_name for each prediction
-    for prediction in predictions:
+    for prediction in predictions_loaded:
         # get id of prediction
         pred_id = prediction["image_id"]
         # extract corresponding file_name from data_format
         file_name = data_format["images"][pred_id]["file_name"]
         # append it to prediction dictionary
-        prediction["file_name"] = file_name
+        predictions.append(ModelPrediction(filename=file_name))
 
     return predictions
 
 
-def append_prediction_coordinates(predictions: Dict[Any, Any]) -> Dict[Any, Any]:
+def append_prediction_coordinates(
+    predictions: List[ModelPrediction],
+) -> List[ModelPrediction]:
     """
     This method adds an extra entry in the predictions dicts with information about coordinates.
     Rationale: We want to plot the predictions of the model on a map, therefore we need to retrieve
@@ -59,24 +62,24 @@ def append_prediction_coordinates(predictions: Dict[Any, Any]) -> Dict[Any, Any]
     :returns: predictions dict with information about coordinates
     """
     # add dummy coordinates for containers locations for now
-    dummy_coords = [[52.352158, 4.908507], [52.359169, 4.906641]]
+    dummy_coords = [(52.352158, 4.908507), (52.359169, 4.906641)]
     for i, prediction in enumerate(predictions):
-        prediction["coords"] = dummy_coords[i]
+        prediction.coords = dummy_coords[i]
 
-        # TODO: query API for panorama object based on panorama id
+        # query API for panorama object based on panorama id
         """
         # get panorama_id
         file_name = re.compile(r"[^/]+$")
-        pano_id = file_name.search(prediction["file_name"]).group()  
+        pano_id = file_name.search(prediction.filename).group()  
 
         #query API for panorama object based on panorama id 
-        pano_obj = None
+        pano_obj = get_panorama(pano_id)
         
         # get coordinates
         long, lat, _ = pano_obj.geometry.coordinates
         
         # update predictions dict with coordinates
-        prediction["coords"] = [lat, long]
+        prediction.coords = [lat, long]
         """
 
     return predictions
@@ -127,42 +130,6 @@ def get_panorama_coords(
     return scan_coords
 
 
-def generate_map(trajectory: List[List[float]], predictions: Dict[Any, Any]) -> None:
-    """
-    This method generates an HTML page with a map containing a path line and randomly chosen points on the line
-    corresponding to detected containers on the path.
-
-    :param trajectory: list of coordinates that define the path.
-    :param predictions: model predictions dict (with information about file names and coordinates).
-    """
-    # Amsterdam coordinates
-    latitude = 52.377956
-    longitude = 4.897070
-
-    Map = folium.Map(location=[latitude, longitude], zoom_start=12)
-
-    marker_cluster = MarkerCluster().add_to(Map)
-
-    for i in range(0, len(predictions)):
-        folium.Marker(
-            location=[predictions[i]["coords"][0], predictions[i]["coords"][1]],
-            popup="Confidence score: {:.0%}".format(predictions[i]["score"]),
-            icon=folium.Icon(
-                color="lightgreen",
-                icon_color="darkgreen",
-                icon="square",
-                angle=0,
-                prefix="fa",
-            ),
-            radius=15,
-        ).add_to(marker_cluster)
-
-    # Create the map and add the line
-    folium.PolyLine(trajectory, color="green", weight=10, opacity=0.8).add_to(Map)
-
-    Map.save("Daily Trajectory.html")
-
-
 def run(
     day_to_plot: datetime.date,
     coco_format: Union[Path, str],
@@ -175,7 +142,7 @@ def run(
     :param coco_format: path to coco format output file.
     :param instances_results: path to model predictions/instances results output file.
     """
-    # dummy trajectory coordinates which map the dummy containers coodinates
+    # dummy trajectory coordinates which map the dummy containers coordinates
     coords = [
         [52.337909, 4.892184],
         [52.340400, 4.892549],
@@ -210,8 +177,9 @@ def run(
     model_predictions = unify_model_output(
         coco_format=coco_format, instances_results=instances_results
     )
-    append_prediction_coordinates(model_predictions)
-    generate_map(coords, model_predictions)
+    # TODO use this variable when model is trained instead of the temporary dummy
+    model_predictions_with_coords = append_prediction_coordinates(model_predictions)
+    generate_map(trajectory=coords, predictions=model_predictions)
 
 
 if __name__ == "__main__":
