@@ -13,6 +13,7 @@ from azureml.core import (
 
 EXPERIMENT_NAME = "train_dummy_detectron2"
 
+CONFIG = "configs/container_detection_train.yaml"
 
 if __name__ == "__main__":
     ws = Workspace.from_config()
@@ -32,7 +33,7 @@ if __name__ == "__main__":
     script_config = ScriptRunConfig(
         source_directory=".",
         script="training.py",
-        arguments=["--dataset", mounted_dataset],
+        arguments=["--dataset", mounted_dataset, "--config", CONFIG],
         environment=env,
         compute_target=compute_target,
     )
@@ -42,4 +43,4 @@ if __name__ == "__main__":
 
     # add if statement for registering
     run.wait_for_completion(show_output=True)
-    # run.register_model("test_model", f"outputs/model_final.pth")
+    # run.register_model("test_model", f"outputs/")

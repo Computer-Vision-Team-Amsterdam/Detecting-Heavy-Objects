@@ -14,12 +14,12 @@ from inference import setup_cfg
 CONTAINER_DETECTION_MODEL = None
 
 
-def init_train() -> None:
+def init_train(flags) -> None:
     """
     Loads a pre-trained model and fine-tunes it on the data dataset
     """
     global CONTAINER_DETECTION_MODEL  # pylint: disable=global-statement
-    config_file = Path("configs/container_detection_train.yaml")
+    config_file = Path(flags.config)
 
     cfg = setup_cfg(config_file)
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset")
-    opt = parser.parse_args()
+    parser.add_argument("--config")
+    flags = parser.parse_args()
     register_dataset(DATASET_NAME)
-    init_train()
+    init_train(flags)
