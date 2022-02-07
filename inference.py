@@ -27,6 +27,8 @@ MODEL_NAME = "dummy_detectron"
 VERSION = 2
 
 
+
+
 def setup_cfg(config_file: Union[Path, str]) -> CfgNode:
     """
     Reads the model and inference settings from the config file
@@ -34,7 +36,7 @@ def setup_cfg(config_file: Union[Path, str]) -> CfgNode:
     cfg = get_cfg()
     cfg.merge_from_file(config_file)
 
-    cfg.freeze()
+    # cfg.freeze()
     return cfg
 
 
