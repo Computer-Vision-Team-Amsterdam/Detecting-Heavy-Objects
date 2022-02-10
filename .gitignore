@@ -143,7 +143,7 @@ yolov5/weights/*
 
 # source images and label files
 data/
-data_azure/
+data_azure/*
 
 # private configuration file
 config.json
