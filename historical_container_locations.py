@@ -1,6 +1,6 @@
 """This module contains functionality to search for images containers based on
 the Decos dataset and evaluate the quality of the search"""
-
+import argparse
 import glob
 import os
 import random
@@ -27,14 +27,13 @@ class Coordinate:
 
 def parse_file_from_decos(
     path_to_file: Union[Path, str],
-) -> Tuple[List[Coordinate], int, List[Tuple[date, date]]]:
+) -> Tuple[List[Coordinate], List[Tuple[date, date]]]:
     """
     This function looks at the csv/json file from Decos
-    and returns list of coords, an avg radius or search and the datetime
+    and returns list of coords and the datetime
     """
     data = pd.read_excel(path_to_file)
 
-    radius = 100
     coords = []
     intervals = []
     for _, row in tqdm(data.iterrows(), total=len(data), desc="Parsing Decos file..."):
@@ -47,7 +46,7 @@ def parse_file_from_decos(
         coords.append(Coordinate(longitude=long, latitude=lat))
         intervals.append((start, end))
 
-    return coords, radius, intervals
+    return coords, intervals
 
 
 def filter_panoramas(
@@ -100,7 +99,7 @@ def download_images(
 
     """
     os.makedirs(output_location, exist_ok=True)
-    for image in tqdm(images, desc="Downloading images..."):
+    for image in tqdm(images, desc="Downloading panoramas"):
         if os.path.isfile(Path(output_location, image.filename)):
             print(f"{image.filename} was already downloaded. Overwriting...")
         try:
@@ -111,30 +110,29 @@ def download_images(
             print("Timed out downloading operation...Skipping.")
 
 
-def find_container_images() -> None:
+def find_container_images(radius: int) -> List[Panorama]:
     """
     Pipeline that searches and stores container images starting from
     Decos permit requests.
     """
-    coordinates, radius, time_intervals = parse_file_from_decos("Decos.xlsx")
+    coordinates, time_intervals = parse_file_from_decos("Decos.xlsx")
     images = filter_panoramas(coordinates, radius, time_intervals)
     print(f"Query returned {len(images)} results.")
 
-    output_location = f"filter_radius_{radius}"
-    download_images(images, models.ImageSize.MEDIUM, output_location)
+    return images
 
 
 def evaluate_images_filtering(
-    output_location: Union[Path, str], subset_size: int
+    target_path: Union[Path, str], subset_size: int
 ) -> None:
     """
     Helper method to visualize sample of images that are queried from the panorama API.
 
-    :param output_location: path to the directory where the downloaded images are stored
+    :param target_path: path to the directory where the downloaded images are stored
     :param subset_size: number of images to visualize from the output_location
     """
 
-    filtered_panorama_files = glob.glob(f"{output_location}/*.jpg")
+    filtered_panorama_files = glob.glob(f"{target_path}/*.jpg")
 
     if len(filtered_panorama_files) < subset_size:
         raise Exception("The sample size exceeds the number of available images.")
@@ -153,5 +151,14 @@ def evaluate_images_filtering(
 
 
 if __name__ == "__main__":
-    find_container_images()
-    evaluate_images_filtering("filter_radius_100", subset_size=100)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--radius', type=int, default=100,
+                        help='Radius of search given lat and long')
+
+    args = parser.parse_args()
+    images = find_container_images(args.radius)
+
+    output_location = f"pano_id_filter_radius_{args.radius}"
+    download_images(images, models.ImageSize.MEDIUM, output_location)
+
+    evaluate_images_filtering(f"filter_radius_{args.radius}", subset_size=100)

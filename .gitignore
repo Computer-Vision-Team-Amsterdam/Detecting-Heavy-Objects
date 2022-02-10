@@ -26,6 +26,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.idea/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -80,6 +81,7 @@ target/
 # IPython
 profile_default/
 ipython_config.py
+*.ipynb
 
 # pyenv
 .python-version
@@ -130,7 +132,22 @@ dmypy.json
 
 # output folders
 output/*
+outputs/*
 
 # test output folders
 tests/filtering_output/*
 tests/test_download_images/*
+
+# blurring model
+yolov5/weights/*
+
+# source images and label files
+data/
+data_azure/
+
+# private configuration file
+config.json
+
+# other source files
+*.pickle
+*.xlsx
