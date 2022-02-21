@@ -7,7 +7,7 @@ import itertools
 import os
 import yaml
 from pathlib import Path
-
+from tqdm import trange
 from detectron2.engine import DefaultTrainer
 
 from dataset import DATASET_NAME, register_dataset
@@ -54,32 +54,39 @@ def collect_nested_lists(dictionary, composed_key, nested_lists):
             else:
                 nested_lists[composed_key+"."+k] = v
 
-
     return nested_lists
 
 
-def replace_lists(hyperparameters_yaml, info):
-    for composed_key, value in info.items():
-        keys = composed_key.split(".")
-        levels = len(keys)
-        for i in range(levels):
+def generate_config_file(file, configuration, name):
+    for composed_name, value in configuration.items():
+        names = composed_name.split(".")
+        if len(names) == 1:
+            file[names[0]] = value
+        if len(names) == 2:
+            file[names[0]][names[1]] = value
+        if len(names) == 3:
+            file[names[0]][names[1]][names[2]] = value
 
-
+    with open(f'configs/temp_{name}.yaml', 'w') as outfile:
+        yaml.dump(file, outfile, sort_keys=False)
 
 
 def handle_hyperparameters(config):
 
     # open yaml file as dict
     with open(config) as f:
-        yaml_hyperparams = yaml.safe_load(f)
+        file = yaml.safe_load(f)
 
-    hyperparams_grid_space = collect_nested_lists(yaml_hyperparams, "", {})
+    # get rows for which we do hyperparameter search
+    grid_space = collect_nested_lists(file, "", {})
 
-    for param_vals in itertools.product(*hyperparams_grid_space.values()):
-        single_config = dict(zip(hyperparams_grid_space.keys(), param_vals))
-        with open('configs/temp.yaml', 'w') as outfile:
-            yaml.dump(single_config, outfile, default_flow_style=False)
-            break
+    count = 0
+    for combination in itertools.product(*grid_space.values()):
+        configuration = dict(zip(grid_space.keys(), combination))
+        generate_config_file(file, configuration, count)
+        count = count + 1
+
+    return count
 
 
 if __name__ == "__main__":
@@ -87,12 +94,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="data/")
     parser.add_argument("--config", type=str, default="configs/temp.yaml")
-    parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument("--device", type=str, default="cuda:0")
 
     flags = parser.parse_args()
 
-
-    #handle_hyperparameters("configs/hyperparameter-search.yaml")
+    nr_experiments = handle_hyperparameters("configs/hyperparameter-search.yaml")
 
     register_dataset(DATASET_NAME)
-    init_train(flags)
+    for exp in trange(nr_experiments):
+        flags.config= f"configs/temp_{exp}.yaml"
+        init_train(flags)

@@ -11,7 +11,7 @@ from azureml.core import (
     Workspace,
 )
 
-EXPERIMENT_NAME = "train_dummy_detectron2"
+EXPERIMENT_NAME = "hyperparam_search"
 
 CONFIG = "configs/container_detection_train.yaml"
 

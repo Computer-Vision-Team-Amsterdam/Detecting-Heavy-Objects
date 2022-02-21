@@ -1,5 +1,0 @@
-SOLVER:
-  BASE_LR: 0.00025
-SOLVER:
-  IMS_PER_BATCH: 2
-_BASE_: container_detection_train.yaml
