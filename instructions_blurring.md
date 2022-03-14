@@ -1,5 +1,17 @@
 ## Blurring process
+0. Create virtual environment.
+```shell
+conda env create -f det2.yml
+```
+Have the latest panorama version installed.
 
+If not sure, run 
+
+```shell
+pip uninstall panorama
+pip install git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.1
+
+```
 1. To download a batch of 100 images, run
 ```shell
 conda activate det2
