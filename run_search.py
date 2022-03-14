@@ -50,7 +50,7 @@ if __name__ == "__main__":
         run = experiment.submit(config=script_config)
         run.display_name = f"temp_{exp}"
 
-        output_list = [json.loads(line) for line in open('outputs/metrics.json', 'r')]
+        output_list = [json.loads(line) for line in open('outputs/TRAIN_detectron_3mar_2/metrics.json', 'r')]
         keys = output_list[0].keys()
         for key in keys:
             for output in output_list:
