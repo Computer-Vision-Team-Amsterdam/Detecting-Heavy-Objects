@@ -10,10 +10,38 @@ from typing import Any, Dict, List, Union
 import cv2
 import numpy as np
 import yaml
+from detectron2.data.datasets import load_coco_json
 from detectron2.structures import BoxMode
+from typing import NamedTuple
 
 
-def get_container_dicts(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
+class ExperimentConfig(NamedTuple):
+    """
+    :param dataset_name: name of the dataset
+    :param subset: what subset of data we visualize: train, val or test
+    :param data_format: coco or via
+    """
+    dataset_name: str
+    subset: str
+    data_format: str
+
+
+def get_container_dicts(expCfg: ExperimentConfig):
+    """
+    Return annotations in json format
+    """
+    if expCfg.data_format == "coco":
+        container_dicts = load_coco_json(f"data/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json",
+                                         image_root="data")
+    elif expCfg.data_format == "via":
+        container_dicts = load_via_json(f"data/{expCfg.subset}")
+    else:
+        raise Exception("Wrong data format")
+
+    return container_dicts
+
+
+def load_via_json(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
     """
     Parse annotations json
 

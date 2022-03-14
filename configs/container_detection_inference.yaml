@@ -1,6 +1,8 @@
-_BASE_: "container_detection_train.yaml"
+_BASE_: "temp.yaml"
 MODEL:
   DEVICE: cpu
-  WEIGHTS: output/model_final.pth
+  WEIGHTS: output_28feb/model_final.pth
   ROI_HEADS:
-    SCORE_THRESH_TEST: 0.8
+    SCORE_THRESH_TEST: 0.95
+
+OUTPUT_DIR: outputs

@@ -8,6 +8,7 @@ import re
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from tqdm import tqdm
 
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
@@ -16,8 +17,34 @@ from visualizations.model import ModelPrediction
 from visualizations.unique_instance_prediction import generate_map
 
 
+def remove_faulty_annotations(annotations):
+    correct_images = []
+    faulty_ids = []
+    for ann in annotations["images"]:
+        filename = ann["file_name"]
+        is_correct = not filename.split("/")[1].startswith("pano")
+        if is_correct:
+            correct_images.append(ann)
+        else:
+            faulty_ids.append(ann["id"])
+
+    annotations["images"] = correct_images
+
+    return annotations, faulty_ids
+
+
+def remove_corresponding_predictions(predictions, faulty_ids):
+    correct_predictions = []
+    for pred in predictions:
+        is_correct = not pred["image_id"] in faulty_ids
+        if is_correct:
+            correct_predictions.append(pred)
+
+    return correct_predictions
+
+
 def unify_model_output(
-    coco_format: Union[Path, str], instances_results: Union[Path, str]
+        coco_annotations: Union[Path, str], instances_results: Union[Path, str]
 ) -> List[ModelPrediction]:
     """
     This method merges information from output files of the model.
@@ -25,32 +52,46 @@ def unify_model_output(
     predictions to panorama objects. We update the predictions with information about
     file name from the auto-generated coco format file.
 
-    :param coco_format: path to coco format output file
+    :param coco_annotations: path to coco annotations file
     :param instances_results: path to model predictions/instances results output file
 
     :returns: instances_results dict with information about file names
     """
     # Opening JSON files
-    coco_file = open(coco_format)
-    data_format = json.load(coco_file)
+    coco_file = open(coco_annotations)
+    annotations = json.load(coco_file)
 
     instances_file = open(instances_results)
     predictions_loaded = json.load(instances_file)
+
+    #   TODO remove these 2 lines if the data is in the correct format
+    # EXTRA STEP: discard predictions where ann file contains FAULTY image IDs, i.e. filename instead of pano id
+    annotations, faulty_ids = remove_faulty_annotations(annotations)
+    predictions_loaded = remove_corresponding_predictions(predictions_loaded, faulty_ids)
+
     predictions = []
     # get file_name for each prediction
     for prediction in predictions_loaded:
         # get id of prediction
         pred_id = prediction["image_id"]
-        # extract corresponding file_name from data_format
-        file_name = data_format["images"][pred_id]["file_name"]
-        # append it to prediction dictionary
-        predictions.append(ModelPrediction(filename=file_name))
+        # extract corresponding file_name from annotations
+        found = False
+        for ann in annotations["images"]:
+            if ann["id"] == pred_id:
+                file_name = ann["file_name"].split("/")[1]
+                # append it to prediction dictionary
+                predictions.append(ModelPrediction(filename=file_name))
+                found = True
+                break
+
+        if found is False:
+            raise "No annotation was found"
 
     return predictions
 
 
 def append_prediction_coordinates(
-    predictions: List[ModelPrediction],
+        predictions: List[ModelPrediction],
 ) -> List[ModelPrediction]:
     """
     This method adds an extra entry in the predictions dicts with information about coordinates.
@@ -61,46 +102,44 @@ def append_prediction_coordinates(
 
     :returns: predictions dict with information about coordinates
     """
-    # add dummy coordinates for containers locations for now
-    dummy_coords = [(52.352158, 4.908507), (52.359169, 4.906641)]
-    for i, prediction in enumerate(predictions):
-        prediction.coords = dummy_coords[i]
+
+    for i, prediction in tqdm(enumerate(predictions), total=len(predictions)):
+        # query API for panorama object based on panorama id
+
+        # get panorama_id
+        pano_id = prediction.filename.split(".")[0]  # remove .jpg extension
 
         # query API for panorama object based on panorama id
-        """
-        # get panorama_id
-        file_name = re.compile(r"[^/]+$")
-        pano_id = file_name.search(prediction.filename).group()  
+        pano_obj = PanoramaClient.get_panorama(pano_id)
 
-        #query API for panorama object based on panorama id 
-        pano_obj = get_panorama(pano_id)
-        
         # get coordinates
         long, lat, _ = pano_obj.geometry.coordinates
-        
+
         # update predictions dict with coordinates
         prediction.coords = [lat, long]
-        """
 
     return predictions
 
 
-def get_daily_panoramas(target_date: date) -> models.PagedPanoramasResponse:
+def get_daily_panoramas(target_date: date, location_query: models.LocationQuery) -> models.PagedPanoramasResponse:
     """
     This method queries the panorama API for all panorama objects stored at a specific date.
 
     :param target_date: date we are interested to know trsjectory for
+    :param location_query: search query
     :returns: paged list of panorama objects based on query
 
     """
     query_result: models.PagedPanoramasResponse = PanoramaClient.list_panoramas(
-        timestamp_after=target_date, timestamp_before=target_date + timedelta(days=1)
+        location=location_query,
+        timestamp_after=target_date,
+        timestamp_before=target_date + timedelta(days=1)
     )
     return query_result
 
 
 def get_panorama_coords(
-    daily_panoramas: models.PagedPanoramasResponse,
+        daily_panoramas: models.PagedPanoramasResponse,
 ) -> List[List[float]]:
     """
     This method collects the coordinates of the panorama objects stored at a specific date
@@ -131,15 +170,17 @@ def get_panorama_coords(
 
 
 def run(
-    day_to_plot: datetime.date,
-    coco_format: Union[Path, str],
-    instances_results: Union[Path, str],
+        day_to_plot: datetime.date,
+        location_query: models.LocationQuery,
+        coco_annotations: Union[Path, str],
+        instances_results: Union[Path, str],
 ) -> None:
     """
     This method creates visualization of a path and detected containers based on trajectory on a specific date.
 
     :param day_to_plot: target date for which we want to see the trajectory and detections.
-    :param coco_format: path to coco format output file.
+    :param location_query: location information for API search
+    :param coco_annotations: path to coco annotations file.
     :param instances_results: path to model predictions/instances results output file.
     """
     # dummy trajectory coordinates which map the dummy containers coordinates
@@ -170,12 +211,12 @@ def run(
 
     # for actual trajectory coordinates retrieved from the API uncomment the two lines below
     """
-    daily_query_result = get_daily_panoramas(day_to_plot)
+    daily_query_result = get_daily_panoramas(day_to_plot, location_query)
     coords = get_panorama_coords(daily_query_result)
     """
 
     model_predictions = unify_model_output(
-        coco_format=coco_format, instances_results=instances_results
+        coco_annotations=coco_annotations, instances_results=instances_results
     )
     # TODO use this variable when model is trained instead of the temporary dummy
     model_predictions_with_coords = append_prediction_coordinates(model_predictions)
@@ -183,7 +224,14 @@ def run(
 
 
 if __name__ == "__main__":
-    target_day = date(2016, 7, 21)
-    coco_format_file = "../output/container_train_coco_format.json"
-    predictions_file = "../output/coco_instances_results.json"
-    run(target_day, coco_format_file, predictions_file)
+
+    target_day = date(2021, 3, 17)
+
+    # Address: Kloveniersburgwal 45
+    lat = 52.370670
+    long = 4.898990
+    radius = 2000
+    location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
+    coco_val_annotations_file = "../data/val/containers-annotated-COCO-val.json"
+    predictions_file = "../outputs/INFER_detectron_10mar_1_Mar-10-10:50/coco_instances_results.json"
+    run(target_day, location_query, coco_val_annotations_file, predictions_file)

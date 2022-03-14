@@ -40,6 +40,7 @@ from pycocotools.cocoeval import COCOeval
 from tabulate import tabulate
 
 
+# custom class defined by CVT
 class CustomCOCOeval:
     # Interface for evaluating detection on the Microsoft COCO dataset.
     #
@@ -90,7 +91,7 @@ class CustomCOCOeval:
     # Data, paper, and tutorials available at:  http://mscoco.org/
     # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
     # Licensed under the Simplified BSD License [see coco/license.txt]
-    def __init__(self, cocoGt=None, cocoDt=None, iouType: str = "segm") -> None:
+    def __init__(self, cocoGt=None, cocoDt=None, iouType: str = "segm", output_dir: str =None) -> None:
         """
         Initialize CocoEval using coco APIs for gt and dt
         :param cocoGt: coco object with ground truth annotations
@@ -111,6 +112,7 @@ class CustomCOCOeval:
         self._paramsEval = {}  # parameters for evaluation
         self.stats = []  # result summarization
         self.ious = {}  # ious between all gts and dts
+        self.output_dir = output_dir
         if not cocoGt is None:
             self.params.imgIds = sorted(cocoGt.getImgIds())
             self.params.catIds = sorted(cocoGt.getCatIds())
@@ -146,7 +148,8 @@ class CustomCOCOeval:
         # set ignore flag
         for gt in gts:
             gt["ignore"] = gt["ignore"] if "ignore" in gt else 0
-            gt["ignore"] = "iscrowd" in gt and gt["iscrowd"]
+            # TODO [what was changed]: modified line below from gt['ignore'] to gt["iscrowd"]
+            gt["iscrowd"] = "iscrowd" in gt and gt["iscrowd"]
             if p.iouType == "keypoints":
                 gt["ignore"] = (gt["num_keypoints"] == 0) or gt["ignore"]
         self._gts = defaultdict(list)  # gt for evaluation
@@ -486,7 +489,7 @@ class CustomCOCOeval:
         toc = time.time()
         print("DONE (t={:0.2f}s).".format(toc - tic))
 
-    def summarize(self):
+    def summarize(self, output_dir):
         """
         Compute and display summary metrics for evaluation results.
         Note this functin can *only* be applied on the default parameter setting
@@ -525,7 +528,7 @@ class CustomCOCOeval:
             else:
                 mean_s = np.mean(s[s > -1])
             string = iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s)
-            with open("output/eval_metrics.txt", "a") as f:
+            with open(f"{output_dir}/eval_metrics.txt", "a") as f:
                 f.write(string)
                 f.write("\n")
 
@@ -591,13 +594,26 @@ class Params:
         self.recThrs = np.linspace(
             0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01)) + 1, endpoint=True
         )
-        self.maxDets = [1, 10, 100]
+        self.maxDets = [1, 3, 20]
+        """
         self.areaRng = [
             [0 ** 2, 1e5 ** 2],
             [0 ** 2, 32 ** 2],
             [32 ** 2, 96 ** 2],
             [96 ** 2, 1e5 ** 2],
         ]
+        """
+        
+        self.areaRng = [
+            [0 ** 2, 1e5 ** 2],
+            [0 ** 2, 176 ** 2],
+            [176 ** 2, 353 ** 2],
+            [353 ** 2, 1e5 ** 2] # 707
+        ]
+
+
+
+
         self.areaRngLbl = ["all", "small", "medium", "large"]
         self.useCats = 1
 
@@ -612,7 +628,8 @@ class Params:
             0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01)) + 1, endpoint=True
         )
         self.maxDets = [20]
-        self.areaRng = [[0 ** 2, 1e5 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
+        # self.areaRng = [[0 ** 2, 1e5 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
+        self.areaRng = [[0 ** 2, 1e5 ** 2], [176 ** 2, 353 ** 2], [353 ** 2, 1e5 ** 2]] # 707
         self.areaRngLbl = ["all", "medium", "large"]
         self.useCats = 1
         self.kpt_oks_sigmas = (
@@ -891,6 +908,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                     use_fast_impl=self._use_fast_impl,
                     img_ids=img_ids,
                     max_dets_per_image=self._max_dets_per_image,
+                    output_dir=self._output_dir
                 )
                 if len(coco_results) > 0
                 else None  # cocoapi does not handle empty results very well
@@ -1104,6 +1122,7 @@ def _evaluate_box_proposals(
         "256-512": 6,
         "512-inf": 7,
     }
+    """
     area_ranges = [
         [0 ** 2, 1e5 ** 2],  # all
         [0 ** 2, 32 ** 2],  # small
@@ -1114,6 +1133,18 @@ def _evaluate_box_proposals(
         [256 ** 2, 512 ** 2],  # 256-512
         [512 ** 2, 1e5 ** 2],
     ]  # 512-inf
+    """
+    area_ranges = [
+        [0 ** 2, 1e5 ** 2],  # all
+        [0 ** 2, 176 ** 2],  # small
+        [176 ** 2, 353 ** 2],  # medium
+        [353 ** 2, 1e5 ** 2],  # large
+        [96 ** 2, 128 ** 2],  # 96-128
+        [128 ** 2, 256 ** 2],  # 128-256
+        [256 ** 2, 512 ** 2],  # 256-512
+        [512 ** 2, 1e5 ** 2],
+    ]  # 512-inf
+
     assert area in areas, "Unknown area range: {}".format(area)
     area_range = area_ranges[areas[area]]
     gt_overlaps = []
@@ -1207,7 +1238,7 @@ def _evaluate_predictions_on_coco(
     use_fast_impl=True,
     img_ids=None,
     max_dets_per_image=None,
-):
+    output_dir=None):  # added by CVT
     """
     Evaluate the coco results using COCOEval API.
     """
@@ -1225,9 +1256,7 @@ def _evaluate_predictions_on_coco(
     coco_dt = coco_gt.loadRes(coco_results)
     # TODO [what was changed]: modified line below to use the custom coco eval instead of the one from pycocotools
     # coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
-    coco_eval = (CustomCOCOeval if use_fast_impl else COCOeval)(
-        coco_gt, coco_dt, iou_type
-    )
+    coco_eval = CustomCOCOeval(cocoGt=coco_gt, cocoDt=coco_dt, iouType=iou_type, output_dir=output_dir)
     # For COCO, the default max_dets_per_image is [1, 10, 100].
     if max_dets_per_image is None:
         max_dets_per_image = [1, 10, 100]  # Default from COCOEval
@@ -1267,6 +1296,6 @@ def _evaluate_predictions_on_coco(
 
     coco_eval.evaluate()
     coco_eval.accumulate()
-    coco_eval.summarize()
+    coco_eval.summarize(output_dir)
 
     return coco_eval

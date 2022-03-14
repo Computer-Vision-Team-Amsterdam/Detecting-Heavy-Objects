@@ -1,6 +1,13 @@
 """
 This module contains functionality to run a training script on Azure.
 """
+
+import azureml._restclient.snapshots_client
+from azureml.exceptions import WebserviceException
+
+azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 1000000000
+
+from configs.config_parser import arg_parser
 from azureml.core import (
     ComputeTarget,
     Dataset,
@@ -8,39 +15,68 @@ from azureml.core import (
     Environment,
     Experiment,
     ScriptRunConfig,
-    Workspace,
+    Workspace, Model,
 )
 
-EXPERIMENT_NAME = "hyperparam_search"
+EXPERIMENT_NAME = "detectron_improved"
 
-CONFIG = "configs/container_detection_train.yaml"
+ws = Workspace.from_config()
+env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
+default_ds: Datastore = ws.get_default_datastore()
+dataset = Dataset.get_by_name(ws, "blurred-container-data")
+mounted_dataset = dataset.as_mount(path_on_compute="data/")
+compute_target = ComputeTarget(ws, "quick-gpu")
+experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
 
-if __name__ == "__main__":
-    ws = Workspace.from_config()
+flags = arg_parser()
 
-    env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
+# check if model already exists. Used when creating the name of the output folder.
+try:
+    model = Model(ws, f"{flags.name}")
+    if flags.train:
+        flags.version = model.version + 1
+except WebserviceException:
+    flags.version = 1
 
-    # Get datastore path
-    default_ds: Datastore = ws.get_default_datastore()
+args = {}
+for arg in vars(flags):
+    if flags.train is False and arg == "train":
+        continue
+    if flags.inference is False and arg == "inference":
+        continue
+    args[f"--{arg}"] = getattr(flags, arg)
 
-    dataset = Dataset.get_by_name(ws, "container-data")
 
-    mounted_dataset = dataset.as_mount(path_on_compute="data/")
+args["--dataset"] = mounted_dataset
+args = [[k, v] for (k, v) in args.items()]
+args = [val for sublist in args for val in sublist]  # flatten
 
-    compute_target = ComputeTarget(ws, "detectron2")
 
-    # Create a script config for the experiment
+if flags.train:
     script_config = ScriptRunConfig(
         source_directory=".",
         script="training.py",
-        arguments=["--dataset", mounted_dataset, "--config", CONFIG],
+        arguments=args,
         environment=env,
         compute_target=compute_target,
     )
-    # Submit the experiment
-    experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
     run = experiment.submit(config=script_config)
-
-    # add if statement for registering
     run.wait_for_completion(show_output=True)
-    # run.register_model("test_model", f"outputs/")
+
+    run.register_model(flags.name, f"outputs/TRAIN_{flags.name}_{flags.version}/model_final.pth")
+    run.download_files(prefix="outputs")
+
+
+if flags.inference:
+    model = Model.get_model_path(model_name=f"{flags.name}", version=flags.version, _workspace=ws)  # latest version
+
+    script_config = ScriptRunConfig(
+        source_directory=".",
+        script="inference.py",
+        arguments=args,
+        environment=env,
+        compute_target=compute_target,
+    )
+    run = experiment.submit(config=script_config)
+    run.wait_for_completion(show_output=False)
+    run.download_files(prefix="outputs")

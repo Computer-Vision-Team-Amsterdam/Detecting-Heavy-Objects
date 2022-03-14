@@ -5,20 +5,21 @@ in Detectron2 dataset catalog
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.logger import setup_logger
 
-from utils import get_container_dicts
-
+from utils import load_via_json
+from detectron2.data.datasets import register_coco_instances
 setup_logger()
 
-DATASET_NAME = "container"
 
-
-def register_dataset(name: str) -> None:
+def register_dataset(name: str, data_format: str) -> None:
     """
-    Update detectron2 dataset catalog with our custom dataset.
+    @param name: name of the dataset
+    @param data_format: format of the dataset. Choices: coco, via
     """
+    for subset in ["train", "val"]:
+        if data_format == "coco":
+            ann_path = f"data/{subset}/containers-annotated-COCO-{subset}.json"
+            register_coco_instances(f"{name}_{subset}", {}, ann_path, image_root="data")
+        if data_format == "via":
+            DatasetCatalog.register(f"{name}_{subset}", lambda d=subset: load_via_json("data/" + d))
+            MetadataCatalog.get(f"{name}_{subset}").set(thing_classes=[f"{name}"])
 
-    for data_set in ["train", "val"]:
-        DatasetCatalog.register(
-            f"{name}_" + data_set, lambda d=data_set: get_container_dicts("data/" + d)
-        )
-        MetadataCatalog.get(f"{name}_" + data_set).set(thing_classes=[f"{name}"])

@@ -46,39 +46,39 @@ The output files are stored according to the [training configuration file](./con
 
 To train the model on GPU, run 
 ```shell
-python run_on_azure.py --TODO add flag to change devide from cpu to cuda:0
+python run_on_azure.py --train --config ${CONFIG_FILE} --name ${MODEL_NAME} 
 ```
 
-The output files are stored on Azure in the *outputs* folder and contain the following:
+```${MODEL_NAME}``` is the name you give to your model; can be anything.
+
+Latest model is registered on Azure.
+The output files are stored on Azure in the ```outputs``` folder and contain the following:
 
 - *model_final.pth* -- trained pytorch model
 - *metrics.json* -- metrics used for plotting by the tensorboard
 - *events.out.tfevents* -- output summary used for plotting by tensorboard
 - *last_checkpoint* -- stores reference to name of the last trained model.
 
-
+The output files are also downloaded locally in ```outputs/TRAIN_${MODEL_NAME}_${MODEL_VERSION}``` folder.
 
 Once you have a trained model, you can visualize the training loss curves, accuracies and other metrics by running:
 ```shell
-python -m tensorboard.main --logdir $PWD/output
+python -m tensorboard.main --logdir $PWD/outputs/TRAIN_${MODEL_NAME}_${MODEL_VERSION}
 ```
 
 ## Model Inference
 
 To perform inference on your local machine, run
 ```shell
-python inference.py
+python inference.py --config ${CONFIG} --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu
+
 ```
-If there is no trained model stored locally, this command downloads a trained model from Azure and stores it in 
-the *output*. folder. To download a specific model, run:
-```shell
-python inference.py --name MODEL_NAME --version VERSION 
-```
+Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
 
 
 To perform inference on GPU, run
 ```shell
-python inference.py --TODO add flag to change devide from cpu to cuda:0
+python run_on_azure.py --inference --name ${MODEL_NAME} --version ${MODEL_VERSION} --config ${CONFIG_FILE}
 ```
 The output files are as follows:
 - *container_val_coco_format.json* -- automatically generated COCO file for Detectron2. It contains metadata of the 
@@ -87,6 +87,15 @@ dataset used at inference time
 - *instances_predictions.pth* -- ? 
 - *eval_metrics.txt* -- stores evaluation metrics described below
 
+The trained model is downloaded locally at ```azureml-models/${MODEL_NAME}/${MODEL_VERSION}/model_final.pth```.
+
+The output files are downloaded locally in ```outputs/INFER_${MODEL_NAME}_${MODEL_VERSION}``` folder.
+
+---
+To visualize some detected containers, run
+``` python predictions.py --config ${CONFIG} --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu```
+
+Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
 ## Evaluation Metrics
 
 To compute and store evaluation metrics, run
