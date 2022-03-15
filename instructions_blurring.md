@@ -5,11 +5,11 @@ conda env create -f det2.yml
 ```
 Have the latest panorama version installed.
 
-If not sure, run 
+If not sure, run the following in the conda environment.
 
 ```shell
 pip uninstall panorama
-pip install git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.1
+pip install git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
 
 ```
 1. To download a batch of 100 images, run
