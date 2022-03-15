@@ -3,6 +3,21 @@ MODEL:
   DEVICE: cpu
   WEIGHTS: output_28feb/model_final.pth
   ROI_HEADS:
-    SCORE_THRESH_TEST: 0.95
+    SCORE_THRESH_TEST: 0.05
 
 OUTPUT_DIR: outputs
+
+
+# write script to convert data labelling to coco format
+# change all pics and anns to 2000x4000
+# add area based on polygon
+# during training:
+#   set min train size to range 800-1200
+# during testing:
+#   set min test size to 1000
+
+INPUT:
+  MIN_SIZE_TRAIN: ((800, 2000))
+  MAX_SIZE_TRAIN: 4000
+  MIN_SIZE_TEST: 1000
+  MAX_SIZE_TEST: 4000
