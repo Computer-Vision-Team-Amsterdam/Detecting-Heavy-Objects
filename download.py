@@ -25,7 +25,7 @@ def batch_pano_ids():
     timestamp_after = date(2021, 3, 17)
     timestamp_before = date(2021, 3, 18)
 
-    root = "data_azure/17mar2021"
+    root = "data_azure/17mar2021/batches"
     Path(root).mkdir(parents=True, exist_ok=True)  # create folder structure if it doesn't exist yet
 
     location = models.LocationQuery(
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--f', type=str, default="1",
                         help='Text file number to download')
-    parser.add_argument('--root', type=str, default="data_azure/pano_ids")
+    parser.add_argument('--root', type=str, default="data_azure/17mar2021/batches")
     args = parser.parse_args()
 
     download_text_file(args.root, args.f)
