@@ -13,7 +13,7 @@ from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import Visualizer, ColorMode
 
 from configs.config_parser import arg_parser
-from dataset import register_dataset
+from utils import register_dataset
 from inference import init_inference
 from utils import ExperimentConfig, get_container_dicts
 
@@ -79,8 +79,8 @@ def visualize_predictions(flags, expCfg: ExperimentConfig) -> None:
     :param expCfg: experiment configuration
     """
 
-    register_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format)
-    container_dicts = get_container_dicts(expCfg)
+    register_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format, data_folder="data")
+    container_dicts = get_container_dicts(expCfg, "data")
     cfg = init_inference(flags)
 
     global CONTAINER_DETECTION_MODEL

@@ -17,7 +17,7 @@ from detectron2.evaluation import inference_on_dataset
 from PIL import Image
 
 from configs.config_parser import arg_parser
-from dataset import register_dataset
+from utils import register_dataset
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig
 
@@ -88,7 +88,7 @@ def evaluate_model(flags, expCfg: ExperimentConfig) -> None:
     constructor from another method i.e. _test_loader_from_config
     """
 
-    register_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format)
+    register_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format, data_folder="data")
     cfg = init_inference(flags)
     CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
 

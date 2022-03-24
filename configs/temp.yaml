@@ -1,7 +1,7 @@
 _BASE_: "container_detection_train.yaml"
 SOLVER:
   IMS_PER_BATCH: 2
-  MAX_ITER: 1000
+  MAX_ITER: 10000
   BASE_LR: 0.00025
 
 MODEL:
@@ -10,8 +10,14 @@ MODEL:
     BATCH_SIZE_PER_IMAGE: 28
 
 INPUT:
-  MIN_SIZE_TRAIN: (1000,)
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  MIN_SIZE_TRAIN: (800,1200)
   MAX_SIZE_TRAIN: 4000
-  MIN_SIZE_TEST: 0
+  MIN_SIZE_TEST: 1000
   MAX_SIZE_TEST: 4000
+  CROP:
+    ENABLED: True
+    TYPE: "relative_range"
+    SIZE: [0.50, 0.50]
+  RANDOM_FLIP: "horizontal"
 

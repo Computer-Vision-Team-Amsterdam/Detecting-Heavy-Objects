@@ -233,9 +233,7 @@ class CustomCOCOeval:
             raise Exception("unknown iouType for iou computation")
 
         # compute iou between each dt and gt region
-        # TODO commented line below since there is no iscrowd attribute in our ann file
-        # iscrowd = [int(o["iscrowd"]) for o in gt]
-        iscrowd = [0 for o in gt]
+        iscrowd = [int(o["iscrowd"]) for o in gt]
         ious = maskUtils.iou(d, g, iscrowd)
         return ious
 
@@ -303,8 +301,6 @@ class CustomCOCOeval:
             return None
 
         for g in gt:
-            # TODO compute g["area"] more precisely
-            # g["area"] = g["bbox"][2] * g["bbox"][3]
             if g["ignore"] or (g["area"] < aRng[0] or g["area"] > aRng[1]):
                 g["_ignore"] = 1
 
@@ -316,9 +312,7 @@ class CustomCOCOeval:
         gt = [gt[i] for i in gtind]
         dtind = np.argsort([-d["score"] for d in dt], kind="mergesort")
         dt = [dt[i] for i in dtind[0:maxDet]]
-        # TODO commented line below since there is no iscrowd attribute in our ann file
-        # iscrowd = [int(o["iscrowd"]) for o in gt]
-        iscrowd = [0 for o in gt]
+        iscrowd = [int(o["iscrowd"]) for o in gt]
         # load computed ious
         ious = (
             self.ious[imgId, catId][:, gtind]
@@ -1254,7 +1248,7 @@ def _evaluate_predictions_on_coco(
     # coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
     coco_eval = CustomCOCOeval(cocoGt=coco_gt, cocoDt=coco_dt, iouType=iou_type, output_dir=output_dir)
     # coco_eval.params.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 176 ** 2], [176 ** 2, 353 ** 2], [353 ** 2, 1e5 ** 2]]
-    coco_eval.params.areaRng = [[1, 20000], [1, 2500], [2500, 7500], [7500, 20000]]
+    coco_eval.params.areaRng = [[0, 1e5**2], [0, 12000], [12000, 30000], [30000, 1e5**2]]
     # For COCO, the default max_dets_per_image is [1, 10, 100].
     if max_dets_per_image is None:
         max_dets_per_image = [1, 5, 20]  # Default from COCOEval

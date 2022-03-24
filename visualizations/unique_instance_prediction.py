@@ -186,7 +186,7 @@ def geo_clustering(
 
 
 if __name__ == "__main__":
-    container_metadata = read_coordinates("../Decos.xlsx")
+    container_metadata = read_coordinates("../decos/Decos.xlsx")
     container_metadata_with_geohash = append_geohash(container_metadata)
     container_metadata_clustered, total_clusters = geo_clustering(
         container_metadata_with_geohash, prefix_length=5

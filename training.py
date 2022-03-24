@@ -8,7 +8,7 @@ from pathlib import Path
 from detectron2.engine import DefaultTrainer
 
 from configs.config_parser import arg_parser
-from dataset import register_dataset
+from utils import register_dataset
 from inference import setup_cfg
 
 CONTAINER_DETECTION_MODEL = None
@@ -37,6 +37,6 @@ if __name__ == "__main__":
 
     flags = arg_parser()
 
-    register_dataset(name=flags.dataset_name, data_format="coco")
+    register_dataset(name=flags.dataset_name, data_format="coco", data_folder="data")
     print(f"Using {flags.config} config file.")
     init_train(flags)

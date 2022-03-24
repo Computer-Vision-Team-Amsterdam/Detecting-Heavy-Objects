@@ -18,7 +18,7 @@ from azureml.core import (
     Workspace, Model,
 )
 
-EXPERIMENT_NAME = "detectron_improved"
+EXPERIMENT_NAME = "detectron_2000x4000" # all used images have resolution 2000x4000
 
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
