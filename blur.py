@@ -46,7 +46,7 @@ def blur(image: str, label: Union[Path, str], output_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root', default="data_azure", help='path to root folder')
+    parser.add_argument('--root', default="data_azure/17mar2021", help='path to root folder')
     parser.add_argument("--source", type=int, default=1, help="path to batch folder")
     args = parser.parse_args()
 

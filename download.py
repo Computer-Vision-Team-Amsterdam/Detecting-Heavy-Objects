@@ -90,7 +90,7 @@ if __name__ == "__main__":
     download_text_file(args.root, args.f)
 
     # create classes.txt file used for labelImg
-    filename = f"data_azure/{args.f}/images/classes.txt"
+    filename = f"data_azure/17mar2021/{args.f}/images/classes.txt"
     print(f"Created classes.txt file in {filename}")
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w") as f:
