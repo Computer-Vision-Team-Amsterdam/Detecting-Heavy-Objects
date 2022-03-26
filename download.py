@@ -75,7 +75,7 @@ def download_text_file(root, file):
         panorama_image = PanoramaClient.get_panorama(pano_id)
         panorama_images.append(panorama_image)
 
-    output_location = f"data_azure/{filename}/images"
+    output_location = f"data_azure/17mar2021/{filename}/images"
     download_images(panorama_images, models.ImageSize.MEDIUM, output_location)
 
 
