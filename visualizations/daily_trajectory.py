@@ -8,7 +8,7 @@ import re
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
@@ -80,7 +80,7 @@ def unify_model_output(
             if ann["id"] == pred_id:
                 file_name = ann["file_name"].split("/")[1]
                 # append it to prediction dictionary
-                predictions.append(ModelPrediction(filename=file_name))
+                predictions.append(ModelPrediction(filename=file_name, score=prediction["score"]))
                 found = True
                 break
 
@@ -125,7 +125,7 @@ def get_daily_panoramas(target_date: date, location_query: models.LocationQuery)
     """
     This method queries the panorama API for all panorama objects stored at a specific date.
 
-    :param target_date: date we are interested to know trsjectory for
+    :param target_date: date we are interested to know trajectory for
     :param location_query: search query
     :returns: paged list of panorama objects based on query
 
@@ -150,12 +150,21 @@ def get_panorama_coords(
     if len(daily_panoramas.panoramas) == 0:
         raise ValueError("No available panoramas.")
 
+    total_pano_pages = int(daily_panoramas.count/25)
+    print(f"There is a total of {total_pano_pages} panorama pages to iterate over.")
+    print(50*"=")
+    pano_page_count = 0
     scan_coords = []
+    timestamps = []
     while True:
+        pano_page_count = pano_page_count + 1
+        if pano_page_count % 20 == 0:
+            print(f"Finished {pano_page_count} out of {total_pano_pages}.")
         try:
             for i in range(len(daily_panoramas.panoramas)):
                 panorama: models.Panorama = daily_panoramas.panoramas[i]
                 long, lat, _ = panorama.geometry.coordinates
+                timestamps.append(panorama.timestamp)
                 scan_coords.append([lat, long])
 
             next_pano_batch: models.PagedPanoramasResponse = PanoramaClient.next_page(
@@ -166,7 +175,10 @@ def get_panorama_coords(
             print("No next page available")
             break
 
-    return scan_coords
+    sorted_lists = sorted(zip(timestamps, scan_coords), key=lambda x: x[0])
+    sorted_timestamps, sorted_coords = [[x[i] for x in sorted_lists] for i in range(2)]
+
+    return sorted_coords
 
 
 def run(
@@ -210,17 +222,17 @@ def run(
     ]
 
     # for actual trajectory coordinates retrieved from the API uncomment the two lines below
-    """
+
     daily_query_result = get_daily_panoramas(day_to_plot, location_query)
     coords = get_panorama_coords(daily_query_result)
-    """
 
     model_predictions = unify_model_output(
         coco_annotations=coco_annotations, instances_results=instances_results
     )
     # TODO use this variable when model is trained instead of the temporary dummy
     model_predictions_with_coords = append_prediction_coordinates(model_predictions)
-    generate_map(trajectory=coords, predictions=model_predictions)
+    generate_map(trajectory=coords, predictions=model_predictions_with_coords)
+    #generate_map(trajectory=coords, predictions=model_predictions)
 
 
 if __name__ == "__main__":
@@ -230,8 +242,9 @@ if __name__ == "__main__":
     # Address: Kloveniersburgwal 45
     lat = 52.370670
     long = 4.898990
-    radius = 2000
+    #radius = 2000
+    radius = 800
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
-    coco_val_annotations_file = "../data/val/containers-annotated-COCO-val.json"
-    predictions_file = "../outputs/INFER_detectron_10mar_1_Mar-10-10:50/coco_instances_results.json"
+    coco_val_annotations_file = "../data/test/containers-annotated-COCO-test=.json"
+    predictions_file = "../outputs/INFER_2kx4k_resolution_1_Mar-25-17:36/coco_instances_results.json"
     run(target_day, location_query, coco_val_annotations_file, predictions_file)

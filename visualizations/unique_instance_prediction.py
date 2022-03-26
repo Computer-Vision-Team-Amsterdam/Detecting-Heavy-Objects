@@ -136,7 +136,7 @@ def generate_map(
 
     # add line with car trajectory on the map
     if trajectory:
-        folium.PolyLine(trajectory, color="green", weight=10, opacity=0.8).add_to(Map)
+        folium.PolyLine(trajectory, color="green", weight=5, opacity=0.8).add_to(Map)
 
     # create name for the map
     if not name:
