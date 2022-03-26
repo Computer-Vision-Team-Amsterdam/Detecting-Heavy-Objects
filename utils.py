@@ -375,7 +375,7 @@ def register_dataset(name: str, data_format: str, data_folder: str) -> None:
 
 
 def register_test_dataset(name: str, data_format: str, data_folder: str) -> None:
-    ann_path = "data/test/containers-annotated-COCO-test=.json"
+    ann_path = "data/containers-annotated-COCO-test.json"
     register_coco_instances(f"{name}_test", {}, ann_path, image_root=f"{data_folder}")
 
 
@@ -526,25 +526,9 @@ def correct_faulty_panoramas():
 
     _update_dims()
 
-
-def create_annotations():
-    # gather names of files on Azure
-    names = []
-    test_annotations = {"images": [], "annotations": [], "categories": [{"id": 1, "name": "container"}]}
-    for i, name in enumerate(names):
-        image = {"id": i,
-                 "width": 4000,
-                 "height": 2000,
-                 "file_name": name,
-                 "coco_url": "",
-                 "absolute_url": "",
-                 "date_captured": ""
-                 }
-        test_annotations["images"].append(image)
-
-        """
-        input = "/Users/dianaepureanu/Documents/Projects/containers-annotated-1151-4000x2000.json"
-        output_dir = "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/converter_output"
-        converter = DataFormatConverter(input, output_dir)
-        converter.convert_data()
-        """
+"""
+input = "/Users/dianaepureanu/Documents/Projects/containers-annotated-1151-4000x2000.json"
+output_dir = "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/converter_output"
+converter = DataFormatConverter(input, output_dir)
+converter.convert_data()
+"""

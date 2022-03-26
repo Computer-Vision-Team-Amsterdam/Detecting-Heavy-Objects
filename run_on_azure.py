@@ -4,7 +4,7 @@ This module contains functionality to run a training script on Azure.
 
 import azureml._restclient.snapshots_client
 from azureml.exceptions import WebserviceException
-
+import json
 azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 1000000000
 
 from configs.config_parser import arg_parser
@@ -20,12 +20,32 @@ from azureml.core import (
 
 EXPERIMENT_NAME = "detectron_2000x4000" # all used images have resolution 2000x4000
 
+
+def create_annotations(names):
+    # gather names of files on Azure
+    test_annotations = {"images": [], "annotations": [], "categories": [{"id": 1, "name": "container"}]}
+    for i, name in enumerate(names):
+        image = {"id": i,
+                 "width": 4000,
+                 "height": 2000,
+                 "file_name": name,
+                 "coco_url": "",
+                 "absolute_url": "",
+                 "date_captured": ""
+                 }
+        test_annotations["images"].append(image)
+
+    with open("containers-annotated-COCO-test.json", "w") as f:
+        json.dump(test_annotations, f)
+
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()
 dataset = Dataset.get_by_name(ws, "17mar2021")
 
-print(dataset.to_path())
+#dataset_files = dataset.to_path()
+#dataset_files = [file.split("/")[-1] for file in dataset_files]
+#create_annotations(dataset_files)
 mounted_dataset = dataset.as_mount(path_on_compute="data/")
 compute_target = ComputeTarget(ws, "quick-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)

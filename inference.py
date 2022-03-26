@@ -95,7 +95,7 @@ def evaluate_model(flags, expCfg: ExperimentConfig) -> None:
     """
 
     #register_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format, data_folder="data")
-    register_test_dataset(name=expCfg.dataset_name,data_format=expCfg.data_format, data_folder="data")
+    register_test_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format, data_folder="data")
     cfg = init_inference(flags)
     CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
 
