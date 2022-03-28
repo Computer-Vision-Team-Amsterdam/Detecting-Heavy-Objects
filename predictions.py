@@ -1,6 +1,7 @@
 """
 Visualize predictions or annotations on a data subset.
 """
+
 import os
 import shutil
 import random
@@ -11,8 +12,9 @@ from azureml.core import Workspace, Model
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import Visualizer, ColorMode
+from tqdm import tqdm
 
-from configs.config_parser import arg_parser
+from configs import config_parser
 from utils import register_dataset
 from inference import init_inference
 from utils import ExperimentConfig, get_container_dicts
@@ -42,7 +44,7 @@ def plot_instance_segm(
     """
     temp_output_dir = "temp"
     os.mkdir(temp_output_dir)
-    for i, dataset_dict in enumerate(random.sample(dataset_dicts, n_sample)):
+    for i, dataset_dict in tqdm(enumerate(random.sample(dataset_dicts, n_sample)), total=n_sample):
         img = cv2.imread(dataset_dict["file_name"])
         visualizer = Visualizer(
             img[:, :, ::-1],
@@ -79,22 +81,23 @@ def visualize_predictions(flags, expCfg: ExperimentConfig) -> None:
     :param expCfg: experiment configuration
     """
 
-    register_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format, data_folder="data")
-    container_dicts = get_container_dicts(expCfg, "data")
+    register_dataset(expCfg)
+    container_dicts = get_container_dicts(expCfg)
     cfg = init_inference(flags)
 
     global CONTAINER_DETECTION_MODEL
     CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
 
     metadata = MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}")
-    plot_instance_segm(container_dicts, metadata, mode="pred", n_sample=10)
+    plot_instance_segm(container_dicts, metadata, mode="pred", n_sample=50)
 
 
 if __name__ == "__main__":
-    flags = arg_parser()
+    flags = config_parser.arg_parser()
 
     experimentConfig = ExperimentConfig(dataset_name=flags.dataset_name,
                                         subset=flags.subset,
-                                        data_format=flags.data_format)
+                                        data_format=flags.data_format,
+                                        data_folder=flags.data_folder)
     visualize_predictions(flags, experimentConfig)
 

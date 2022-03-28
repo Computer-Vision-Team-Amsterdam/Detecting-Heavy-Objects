@@ -3,7 +3,7 @@ MODEL:
   DEVICE: cpu
   WEIGHTS: output_28feb/model_final.pth
   ROI_HEADS:
-    SCORE_THRESH_TEST: 0.7
+    SCORE_THRESH_TEST: 0.9
 
 OUTPUT_DIR: outputs
 

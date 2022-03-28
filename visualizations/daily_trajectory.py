@@ -66,8 +66,8 @@ def unify_model_output(
 
     #   TODO remove these 2 lines if the data is in the correct format
     # EXTRA STEP: discard predictions where ann file contains FAULTY image IDs, i.e. filename instead of pano id
-    annotations, faulty_ids = remove_faulty_annotations(annotations)
-    predictions_loaded = remove_corresponding_predictions(predictions_loaded, faulty_ids)
+    #annotations, faulty_ids = remove_faulty_annotations(annotations)
+    #predictions_loaded = remove_corresponding_predictions(predictions_loaded, faulty_ids)
 
     predictions = []
     # get file_name for each prediction
@@ -78,7 +78,10 @@ def unify_model_output(
         found = False
         for ann in annotations["images"]:
             if ann["id"] == pred_id:
-                file_name = ann["file_name"].split("/")[1]
+                if len(ann["file_name"].split("/")) > 1:
+                    file_name = ann["file_name"].split("/")[1]
+                else:
+                    file_name = ann["file_name"]
                 # append it to prediction dictionary
                 predictions.append(ModelPrediction(filename=file_name, score=prediction["score"]))
                 found = True
@@ -243,8 +246,8 @@ if __name__ == "__main__":
     lat = 52.370670
     long = 4.898990
     #radius = 2000
-    radius = 800
+    radius = 2000
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
-    coco_val_annotations_file = "../data/test/containers-annotated-COCO-test=.json"
-    predictions_file = "../outputs/INFER_2kx4k_resolution_1_Mar-25-17:36/coco_instances_results.json"
+    coco_val_annotations_file = "../combined/containers-annotated-COCO-test-first-11-batches.json"
+    predictions_file = "../outputs/INFER_2kx4k_resolution_1_Mar-27-01:43/coco_instances_results.json"
     run(target_day, location_query, coco_val_annotations_file, predictions_file)

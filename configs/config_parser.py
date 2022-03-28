@@ -16,10 +16,11 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument("--data_format", type=str, default="coco", help="coco, via")
     parser.add_argument("--dataset", default="blurred-container-data", help="name of dataset on Azure")
     parser.add_argument("--dataset_name", type=str, default="container", help="name of obj in instance segmentation")
+    parser.add_argument("--data_folder", type=str, default="data", help="name of the folder where data is located")
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--inference", action='store_true', help="True if we infer on Azure")
     parser.add_argument("--name", required=True, type=str, help="Name of Azure trained model to load")
-    parser.add_argument("--subset", type=str, default="train", help="train, val, test")
+    parser.add_argument("--subset", type=str, default="test", help="train, val, test")
     parser.add_argument("--train", action='store_true', help="True if we train on Azure")
     parser.add_argument("--version", type=int, help="Version of trained model.")
 

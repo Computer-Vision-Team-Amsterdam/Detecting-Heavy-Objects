@@ -229,24 +229,26 @@ class ExperimentConfig(NamedTuple):
     :param dataset_name: name of the dataset
     :param subset: what subset of data we visualize: train, val or test
     :param data_format: coco or via
+    :param data_folder: name of the root folder where data is located
     """
     dataset_name: str
     subset: str
     data_format: str
+    data_folder: str
 
 
-def get_container_dicts(expCfg: ExperimentConfig, data_folder: str):
+def get_container_dicts(expCfg: ExperimentConfig):
     """
     Return annotations in json format
 
-    @param data_folder: name of the data folder
     """
+
     if expCfg.data_format == "coco":
         container_dicts = load_coco_json(
-            f"{data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json",
-            image_root=f"{data_folder}")
+            f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json",
+            image_root=f"{expCfg.data_folder}")
     elif expCfg.data_format == "via":
-        container_dicts = load_via_json(f"{data_folder}/{expCfg.subset}")
+        container_dicts = load_via_json(f"{expCfg.data_folder}/{expCfg.subset}")
     else:
         raise Exception("Wrong data format")
 
@@ -359,24 +361,19 @@ def handle_hyperparameters(config):
     return count
 
 
-def register_dataset(name: str, data_format: str, data_folder: str) -> None:
+def register_dataset(expCfg: ExperimentConfig) -> None:
     """
     @param name: name of the dataset
     @param data_format: format of the dataset. Choices: coco, via
     @param data_folder: name of the data folder.
+    @param subset: either train, val or test
     """
-    for subset in ["train", "val"]:
-        if data_format == "coco":
-            ann_path = f"{data_folder}/{subset}/containers-annotated-COCO-{subset}.json"
-            register_coco_instances(f"{name}_{subset}", {}, ann_path, image_root=f"{data_folder}")
-        if data_format == "via":
-            DatasetCatalog.register(f"{name}_{subset}", lambda d=subset: load_via_json(f"{data_folder}/" + d))
-            MetadataCatalog.get(f"{name}_{subset}").set(thing_classes=[f"{name}"])
-
-
-def register_test_dataset(name: str, data_format: str, data_folder: str) -> None:
-    ann_path = "data/containers-annotated-COCO-test.json"
-    register_coco_instances(f"{name}_test", {}, ann_path, image_root=f"{data_folder}")
+    if expCfg.data_format == "coco":
+        ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
+        register_coco_instances(f"{expCfg.name}_{expCfg.subset}", {}, ann_path, image_root=f"{expCfg.data_folder}")
+    if expCfg.data_format == "via":
+        DatasetCatalog.register(f"{expCfg.name}_{expCfg.subset}", lambda d=expCfg.subset: load_via_json(f"{expCfg.data_folder}/" + d))
+        MetadataCatalog.get(f"{expCfg.name}_{expCfg.subset}").set(thing_classes=[f"{expCfg.name}"])
 
 
 def correct_faulty_panoramas():

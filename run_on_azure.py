@@ -1,10 +1,12 @@
 """
 This module contains functionality to run a training script on Azure.
 """
+from pathlib import Path
 
 import azureml._restclient.snapshots_client
 from azureml.exceptions import WebserviceException
 import json
+
 azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 1000000000
 
 from configs.config_parser import arg_parser
@@ -18,10 +20,17 @@ from azureml.core import (
     Workspace, Model,
 )
 
-EXPERIMENT_NAME = "detectron_2000x4000" # all used images have resolution 2000x4000
+EXPERIMENT_NAME = "detectron_2000x4000"  # all used images have resolution 2000x4000
 
 
 def create_annotations(names):
+    """
+    names = []
+    files = Path("/combined").glob('*.jpg')
+    for file in files:
+        name = file.parts[-1]
+        names.append(name)
+ """
     # gather names of files on Azure
     test_annotations = {"images": [], "annotations": [], "categories": [{"id": 1, "name": "container"}]}
     for i, name in enumerate(names):
@@ -38,14 +47,18 @@ def create_annotations(names):
     with open("containers-annotated-COCO-test.json", "w") as f:
         json.dump(test_annotations, f)
 
+
+
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()
 dataset = Dataset.get_by_name(ws, "17mar2021")
 
-#dataset_files = dataset.to_path()
-#dataset_files = [file.split("/")[-1] for file in dataset_files]
-#create_annotations(dataset_files)
+dataset_files = dataset.to_path()
+dataset_files = [file.split("/")[-1] for file in dataset_files]
+create_annotations(dataset_files)
+
+"""
 mounted_dataset = dataset.as_mount(path_on_compute="data/")
 compute_target = ComputeTarget(ws, "quick-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
@@ -68,11 +81,9 @@ for arg in vars(flags):
         continue
     args[f"--{arg}"] = getattr(flags, arg)
 
-
 args["--dataset"] = mounted_dataset
 args = [[k, v] for (k, v) in args.items()]
 args = [val for sublist in args for val in sublist]  # flatten
-
 
 if flags.train:
     script_config = ScriptRunConfig(
@@ -88,7 +99,6 @@ if flags.train:
     run.register_model(flags.name, f"outputs/TRAIN_{flags.name}_{flags.version}/model_final.pth")
     run.download_files(prefix="outputs")
 
-
 if flags.inference:
     model = Model.get_model_path(model_name=f"{flags.name}", version=flags.version, _workspace=ws)  # latest version
 
@@ -102,3 +112,6 @@ if flags.inference:
     run = experiment.submit(config=script_config)
     run.wait_for_completion(show_output=False)
     run.download_files(prefix="outputs")
+
+
+"""

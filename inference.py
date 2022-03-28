@@ -21,7 +21,7 @@ from detectron2.evaluation import inference_on_dataset
 from PIL import Image
 
 from configs.config_parser import arg_parser
-from utils import register_dataset, register_test_dataset
+from utils import register_dataset
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig
 
@@ -94,8 +94,7 @@ def evaluate_model(flags, expCfg: ExperimentConfig) -> None:
     constructor from another method i.e. _test_loader_from_config
     """
 
-    #register_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format, data_folder="data")
-    register_test_dataset(name=expCfg.dataset_name, data_format=expCfg.data_format, data_folder="data")
+    register_dataset(expCfg)
     cfg = init_inference(flags)
     CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
 
@@ -112,41 +111,12 @@ def evaluate_model(flags, expCfg: ExperimentConfig) -> None:
 
 if __name__ == "__main__":
 
-    """
     flags = arg_parser()
 
     experimentConfig = ExperimentConfig(dataset_name=flags.dataset_name,
                                         subset=flags.subset,
-                                        data_format=flags.data_format)
-    evaluate_model(flags, experimentConfig)
-    """
-
-    flags = arg_parser()
-    experimentConfig = ExperimentConfig(dataset_name=flags.dataset_name,
-                                        subset="test",
-                                        data_format=flags.data_format)
+                                        data_format=flags.data_format,
+                                        data_folder=flags.data_folder)
     evaluate_model(flags, experimentConfig)
 
 
-    """
-    flags = arg_parser()
-    cfg = init_inference(flags)
-    CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
-
-    images = Path("data_azure/17mar2021/0/blurred").glob("*.jpg")
-    count = 0
-    results = []
-    for image in images:
-        count = count + 1
-        if count == 2:
-            break
-        im = cv2.imread(str(image))
-        out = CONTAINER_DETECTION_MODEL(im)
-        out["image_id"] = image.stem
-        results.append(out)
-        print(results)
-
-    with open("map_info.pkl", "w") as f :
-        pickle.dump(results, f)
-    
-    """
