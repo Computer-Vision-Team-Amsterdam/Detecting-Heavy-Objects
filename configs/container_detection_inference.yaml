@@ -1,9 +1,9 @@
 _BASE_: "temp.yaml"
 MODEL:
-  DEVICE: cpu
+  DEVICE: cuda:0
   WEIGHTS: output_28feb/model_final.pth
   ROI_HEADS:
-    SCORE_THRESH_TEST: 0.9
+    SCORE_THRESH_TEST: 0.95
 
 OUTPUT_DIR: outputs
 

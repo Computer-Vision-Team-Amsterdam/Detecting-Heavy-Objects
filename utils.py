@@ -363,17 +363,14 @@ def handle_hyperparameters(config):
 
 def register_dataset(expCfg: ExperimentConfig) -> None:
     """
-    @param name: name of the dataset
-    @param data_format: format of the dataset. Choices: coco, via
-    @param data_folder: name of the data folder.
-    @param subset: either train, val or test
+    Register dataset.
     """
     if expCfg.data_format == "coco":
         ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
-        register_coco_instances(f"{expCfg.name}_{expCfg.subset}", {}, ann_path, image_root=f"{expCfg.data_folder}")
+        register_coco_instances(f"{expCfg.dataset_name}_{expCfg.subset}", {}, ann_path, image_root=f"{expCfg.data_folder}")
     if expCfg.data_format == "via":
-        DatasetCatalog.register(f"{expCfg.name}_{expCfg.subset}", lambda d=expCfg.subset: load_via_json(f"{expCfg.data_folder}/" + d))
-        MetadataCatalog.get(f"{expCfg.name}_{expCfg.subset}").set(thing_classes=[f"{expCfg.name}"])
+        DatasetCatalog.register(f"{expCfg.dataset_name}_{expCfg.subset}", lambda d=expCfg.subset: load_via_json(f"{expCfg.data_folder}/" + d))
+        MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}").set(thing_classes=[f"{expCfg.dataset_name}"])
 
 
 def correct_faulty_panoramas():

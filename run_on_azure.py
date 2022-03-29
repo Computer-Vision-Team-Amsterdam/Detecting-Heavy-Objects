@@ -48,17 +48,15 @@ def create_annotations(names):
         json.dump(test_annotations, f)
 
 
-
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()
 dataset = Dataset.get_by_name(ws, "17mar2021")
 
-dataset_files = dataset.to_path()
-dataset_files = [file.split("/")[-1] for file in dataset_files]
-create_annotations(dataset_files)
+#dataset_files = dataset.to_path()
+#dataset_files = ["/".join(file.split("/")[-2:]) for file in dataset_files]  # name is test/pano_id.jpg
+#create_annotations(dataset_files)
 
-"""
 mounted_dataset = dataset.as_mount(path_on_compute="data/")
 compute_target = ComputeTarget(ws, "quick-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
@@ -112,6 +110,3 @@ if flags.inference:
     run = experiment.submit(config=script_config)
     run.wait_for_completion(show_output=False)
     run.download_files(prefix="outputs")
-
-
-"""
