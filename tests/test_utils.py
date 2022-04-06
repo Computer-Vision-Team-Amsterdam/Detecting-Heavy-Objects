@@ -1,12 +1,11 @@
 import json
 import shutil
+
 from pathlib import Path
 from typing import List
 from unittest.mock import Mock, call
 
-from visualizations import get_obj_size
 from utils import DataFormatConverter
-
 from unittest import TestCase
 
 
@@ -21,7 +20,7 @@ class Test(TestCase):
     def test__add_key(self):
 
         # firstly, discard all images with bad resolution
-        # make sure we resize the 2000x1000 images to 40000x2000, then re-create the input file for this test.
+        # make sure we resize the 2000x1000 images to 4000x2000, then re-create the input file for this test.
         self.converter._add_key("iscrowd", 0)
         for ann in self.converter._input["annotations"]:
             self.assertTrue(("iscrowd", 0) in ann.items())
@@ -102,7 +101,6 @@ class Test(TestCase):
 
         self.converter.convert_data()
         m.assert_has_calls([call.one(key='iscrowd', value=0), call.two(), call.three(), call.four(), call.five()])
-
 
     #  OBSOLETE
     def test_hyperparameter_search(self):

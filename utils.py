@@ -520,6 +520,27 @@ def correct_faulty_panoramas():
 
     _update_dims()
 
+
+def collect_dimensions(data):
+    """
+    Collects widths and heights from json file
+    """
+    # assert if we have a list/results json or a dict/annotations json
+    if isinstance(data, list):  # this is a results json file
+        pass
+    if isinstance(data, dict):  # this is an annotation json file
+        data = data["annotations"]
+
+    widths, heights, areas = [], [], []
+    for ann in data:
+        width = ann["bbox"][2]
+        height = ann["bbox"][3]
+
+        widths.append(int(width))
+        heights.append(int(height))
+
+    return widths, heights
+
 """
 input = "/Users/dianaepureanu/Documents/Projects/containers-annotated-1151-4000x2000.json"
 output_dir = "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/converter_output"
