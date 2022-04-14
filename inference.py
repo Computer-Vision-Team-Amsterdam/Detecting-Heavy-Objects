@@ -14,11 +14,12 @@ import numpy as np
 import torch
 
 from detectron2.config import CfgNode, get_cfg
-from detectron2.data import build_detection_test_loader
+from detectron2.data import build_detection_test_loader, MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
 
 from PIL import Image
+from detectron2.utils.visualizer import Visualizer
 
 from configs.config_parser import arg_parser
 from utils import register_dataset
@@ -109,6 +110,22 @@ def evaluate_model(flags, expCfg: ExperimentConfig) -> None:
     print(inference_on_dataset(CONTAINER_DETECTION_MODEL.model, loader, evaluator))
 
 
+def single_instance_prediction(flags, expCfg, image_path):
+    register_dataset(expCfg)
+    im = cv2.imread(image_path)
+    cfg = init_inference(flags)
+    CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
+    outputs = CONTAINER_DETECTION_MODEL(im)
+
+    metadata = MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}")
+    v = Visualizer(im[:, :, ::-1], metadata, scale=1.2)
+    out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+
+    # save image in current directory
+    image_name = Path(image_path).stem
+    cv2.imwrite(f"{image_name}.jpg", out.get_image()[:, :, ::-1])
+
+
 if __name__ == "__main__":
 
     flags = arg_parser()
@@ -118,5 +135,11 @@ if __name__ == "__main__":
                                         data_format=flags.data_format,
                                         data_folder=flags.data_folder)
     evaluate_model(flags, experimentConfig)
+
+    """    
+    # SINGLE IMAGE PREDICTION
+    image = "/Users/dianaepureanu/Downloads/blurred.jpg"
+    single_instance_prediction(flags, experimentConfig, image)
+    """
 
 
