@@ -160,7 +160,7 @@ if __name__ == '__main__':
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--project', default='../data_azure/17mar2021/', help='save results to project/name')
+    parser.add_argument('--project', default='../data_azure/', help='save results to project/name')
     parser.add_argument('--name', default='1', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     opt = parser.parse_args()
