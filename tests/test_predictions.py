@@ -1,31 +1,39 @@
 import os
-import shutil
 import random
+import shutil
 from pathlib import Path
 
 import cv2
 from detectron2.data import MetadataCatalog
-from detectron2.utils.visualizer import Visualizer, ColorMode
+from detectron2.utils.visualizer import ColorMode, Visualizer
 
-from utils import ExperimentConfig, register_dataset, get_container_dicts
+from utils import ExperimentConfig, get_container_dicts, register_dataset
 
 
 def test_visualize_predictions():
 
     # sanity check for upscaled images
 
-    experimentConfig = ExperimentConfig(dataset_name="container-subset-upscaled-images",
-                                        subset="train",
-                                        data_format="coco")
+    experimentConfig = ExperimentConfig(
+        dataset_name="container-subset-upscaled-images",
+        subset="train",
+        data_format="coco",
+    )
 
-    register_dataset(name=experimentConfig.dataset_name, data_format=experimentConfig.data_format, data_folder="data_resized")
+    register_dataset(
+        name=experimentConfig.dataset_name,
+        data_format=experimentConfig.data_format,
+        data_folder="data_resized",
+    )
     container_dicts = get_container_dicts(experimentConfig, data_folder="data_resized")
-    metadata = MetadataCatalog.get(f"{experimentConfig.dataset_name}_{experimentConfig.subset}")
+    metadata = MetadataCatalog.get(
+        f"{experimentConfig.dataset_name}_{experimentConfig.subset}"
+    )
 
     temp_output_dir = "temp"
     os.mkdir(temp_output_dir)
 
-    available_panos = Path("data_resized", "train").glob('*.jpg')
+    available_panos = Path("data_resized", "train").glob("*.jpg")
     upscaled_subset_annotations = []
 
     pano_filenames = [pano.parts[-1] for pano in available_panos]

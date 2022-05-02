@@ -3,6 +3,7 @@ This module contains functionality to run a training script on Azure.
 """
 import json
 from pathlib import Path
+from typing import Any, Dict, List
 
 import azureml._restclient.snapshots_client
 from azureml.exceptions import WebserviceException
@@ -44,12 +45,8 @@ try:
 except WebserviceException:
     flags.version = 1
 
-args = {}
+args: Dict[str, Any] = {}
 for arg in vars(flags):
-    if flags.train is False and arg == "train":
-        continue
-    if flags.inference is False and arg == "inference":
-        continue
     args[f"--{arg}"] = getattr(flags, arg)
 
 args["--dataset"] = mounted_dataset

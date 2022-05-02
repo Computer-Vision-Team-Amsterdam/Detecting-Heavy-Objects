@@ -1,16 +1,14 @@
 import json
 import shutil
-
 from pathlib import Path
 from typing import List
+from unittest import TestCase
 from unittest.mock import Mock, call
 
 from utils import DataFormatConverter
-from unittest import TestCase
 
 
 class Test(TestCase):
-
     def __init__(self, *args, **kwargs):
         super(Test, self).__init__(*args, **kwargs)
         input = "/Users/dianaepureanu/Documents/Projects/containers-annotated-1151-4000x2000.json"
@@ -38,13 +36,21 @@ class Test(TestCase):
 
     def test__to_absolute(self):
 
-        relative_segm: List[List[float]] = [ann["segmentation"][0] for ann in self.converter._input["annotations"]]
-        relative_bbox: List[List[float]] = [ann["bbox"] for ann in self.converter._input["annotations"]]
+        relative_segm: List[List[float]] = [
+            ann["segmentation"][0] for ann in self.converter._input["annotations"]
+        ]
+        relative_bbox: List[List[float]] = [
+            ann["bbox"] for ann in self.converter._input["annotations"]
+        ]
 
         self.converter._to_absolute()
 
-        absolute_segm: List[List[float]] = [ann["segmentation"][0] for ann in self.converter._input["annotations"]]
-        absolute_bbox: List[List[float]] = [ann["bbox"] for ann in self.converter._input["annotations"]]
+        absolute_segm: List[List[float]] = [
+            ann["segmentation"][0] for ann in self.converter._input["annotations"]
+        ]
+        absolute_bbox: List[List[float]] = [
+            ann["bbox"] for ann in self.converter._input["annotations"]
+        ]
 
         for rel_segm, abs_segm in zip(relative_segm, absolute_segm):
             rel_xs = [rel_segm[i] * 4000 for i in range(len(rel_segm)) if i % 2 == 0]
@@ -77,6 +83,7 @@ class Test(TestCase):
 
             with path_to_subset.open("r") as f:
                 subset_data = json.load(f)
+            f.close()
             subset_count += len(subset_data["images"])
 
         self.assertEqual(subset_count, len(self.converter._input["images"]))
@@ -93,38 +100,21 @@ class Test(TestCase):
         self.converter._split = Mock()
 
         m = Mock()
-        m.configure_mock(one=self.converter._dimensions_to_int,
-                         two=self.converter._add_key,
-                         three=self.converter._to_absolute,
-                         four=self.converter._calculate_area,
-                         five=self.converter._split)
+        m.configure_mock(
+            one=self.converter._dimensions_to_int,
+            two=self.converter._add_key,
+            three=self.converter._to_absolute,
+            four=self.converter._calculate_area,
+            five=self.converter._split,
+        )
 
         self.converter.convert_data()
-        m.assert_has_calls([call.one(key='iscrowd', value=0), call.two(), call.three(), call.four(), call.five()])
-
-    #  OBSOLETE
-    def test_hyperparameter_search(self):
-        """
-        params_info = {
-            "x": [ 1, 2, 3],
-            "y": [ "a", "b", "c"],
-            "z": [ "A", "B", "C"],
-            }
-    
-        for param_vals in itertools.product(*params_info.values()):
-            params = dict(zip(params_info.keys(), param_vals))
-            data = {
-              "A": params["x"],
-              "B": "Green",
-              "C": {
-                "c_a": "O2",
-                "c_b": params["y"],
-                "c_c": ["D", "E", "F", params["z"]]
-              }
-            }
-            jsonstr = json.dumps(data) # use json.dump if you want to dump to a file
-            print(jsonstr)
-            
-        """
-
-        assert False
+        m.assert_has_calls(
+            [
+                call.one(key="iscrowd", value=0),
+                call.two(),
+                call.three(),
+                call.four(),
+                call.five(),
+            ]
+        )

@@ -2,9 +2,8 @@ import os
 from pathlib import Path
 from unittest import TestCase
 
-from detectron2.data import MetadataCatalog
-
 from dataset import DATASET_NAME, register_via_dataset
+from detectron2.data import MetadataCatalog
 
 ROOT = Path(__file__).parent.parent
 
