@@ -1,14 +1,50 @@
 import argparse
+import json
 import os
+import glob
+import time
 from pathlib import Path
+from typing import Dict, Any
 
 from panorama import models
 from panorama.client import PanoramaClient
 
 from tqdm import tqdm
-from datetime import date
+import datetime
 
 from historical_container_locations import download_images
+
+
+def generate_metadata_file(path_to_folder: Path) -> None:
+    """
+    Create metadata json file named "metadata.json" given a list of panoramas
+    :param path_to_folder: path to folder with images
+    """
+
+    def json_default(value) -> Dict[Any, Any]:
+        """
+        Custom json encoder for Panorama object
+        """
+        if isinstance(value, datetime.datetime):
+            return dict(year=value.year,
+                        month=value.month,
+                        day=value.day,
+                        hour=value.hour,
+                        minute=value.minute,
+                        second=value.second)
+        else:
+            return value.__dict__
+
+    metadata = []
+    for image in glob.glob(f"{path_to_folder}/*.jpg"):
+        panorama_id: str = Path(image).stem
+        panorama_object:  models.Panorama = PanoramaClient.get_panorama(panorama_id)
+        metadata.append(panorama_object)
+        time.sleep(10)  # we are allowed to do 6 API requests per 10 seconds
+
+    with open('metadata.json', 'w') as file:
+        json.dump(metadata, file, default=json_default)
+    file.close()
 
 
 def batch_pano_ids():
@@ -22,8 +58,8 @@ def batch_pano_ids():
     long = 4.898990
     radius = 2000
 
-    timestamp_after = date(2021, 3, 17)
-    timestamp_before = date(2021, 3, 18)
+    timestamp_after = datetime.date(2021, 3, 17)
+    timestamp_before = datetime.date(2021, 3, 18)
 
     root = "data_azure/17mar2021/batches"
     Path(root).mkdir(parents=True, exist_ok=True)  # create folder structure if it doesn't exist yet
