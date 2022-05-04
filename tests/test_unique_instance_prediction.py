@@ -1,7 +1,17 @@
+import base64
 from unittest import TestCase
+
+import folium
+from branca.element import IFrame
+from dask.array.svg import svg
+from folium import Map
+from folium.plugins import MarkerCluster
+
+from panorama.client import PanoramaClient  # pylint: disable=import-error
 
 from visualizations.model import ModelPrediction
 from visualizations.unique_instance_prediction import geo_clustering
+
 
 
 class Test(TestCase):
@@ -59,3 +69,43 @@ class Test(TestCase):
 
         self.assertListEqual(expected_containter_info, actual_container_info)
         self.assertEqual(expected_nr_clusters, actual_nr_clusters)
+
+    def test_map_with_image(self):
+        """This test check whether the icon in the map can contain an image"""
+        # Amsterdam coordinates
+        latitude = 52.377956
+        longitude = 4.897070
+
+        predictions = [
+            [52.337909, 4.892184],
+            [52.340400, 4.892549],
+        ]
+
+        # create empty map zoomed on Amsterdam
+        Map = folium.Map(location=[latitude, longitude], zoom_start=12)
+
+        marker_cluster = MarkerCluster().add_to(Map)
+
+        panorama_id = "TMX7316010203-001698_pano_0001_004410"
+        image = PanoramaClient.get_panorama(panorama_id)
+        link = image.links.equirectangular_small.href
+        score = 0.85
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <h2> Score is {score} </h2>
+        <center><img src=\"""" + link + """\" width=400 height=200 ></center>
+        </html>
+        """
+        for i in range(len(predictions)):
+
+            popup = folium.Popup(folium.Html(html, script=True), max_width=500)
+            icon = folium.Icon(color="red", icon="ok")
+            folium.Marker(
+                location=[predictions[i][0], predictions[i][1]],
+                popup=popup,
+                icon=icon,
+                radius=15,
+            ).add_to(marker_cluster)
+
+        Map.save("test_jpg_icon.html")
