@@ -1,8 +1,10 @@
+# pylint: disable=import-error
+
 from unittest import TestCase
 
 import folium
 from folium.plugins import MarkerCluster
-from panorama.client import PanoramaClient  # pylint: disable=import-error
+from panorama.client import PanoramaClient
 
 from visualizations.model import ModelPrediction
 from visualizations.unique_instance_prediction import geo_clustering
