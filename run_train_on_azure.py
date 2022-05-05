@@ -23,13 +23,13 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "detectron_2000x4000"  # all used images have resolution 2000x4000
+EXPERIMENT_NAME = "map2"
 
 
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()
-dataset = Dataset.get_by_name(ws, "17mar2021")
+dataset = Dataset.get_by_name(ws, "blurred-container-data")
 
 mounted_dataset = dataset.as_mount(path_on_compute="data/")
 compute_target = ComputeTarget(ws, "quick-gpu")
@@ -40,8 +40,7 @@ flags = arg_parser()
 # check if model already exists. Used when creating the name of the output folder.
 try:
     model = Model(ws, f"{flags.name}")
-    if flags.train:
-        flags.version = model.version + 1
+    flags.version = model.version + 1
 except WebserviceException:
     flags.version = 1
 
@@ -50,14 +49,13 @@ for arg in vars(flags):
     args[f"--{arg}"] = getattr(flags, arg)
 
 args["--dataset"] = mounted_dataset
-args = [[k, v] for (k, v) in args.items()]
-args = [val for sublist in args for val in sublist]  # flatten
-
+args_list: List[List[Any]] = [[k, v] for (k, v) in args.items()]
+args_flattened: List[str] = [val for sublist in args_list for val in sublist]  # flatten
 
 script_config = ScriptRunConfig(
     source_directory=".",
     script="training.py",
-    arguments=args,
+    arguments=args_flattened,
     environment=env,
     compute_target=compute_target,
 )

@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Any
 from unittest import TestCase
 
 from postprocessing import PostProcessing
@@ -7,14 +8,14 @@ from visualizations.stats import DataStatistics
 
 
 class Test(TestCase):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super(Test, self).__init__(*args, **kwargs)
         self.results_file = Path(
             "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-Objects/outputs/"
             "INFER_2kx4k_resolution_1_Mar-27-01:43/coco_instances_results.json"
         )
 
-    def test_discard_objects(self):
+    def test_discard_objects(self) -> None:
         postprocessing = PostProcessing(json_predictions=self.results_file)
         postprocessing.filter_by_size()
 

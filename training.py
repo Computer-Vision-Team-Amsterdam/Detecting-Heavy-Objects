@@ -1,7 +1,7 @@
 """
 This module contains functionality to train a default detectron2 model.
 """
-
+import argparse
 import os
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +13,7 @@ from inference import setup_cfg
 from utils import ExperimentConfig, register_dataset
 
 
-def init_train(flags) -> None:
+def init_train(flags: argparse.Namespace) -> None:
     """
     Loads a pre-trained model and fine-tunes it on the data dataset
     """

@@ -9,7 +9,7 @@ MODEL:
   ROI_HEADS:
     NUM_CLASSES: 1
     BATCH_SIZE_PER_IMAGE: 28
-    SCORE_THRESH_TEST: 0.95
+    SCORE_THRESH_TEST: 0.98
 
 INPUT:
   MIN_SIZE_TRAIN_SAMPLING: "range"
@@ -25,7 +25,7 @@ INPUT:
 
 SOLVER:
   IMS_PER_BATCH: 2
-  MAX_ITER: 1
+  MAX_ITER: 10000
   BASE_LR: 0.00025
   STEPS: [] # do not perform decay on the learning rate
 

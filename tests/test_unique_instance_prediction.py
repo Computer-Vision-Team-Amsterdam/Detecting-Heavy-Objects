@@ -6,12 +6,10 @@ from branca.element import IFrame
 from dask.array.svg import svg
 from folium import Map
 from folium.plugins import MarkerCluster
-
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 
 from visualizations.model import ModelPrediction
 from visualizations.unique_instance_prediction import geo_clustering
-
 
 
 class Test(TestCase):
@@ -70,7 +68,7 @@ class Test(TestCase):
         self.assertListEqual(expected_containter_info, actual_container_info)
         self.assertEqual(expected_nr_clusters, actual_nr_clusters)
 
-    def test_map_with_image(self):
+    def test_map_with_image(self) -> None:
         """This test check whether the icon in the map can contain an image"""
         # Amsterdam coordinates
         latitude = 52.377956
@@ -90,13 +88,17 @@ class Test(TestCase):
         image = PanoramaClient.get_panorama(panorama_id)
         link = image.links.equirectangular_small.href
         score = 0.85
-        html = f"""
+        html = (
+            f"""
         <!DOCTYPE html>
         <html>
         <h2> Score is {score} </h2>
-        <center><img src=\"""" + link + """\" width=400 height=200 ></center>
+        <center><img src=\""""
+            + link
+            + """\" width=400 height=200 ></center>
         </html>
         """
+        )
         for i in range(len(predictions)):
 
             popup = folium.Popup(folium.Html(html, script=True), max_width=500)

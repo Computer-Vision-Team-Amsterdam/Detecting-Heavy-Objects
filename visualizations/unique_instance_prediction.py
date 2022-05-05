@@ -123,13 +123,17 @@ def generate_map(
             image_link = image.links.equirectangular_small.href
 
             # create HTML with more info
-            html = f"""
+            html = (
+                f"""
                    <!DOCTYPE html>
                    <html>
                    <h3> Score: {predictions[i].score} </h3>
-                   <center><img src=\"""" + image_link + """\" width=400 height=200 ></center>
+                   <center><img src=\""""
+                + image_link
+                + """\" width=400 height=200 ></center>
                    </html>
                    """
+            )
             popup = folium.Popup(folium.Html(html, script=True), max_width=500)
             folium.Marker(
                 location=[predictions[i].coords[0], predictions[i].coords[1]],

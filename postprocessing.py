@@ -18,7 +18,7 @@ class PostProcessing:
         json_predictions: Path,
         threshold: float = 20000,
         output_path: Path = Path.cwd() / "postprocessed.json",
-    ):
+    ) -> None:
         """
         Args:
             :param json_predictions: path to ouput file with predictions from detectron2
@@ -28,14 +28,14 @@ class PostProcessing:
         self.stats = DataStatistics(json_file=json_predictions)
         self.threshold = threshold
         self.output_path = output_path
-        self.predictions_to_keep = None
+        self.predictions_to_keep: List[str] = []
 
-    def filter_by_size(self):
+    def filter_by_size(self) -> None:
         """
         Removes predictions of small objects and writes results to json file
         """
 
-        def remove_predictions():
+        def remove_predictions() -> None:
             """
             Filter out all predictions where area of the bbox of object is smaller and equal to @param threshold pixels
             """
@@ -46,7 +46,7 @@ class PostProcessing:
             ]
             self.predictions_to_keep = [self.stats.data[idx] for idx in indices_to_keep]
 
-        def write_json():
+        def write_json() -> None:
             """
             Write filtered list of predictions to another json file
             """

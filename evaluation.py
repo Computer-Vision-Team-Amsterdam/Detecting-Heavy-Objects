@@ -582,7 +582,7 @@ class CustomCOCOeval:
         self.stats = summarize()
 
     def __str__(self):
-        self.summarize()
+        self.summarize(None)
 
 
 class Params:
@@ -794,12 +794,12 @@ class CustomCOCOEvaluator(DatasetEvaluator):
             # image_id is the panorama id instead of a digit.
             pano_id = input["file_name"].split("/")[-1]
             prediction = {"image_id": pano_id}
+            print(50 * "=")
+            print(prediction)
 
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
-                prediction["instances"] = instances_to_coco_json(
-                    instances, input["image_id"]
-                )
+                prediction["instances"] = instances_to_coco_json(instances, pano_id)
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             if len(prediction) > 1:
@@ -1064,6 +1064,9 @@ def instances_to_coco_json(instances, img_id):
     Returns:
         list[dict]: list of json annotations in COCO format.
     """
+
+    print(50 * "=")
+    print(f"image id {img_id}")
     num_instance = len(instances)
     if num_instance == 0:
         return []

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import matplotlib.pyplot as plt
 
@@ -12,7 +12,7 @@ class DataStatistics:
     Compute and visualize different statistics from the data
     """
 
-    def __init__(self, json_file, output_dir=None):
+    def __init__(self, json_file: Path, output_dir: Optional[str] = None) -> None:
         """
         json file can be either COCO annotation or COCO results file
         """
@@ -26,7 +26,7 @@ class DataStatistics:
             width * height for width, height in zip(self.widths, self.heights)
         ]
 
-    def plot_dimensions_distribution(self, plot_name: str):
+    def plot_dimensions_distribution(self, plot_name: str) -> None:
         """
         Scatter plot with height and widths of containers
 
@@ -42,7 +42,7 @@ class DataStatistics:
         plt.ylabel("height")
         plt.savefig(Path(self.output_dir, plot_name))
 
-    def plot_areas_distribution(self, plot_name: str):
+    def plot_areas_distribution(self, plot_name: str) -> None:
         """
         Histogram with containers areas
         plot_name : includes the file type, i.e. jpg

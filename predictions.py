@@ -1,7 +1,7 @@
 """
 Visualize predictions or annotations on a data subset.
 """
-
+import argparse
 import os
 import random
 import shutil
@@ -58,7 +58,7 @@ def plot_instance_segm(
             instance_mode=ColorMode.IMAGE,
         )
         if mode == "pred":
-            outputs = predictor(img)  # type: ignore
+            outputs = predictor(img)
             out = visualizer.draw_instance_predictions(outputs["instances"].to("cpu"))
         if mode == "ann":
             out = visualizer.draw_dataset_dict(dataset_dict)
@@ -77,11 +77,12 @@ def plot_instance_segm(
     shutil.rmtree(temp_output_dir)
 
 
-def visualize_predictions(flags, expCfg: ExperimentConfig) -> None:
+def visualize_predictions(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     """
     This method takes a trained model from Azure, downloads it locally and plots
     visualization of randomly selected images from the validation folder
 
+    :param flags: console arguments
     :param expCfg: experiment configuration
     """
 
@@ -94,7 +95,9 @@ def visualize_predictions(flags, expCfg: ExperimentConfig) -> None:
     )
 
 
-def single_instance_prediction(flags, expCfg, image_path):
+def single_instance_prediction(
+    flags: argparse.Namespace, expCfg: ExperimentConfig, image_path: Path
+) -> None:
     register_dataset(expCfg)
     im = cv2.imread(image_path)
     cfg = init_inference(flags)

@@ -51,7 +51,8 @@ By default, output files are stored in the ```outputs``` folder.
 
 To train the model on GPU, run 
 ```shell
-python run_on_azure.py --train --config ${CONFIG_FILE} --name ${MODEL_NAME} 
+python run_train_on_azure.py --name ${MODEL_NAME} --subset train
+
 ```
 Latest model is registered on Azure.
 The output files are stored on Azure in the ```outputs``` folder and contain the following:
@@ -78,9 +79,9 @@ python inference.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu
 Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
 
 
-To perform inference on GPU, run
+To perform inference on the validation set on GPU, run
 ```shell
-python run_on_azure.py --inference --name ${MODEL_NAME} --version ${MODEL_VERSION} --config ${CONFIG_FILE}
+python run_inference_on_azure.py --name ${MODEL_NAME} --version ${VERSION} --subset val 
 ```
 The output files are as follows:
 - *container_val_coco_format.json* -- automatically generated COCO file for Detectron2. It contains metadata of the 

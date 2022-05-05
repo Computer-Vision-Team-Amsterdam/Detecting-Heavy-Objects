@@ -3,6 +3,7 @@ incorporated into the Azure batch processing pipeline"""
 
 # import os
 # print(os.system("ls azureml-models/detectron_28feb/2"))
+import argparse
 import json
 import logging
 import pickle
@@ -37,10 +38,11 @@ def setup_cfg(config_file: Union[Path, str]) -> CfgNode:
     return cfg
 
 
-def init_inference(flags) -> CfgNode:
+def init_inference(flags: argparse.Namespace) -> CfgNode:
     """
     Initializes the trained model
 
+    :param flags: console arguments
     Returns the configuration object
     """
     config_file = Path(flags.config)
@@ -79,12 +81,12 @@ def run(
     with torch.no_grad():  # type: ignore
 
         # called, not instantiated here
-        outputs = [predictor(input_tensor["image"]) for input_tensor in input_tensors]  # type: ignore
+        outputs = [predictor(input_tensor["image"]) for input_tensor in input_tensors]
 
     return [{path: outputs[idx]} for idx, path in enumerate(minibatch)]
 
 
-def evaluate_model(flags, expCfg: ExperimentConfig) -> None:
+def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     """
     This method calculates evaluation metrics for the trained model.
     :param expCfg: experiment we evaluate

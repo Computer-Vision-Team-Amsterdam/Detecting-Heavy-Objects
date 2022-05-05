@@ -1,8 +1,9 @@
 """
-This module contains functionality to run a training script on Azure.
+This module contains functionality to run an inference script on Azure.
 """
 import json
 from pathlib import Path
+from typing import List
 
 import azureml._restclient.snapshots_client
 from azureml.exceptions import WebserviceException
@@ -22,48 +23,13 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "detectron_2000x4000"  # all used images have resolution 2000x4000
-
-
-def create_annotations(names):
-    """
-    names = []
-    files = Path("/combined").glob('*.jpg')
-    for file in files:
-        name = file.parts[-1]
-        names.append(name)
-    """
-    # gather names of files on Azure
-    test_annotations = {
-        "images": [],
-        "annotations": [],
-        "categories": [{"id": 1, "name": "container"}],
-    }
-    for i, name in enumerate(names):
-        image = {
-            "id": i,
-            "width": 4000,
-            "height": 2000,
-            "file_name": name,
-            "coco_url": "",
-            "absolute_url": "",
-            "date_captured": "",
-        }
-        test_annotations["images"].append(image)
-
-    with open("containers-annotated-COCO-test.json", "w") as f:
-        json.dump(test_annotations, f)
+EXPERIMENT_NAME = "detectron_map2_inference_17mar21"
 
 
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()
 dataset = Dataset.get_by_name(ws, "17mar2021")
-
-# dataset_files = dataset.to_path()
-# dataset_files = ["/".join(file.split("/")[-2:]) for file in dataset_files]  # name is test/pano_id.jpg
-# create_annotations(dataset_files)
-
 mounted_dataset = dataset.as_mount(path_on_compute="data/")
 compute_target = ComputeTarget(ws, "quick-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
@@ -73,22 +39,17 @@ flags = arg_parser()
 # check if model already exists. Used when creating the name of the output folder.
 try:
     model = Model(ws, f"{flags.name}")
-    if flags.train:
-        flags.version = model.version + 1
+    flags.version = model.version
 except WebserviceException:
     flags.version = 1
 
 args = {}
 for arg in vars(flags):
-    if flags.train is False and arg == "train":
-        continue
-    if flags.inference is False and arg == "inference":
-        continue
     args[f"--{arg}"] = getattr(flags, arg)
 
 args["--dataset"] = mounted_dataset
-args = [[k, v] for (k, v) in args.items()]
-args = [val for sublist in args for val in sublist]  # flatten
+args_list: List[List[str]] = [[k, v] for (k, v) in args.items()]
+args_flattened: List[str] = [val for sublist in args_list for val in sublist]  # flatten
 
 
 model = Model.get_model_path(
@@ -98,7 +59,7 @@ model = Model.get_model_path(
 script_config = ScriptRunConfig(
     source_directory=".",
     script="inference.py",
-    arguments=args,
+    arguments=args_flattened,
     environment=env,
     compute_target=compute_target,
 )

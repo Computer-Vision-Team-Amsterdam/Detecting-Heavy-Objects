@@ -38,16 +38,20 @@ def arg_parser() -> argparse.Namespace:
     )
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument(
-        "--image", type=str, help="Path to image on which to run a prediction"
+        "--image",
+        type=str,
+        default="blurred.jpg",
+        help="Path to image on which to run a prediction",
     )
     parser.add_argument(
         "--name", required=True, type=str, help="Name of Azure trained model to load"
     )
     parser.add_argument("--subset", type=str, default="val", help="train, val, test")
-    parser.add_argument("--version", help="Version of trained model.")
+    parser.add_argument("--version", default=1, help="Version of trained model.")
     parser.add_argument(
         "--mode",
         type=str,
+        default="ann",
         help="options: ann, pred. Whether to visualize annotated containers or"
         "predicted containers",
     )
