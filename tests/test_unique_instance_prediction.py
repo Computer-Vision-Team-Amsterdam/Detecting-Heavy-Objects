@@ -1,10 +1,6 @@
-import base64
 from unittest import TestCase
 
 import folium
-from branca.element import IFrame
-from dask.array.svg import svg
-from folium import Map
 from folium.plugins import MarkerCluster
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 
