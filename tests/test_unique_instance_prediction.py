@@ -3,7 +3,6 @@ from unittest import TestCase
 import folium
 from folium.plugins import MarkerCluster
 
-import panorama  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 
 from visualizations.model import ModelPrediction
