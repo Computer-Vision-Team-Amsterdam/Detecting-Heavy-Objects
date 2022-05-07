@@ -4,12 +4,14 @@ import shutil
 from pathlib import Path
 
 import cv2
+import pytest
 from detectron2.data import MetadataCatalog
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
 from utils import ExperimentConfig, get_container_dicts, register_dataset
 
 
+@pytest.mark.skip(reason="this is plotting images for sanity checks")
 def test_visualize_predictions() -> None:
 
     # sanity check for upscaled images
