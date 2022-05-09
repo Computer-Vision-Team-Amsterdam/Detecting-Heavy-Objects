@@ -100,6 +100,13 @@ def single_instance_prediction(
 ) -> None:
     register_dataset(expCfg)
     im = cv2.imread(image_path)
+
+    ws = Workspace.from_config()
+
+    _ = Model.get_model_path(model_name=f"{flags.name}",
+                             version=int(flags.version),
+                             _workspace=ws)
+
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)
     outputs = predictor(im)
@@ -110,21 +117,21 @@ def single_instance_prediction(
 
     # save image in current directory
     image_name = Path(image_path).stem
-    cv2.imwrite(f"{image_name}.jpg", out.get_image()[:, :, ::-1])
+    cv2.imwrite(f"{image_name}:out.jpg", out.get_image()[:, :, ::-1])
 
 
 if __name__ == "__main__":
     flags = config_parser.arg_parser()
-
+    flags.device = "cpu"
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
         data_format=flags.data_format,
         data_folder=flags.data_folder,
     )
+
     if flags.image:
         # SINGLE IMAGE PREDICTION
-        # flags.image = "/Users/dianaepureanu/Downloads/blurred.jpg"
         single_instance_prediction(flags, experimentConfig, flags.image)
     if not flags.image:
         visualize_predictions(flags, experimentConfig)
