@@ -103,9 +103,9 @@ def single_instance_prediction(
 
     ws = Workspace.from_config()
 
-    _ = Model.get_model_path(model_name=f"{flags.name}",
-                             version=int(flags.version),
-                             _workspace=ws)
+    _ = Model.get_model_path(
+        model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+    )
 
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)

@@ -54,9 +54,7 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
 
     # inference run locally
     if cfg.MODEL.DEVICE == "cpu":
-        cfg.MODEL.WEIGHTS = (
-            f"{cfg.OUTPUT_DIR}/{flags.name}_{version}/model_final.pth"
-        )
+        cfg.MODEL.WEIGHTS = f"{cfg.OUTPUT_DIR}/{flags.name}_{version}/model_final.pth"
 
     return cfg
 

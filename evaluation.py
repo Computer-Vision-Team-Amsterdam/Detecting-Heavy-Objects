@@ -118,12 +118,6 @@ class CustomCOCOeval:
             self.params.imgIds = sorted(cocoGt.getImgIds())
             self.params.catIds = sorted(cocoGt.getCatIds())
 
-    def _getImgFilenames(self, cocoGt):
-        """
-        The input image ids do not correspond to the output image ids, therefore coco evaluator is complaining.
-        If we set the input image id to be the imae filename, then it will correspond to the structure of the
-        output file.
-        """
     def _prepare(self):
         """
         Prepare ._gts and ._dts for evaluation based on params
@@ -801,9 +795,13 @@ class CustomCOCOEvaluator(DatasetEvaluator):
 
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
-                prediction["instances"] = instances_to_coco_json(instances, input["image_id"], pano_id)
+                prediction["instances"] = instances_to_coco_json(
+                    instances, input["image_id"], pano_id
+                )
                 if len(prediction["instances"]) == 0:
-                    self._empty_predictions.append({"image_id": input["image_id"], "pano_id": pano_id})
+                    self._empty_predictions.append(
+                        {"image_id": input["image_id"], "pano_id": pano_id}
+                    )
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             if len(prediction) > 1:
@@ -822,7 +820,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
             if not comm.is_main_process():
                 return {}
         else:
-            predictions = self._prediction
+            predictions = self._predictions
 
         if len(predictions) == 0:
             self._logger.warning("[COCOEvaluator] Did not receive valid predictions.")
