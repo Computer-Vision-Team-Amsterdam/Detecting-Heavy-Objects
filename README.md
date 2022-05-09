@@ -96,9 +96,19 @@ The output files are downloaded locally in ```outputs/INFER_${MODEL_NAME}_${MODE
 
 ---
 To visualize some detected containers, run
-``` python predictions.py --config ${CONFIG} --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu```
 
-Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
+``` python predictions.py  --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu```
+
+
+## Single Image Prediction
+Firstly, make sure you have the the model weights with ```${MODEL_NAME}``` and ```${MODEL_VERSION}``` locally in 
+```outputs/${MODEL_NAME}_${MODEL_VERSION}``` folder.
+
+To detect containers on a given image, run
+
+```python predictions.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --image ${PATH}``` 
+
+The output image is stored in the same folder as ```${ORIGINAL_IMAGE_NAME}:out```
 ## Evaluation Metrics
 
 To compute and store evaluation metrics, run
