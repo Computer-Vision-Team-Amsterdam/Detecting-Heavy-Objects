@@ -11,6 +11,7 @@ import folium
 import geohash as gh
 import pandas as pd
 from folium.plugins import MarkerCluster
+from panorama.client import PanoramaClient
 
 from visualizations.model import ModelPrediction
 
@@ -115,13 +116,28 @@ def generate_map(
     if predictions:
         marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
         for i in range(0, len(predictions)):
+
+            # get link to panorama to display
+            filename = predictions[i].filename
+            image = PanoramaClient.get_panorama(filename)
+            image_link = image.links.equirectangular_small.href
+
+            # create HTML with more info
+            html = (
+                f"""
+                   <!DOCTYPE html>
+                   <html>
+                   <h3> Score: {predictions[i].score} </h3>
+                   <center><img src=\""""
+                + image_link
+                + """\" width=400 height=200 ></center>
+                   </html>
+                   """
+            )
+            popup = folium.Popup(folium.Html(html, script=True), max_width=500)
             folium.Marker(
                 location=[predictions[i].coords[0], predictions[i].coords[1]],
-                popup="Score: {:.0%}. \n Cluster: {}".format(
-                    predictions[i].score, predictions[i].cluster
-                )
-                if colors
-                else "Score: {:.0%}.".format(predictions[i].score),
+                popup=popup,
                 icon=folium.Icon(
                     color="lightgreen",
                     icon_color=color(predictions[i].cluster, colors)
@@ -136,7 +152,7 @@ def generate_map(
 
     # add line with car trajectory on the map
     if trajectory:
-        folium.PolyLine(trajectory, color="green", weight=10, opacity=0.8).add_to(Map)
+        folium.PolyLine(trajectory, color="green", weight=5, opacity=0.8).add_to(Map)
 
     # create name for the map
     if not name:
@@ -186,7 +202,7 @@ def geo_clustering(
 
 
 if __name__ == "__main__":
-    container_metadata = read_coordinates("../Decos.xlsx")
+    container_metadata = read_coordinates("../decos/Decos.xlsx")
     container_metadata_with_geohash = append_geohash(container_metadata)
     container_metadata_clustered, total_clusters = geo_clustering(
         container_metadata_with_geohash, prefix_length=5

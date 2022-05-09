@@ -15,5 +15,5 @@ RUN pip install torch==1.8.0 torchaudio==0.8.0 torchvision==0.9.0 opencv-python
 RUN git clone https://github.com/facebookresearch/detectron2.git
 RUN python -m pip install -e detectron2
 RUN python -m pip install azureml-sdk
-
+RUN python -m pip install shapely
 

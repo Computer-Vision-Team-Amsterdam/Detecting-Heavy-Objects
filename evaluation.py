@@ -17,6 +17,7 @@ import os
 import pickle
 import time
 from collections import OrderedDict, defaultdict
+from pathlib import Path
 
 import detectron2.utils.comm as comm
 
@@ -30,16 +31,15 @@ from detectron2.data import MetadataCatalog
 from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.evaluation import DatasetEvaluator
 from detectron2.evaluation.coco_evaluation import COCOevalMaxDets
-from detectron2.evaluation.fast_eval_api import COCOeval_opt
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 from pycocotools import mask as maskUtils
 from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
 from tabulate import tabulate
 
 
+# custom class defined by CVT
 class CustomCOCOeval:
     # Interface for evaluating detection on the Microsoft COCO dataset.
     #
@@ -90,7 +90,9 @@ class CustomCOCOeval:
     # Data, paper, and tutorials available at:  http://mscoco.org/
     # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
     # Licensed under the Simplified BSD License [see coco/license.txt]
-    def __init__(self, cocoGt=None, cocoDt=None, iouType: str = "segm") -> None:
+    def __init__(
+        self, cocoGt=None, cocoDt=None, iouType: str = "segm", output_dir: Path = None
+    ) -> None:
         """
         Initialize CocoEval using coco APIs for gt and dt
         :param cocoGt: coco object with ground truth annotations
@@ -111,6 +113,7 @@ class CustomCOCOeval:
         self._paramsEval = {}  # parameters for evaluation
         self.stats = []  # result summarization
         self.ious = {}  # ious between all gts and dts
+        self.output_dir = output_dir
         if not cocoGt is None:
             self.params.imgIds = sorted(cocoGt.getImgIds())
             self.params.catIds = sorted(cocoGt.getCatIds())
@@ -146,6 +149,7 @@ class CustomCOCOeval:
         # set ignore flag
         for gt in gts:
             gt["ignore"] = gt["ignore"] if "ignore" in gt else 0
+            # TODO [what was changed]: modified line below from gt['ignore'] to gt["iscrowd"]
             gt["ignore"] = "iscrowd" in gt and gt["iscrowd"]
             if p.iouType == "keypoints":
                 gt["ignore"] = (gt["num_keypoints"] == 0) or gt["ignore"]
@@ -302,6 +306,7 @@ class CustomCOCOeval:
         for g in gt:
             if g["ignore"] or (g["area"] < aRng[0] or g["area"] > aRng[1]):
                 g["_ignore"] = 1
+
             else:
                 g["_ignore"] = 0
 
@@ -377,12 +382,14 @@ class CustomCOCOeval:
         :return: None
         """
         print("Accumulating evaluation results...")
+
         tic = time.time()
         if not self.evalImgs:
             print("Please run evaluate() first")
         # allows input customized parameters
         if p is None:
             p = self.params
+            print(f"Accumulate: areaRng values {p.areaRng}")
         p.catIds = p.catIds if p.useCats == 1 else [-1]
         T = len(p.iouThrs)
         R = len(p.recThrs)
@@ -486,13 +493,14 @@ class CustomCOCOeval:
         toc = time.time()
         print("DONE (t={:0.2f}s).".format(toc - tic))
 
-    def summarize(self):
+    def summarize(self, output_dir):
         """
         Compute and display summary metrics for evaluation results.
         Note this functin can *only* be applied on the default parameter setting
         """
 
-        def _summarize(ap=1, iouThr=None, areaRng="all", maxDets=100):
+        # TODO replaced maxDets in argument from 100 with 20
+        def _summarize(ap=1, iouThr=None, areaRng="all", maxDets=20):
             p = self.params
             iStr = " {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} ] = {:0.3f}"
             titleStr = "Average Precision" if ap == 1 else "Average Recall"
@@ -525,7 +533,8 @@ class CustomCOCOeval:
             else:
                 mean_s = np.mean(s[s > -1])
             string = iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s)
-            with open("output/eval_metrics.txt", "a") as f:
+            output_path = Path(output_dir, "eval_metrics.txt")
+            with open(output_path, "a") as f:
                 f.write(string)
                 f.write("\n")
 
@@ -573,7 +582,7 @@ class CustomCOCOeval:
         self.stats = summarize()
 
     def __str__(self):
-        self.summarize()
+        self.summarize(None)
 
 
 class Params:
@@ -591,13 +600,15 @@ class Params:
         self.recThrs = np.linspace(
             0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01)) + 1, endpoint=True
         )
-        self.maxDets = [1, 10, 100]
+        self.maxDets = [1, 3, 20]
+
         self.areaRng = [
             [0 ** 2, 1e5 ** 2],
             [0 ** 2, 32 ** 2],
             [32 ** 2, 96 ** 2],
             [96 ** 2, 1e5 ** 2],
         ]
+
         self.areaRngLbl = ["all", "small", "medium", "large"]
         self.useCats = 1
 
@@ -722,9 +733,9 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         # evaluating AP. COCOEvaluator expects an integer for max_dets_per_image, so for COCOeval,
         # we reformat max_dets_per_image into [1, 10, max_dets_per_image], based on the defaults.
         if max_dets_per_image is None:
-            max_dets_per_image = [1, 10, 100]
+            max_dets_per_image = [1, 5, 20]
         else:
-            max_dets_per_image = [1, 10, max_dets_per_image]
+            max_dets_per_image = [1, 5, max_dets_per_image]
         self._max_dets_per_image = max_dets_per_image
 
         if tasks is not None and isinstance(tasks, CfgNode):
@@ -766,6 +777,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
 
     def reset(self):
         self._predictions = []
+        self._empty_predictions = []
 
     def process(self, inputs, outputs):
         """
@@ -777,17 +789,24 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 "instances" that contains :class:`Instances`.
         """
         for input, output in zip(inputs, outputs):
-            prediction = {"image_id": input["image_id"]}
+            # prediction = {"image_id": input["image_id"]}
+
+            # image_id is the panorama id instead of a digit.
+            pano_id = input["file_name"].split("/")[-1]
+            prediction = {"image_id": pano_id}
+            print(50 * "=")
+            print(prediction)
 
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
-                prediction["instances"] = instances_to_coco_json(
-                    instances, input["image_id"]
-                )
+                prediction["instances"] = instances_to_coco_json(instances, pano_id)
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             if len(prediction) > 1:
                 self._predictions.append(prediction)
+
+            if len(prediction) == 1:
+                self._empty_predictions.append(prediction)
 
     def evaluate(self, img_ids=None):
         """
@@ -799,10 +818,14 @@ class CustomCOCOEvaluator(DatasetEvaluator):
             predictions = comm.gather(self._predictions, dst=0)
             predictions = list(itertools.chain(*predictions))
 
+            empty_predictions = comm.gather(self._empty_predictions, dst=0)
+            empty_predictions = list(itertools.chain(*empty_predictions))
+
             if not comm.is_main_process():
                 return {}
         else:
             predictions = self._predictions
+            empty_predictions = self._empty_predictions
 
         if len(predictions) == 0:
             self._logger.warning("[COCOEvaluator] Did not receive valid predictions.")
@@ -818,7 +841,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         if "proposals" in predictions[0]:
             self._eval_box_proposals(predictions)
         if "instances" in predictions[0]:
-            self._eval_predictions(predictions, img_ids=img_ids)
+            self._eval_predictions(predictions, empty_predictions, img_ids=img_ids)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
@@ -834,7 +857,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 tasks.add("keypoints")
         return sorted(tasks)
 
-    def _eval_predictions(self, predictions, img_ids=None):
+    def _eval_predictions(self, predictions, empty_predictions, img_ids=None):
         """
         Evaluate predictions. Fill self._results with the metrics of the tasks.
         """
@@ -871,6 +894,15 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 f.write(json.dumps(coco_results))
                 f.flush()
 
+            # save pano ids where there are no predictions
+            empty_pred_file_path = os.path.join(
+                self._output_dir, "empty_predictions.json"
+            )
+            self._logger.info("Saving results to {}".format(empty_pred_file_path))
+            with PathManager.open(empty_pred_file_path, "w") as f:
+                f.write(json.dumps(empty_predictions))
+                f.flush()
+
         if not self._do_evaluation:
             self._logger.info("Annotations are not available for evaluation.")
             return
@@ -891,6 +923,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                     use_fast_impl=self._use_fast_impl,
                     img_ids=img_ids,
                     max_dets_per_image=self._max_dets_per_image,
+                    output_dir=self._output_dir,
                 )
                 if len(coco_results) > 0
                 else None  # cocoapi does not handle empty results very well
@@ -1031,6 +1064,9 @@ def instances_to_coco_json(instances, img_id):
     Returns:
         list[dict]: list of json annotations in COCO format.
     """
+
+    print(50 * "=")
+    print(f"image id {img_id}")
     num_instance = len(instances)
     if num_instance == 0:
         return []
@@ -1104,6 +1140,7 @@ def _evaluate_box_proposals(
         "256-512": 6,
         "512-inf": 7,
     }
+    """
     area_ranges = [
         [0 ** 2, 1e5 ** 2],  # all
         [0 ** 2, 32 ** 2],  # small
@@ -1114,6 +1151,18 @@ def _evaluate_box_proposals(
         [256 ** 2, 512 ** 2],  # 256-512
         [512 ** 2, 1e5 ** 2],
     ]  # 512-inf
+    """
+    area_ranges = [
+        [0 ** 2, 1e5 ** 2],  # all
+        [0 ** 2, 176 ** 2],  # small
+        [176 ** 2, 353 ** 2],  # medium
+        [353 ** 2, 1e5 ** 2],  # large
+        [96 ** 2, 128 ** 2],  # 96-128
+        [128 ** 2, 256 ** 2],  # 128-256
+        [256 ** 2, 512 ** 2],  # 256-512
+        [512 ** 2, 1e5 ** 2],
+    ]  # 512-inf
+
     assert area in areas, "Unknown area range: {}".format(area)
     area_range = area_ranges[areas[area]]
     gt_overlaps = []
@@ -1207,7 +1256,8 @@ def _evaluate_predictions_on_coco(
     use_fast_impl=True,
     img_ids=None,
     max_dets_per_image=None,
-):
+    output_dir=None,
+):  # added by CVT
     """
     Evaluate the coco results using COCOEval API.
     """
@@ -1225,12 +1275,19 @@ def _evaluate_predictions_on_coco(
     coco_dt = coco_gt.loadRes(coco_results)
     # TODO [what was changed]: modified line below to use the custom coco eval instead of the one from pycocotools
     # coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
-    coco_eval = (CustomCOCOeval if use_fast_impl else COCOeval)(
-        coco_gt, coco_dt, iou_type
+    coco_eval = CustomCOCOeval(
+        cocoGt=coco_gt, cocoDt=coco_dt, iouType=iou_type, output_dir=output_dir
     )
+    # coco_eval.params.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 176 ** 2], [176 ** 2, 353 ** 2], [353 ** 2, 1e5 ** 2]]
+    coco_eval.params.areaRng = [
+        [0, 1e5 ** 2],
+        [0, 12000],
+        [12000, 30000],
+        [30000, 1e5 ** 2],
+    ]
     # For COCO, the default max_dets_per_image is [1, 10, 100].
     if max_dets_per_image is None:
-        max_dets_per_image = [1, 10, 100]  # Default from COCOEval
+        max_dets_per_image = [1, 5, 20]  # Default from COCOEval
     else:
         assert (
             len(max_dets_per_image) >= 3
@@ -1238,7 +1295,9 @@ def _evaluate_predictions_on_coco(
         # In the case that user supplies a custom input for max_dets_per_image,
         # apply COCOevalMaxDets to evaluate AP with the custom input.
         if max_dets_per_image[2] != 100:
-            coco_eval = COCOevalMaxDets(coco_gt, coco_dt, iou_type)
+            pass
+            # TODO commented line below so that we use our customCocoEval
+            # coco_eval = COCOevalMaxDets(coco_gt, coco_dt, iou_type)
     if iou_type != "keypoints":
         coco_eval.params.maxDets = max_dets_per_image
 
@@ -1267,6 +1326,6 @@ def _evaluate_predictions_on_coco(
 
     coco_eval.evaluate()
     coco_eval.accumulate()
-    coco_eval.summarize()
+    coco_eval.summarize(output_dir)
 
     return coco_eval

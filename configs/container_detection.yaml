@@ -1,0 +1,40 @@
+_BASE_: "Base-RCNN-FPN.yaml"
+
+MODEL:
+  MASK_ON: True
+  DEVICE: cuda:0
+  WEIGHTS: detectron2://ImageNetPretrained/MSRA/R-50.pkl
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 1
+    BATCH_SIZE_PER_IMAGE: 28
+    SCORE_THRESH_TEST: 0.98
+
+INPUT:
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  MIN_SIZE_TRAIN: (800,1200)
+  MAX_SIZE_TRAIN: 4000
+  MIN_SIZE_TEST: 1000
+  MAX_SIZE_TEST: 2000
+  CROP:
+    ENABLED: True
+    TYPE: "relative_range"
+    SIZE: [0.50, 0.50]
+  RANDOM_FLIP: "horizontal"
+
+SOLVER:
+  IMS_PER_BATCH: 2
+  MAX_ITER: 10000
+  BASE_LR: 0.00025
+  STEPS: [] # do not perform decay on the learning rate
+
+
+DATASETS:
+  TRAIN: ("container_train",)
+  TEST: ()
+DATALOADER:
+  NUM_WORKERS: 1
+
+
+OUTPUT_DIR: outputs

@@ -1,0 +1,5 @@
+_BASE_: "container_detection.yaml"
+
+SOLVER:
+  IMS_PER_BATCH: [2, 4]
+  BASE_LR: [0.00025, 0.00050]

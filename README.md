@@ -20,6 +20,7 @@ To create the environment from the .yml file, run
 conda env create -f det2.yml
 ```
 
+
 To activate the environment, run 
 ```shell
 conda activate det2
@@ -39,46 +40,48 @@ configuration. The model performs both instance segmentation and object detectio
 
 To train the model on your local machine, run 
 ```shell
-python training.py
+python training.py --name &{MODEL_NAME} --device cpu
 ```
-The output files are stored according to the [training configuration file](./configs/container_detection_train.yaml).
+
+```${MODEL_NAME}``` is the name you give to your model; can be anything.
+
+The output files are stored according to the [configuration file](./configs/container_detection.yaml).
+By default, output files are stored in the ```outputs``` folder.
 
 
 To train the model on GPU, run 
 ```shell
-python run_on_azure.py --TODO add flag to change devide from cpu to cuda:0
-```
+python run_train_on_azure.py --name ${MODEL_NAME} --subset train
 
-The output files are stored on Azure in the *outputs* folder and contain the following:
+```
+Latest model is registered on Azure.
+The output files are stored on Azure in the ```outputs``` folder and contain the following:
 
 - *model_final.pth* -- trained pytorch model
 - *metrics.json* -- metrics used for plotting by the tensorboard
 - *events.out.tfevents* -- output summary used for plotting by tensorboard
 - *last_checkpoint* -- stores reference to name of the last trained model.
 
-
+The output files are also downloaded locally in ```outputs/TRAIN_${MODEL_NAME}_${MODEL_VERSION}``` folder.
 
 Once you have a trained model, you can visualize the training loss curves, accuracies and other metrics by running:
 ```shell
-python -m tensorboard.main --logdir $PWD/output
+python -m tensorboard.main --logdir $PWD/outputs/TRAIN_${MODEL_NAME}_${MODEL_VERSION}
 ```
 
 ## Model Inference
 
 To perform inference on your local machine, run
 ```shell
-python inference.py
+python inference.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu
+
 ```
-If there is no trained model stored locally, this command downloads a trained model from Azure and stores it in 
-the *output*. folder. To download a specific model, run:
-```shell
-python inference.py --name MODEL_NAME --version VERSION 
-```
+Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
 
 
-To perform inference on GPU, run
+To perform inference on the validation set on GPU, run
 ```shell
-python inference.py --TODO add flag to change devide from cpu to cuda:0
+python run_inference_on_azure.py --name ${MODEL_NAME} --version ${VERSION} --subset val 
 ```
 The output files are as follows:
 - *container_val_coco_format.json* -- automatically generated COCO file for Detectron2. It contains metadata of the 
@@ -87,6 +90,15 @@ dataset used at inference time
 - *instances_predictions.pth* -- ? 
 - *eval_metrics.txt* -- stores evaluation metrics described below
 
+The trained model is downloaded locally at ```azureml-models/${MODEL_NAME}/${MODEL_VERSION}/model_final.pth```.
+
+The output files are downloaded locally in ```outputs/INFER_${MODEL_NAME}_${MODEL_VERSION}``` folder.
+
+---
+To visualize some detected containers, run
+``` python predictions.py --config ${CONFIG} --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu```
+
+Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
 ## Evaluation Metrics
 
 To compute and store evaluation metrics, run
@@ -154,3 +166,24 @@ python daily_trajectory.py
 ```
 The day to plot can be configured in the script.
 The HTML map is created in the same folder. 
+
+---
+## Self notes: Creating a new dataset via Data Labelling
+We first finish annotations
+Download images
+Merge all folders into one
+Download the annotation from AzureML
+
+Run clustering notebook.
+Now we have 3 folders: train, validation, test
+
+Now we need to resize all images to 2000x4000 aka run correct_faulty_panoramas()
+
+This will generate folder with upscaled images.
+These images must be manually moved and replace the downscaled ones in the 3 folders that result from the notebook.
+
+Then we apply the data format converter aka run
+The converter on the output of the correct_faulty_panoramas()
+
+
+These output files we can rename and upload to Azure.
