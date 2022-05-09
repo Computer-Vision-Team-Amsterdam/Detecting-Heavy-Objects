@@ -118,6 +118,12 @@ class CustomCOCOeval:
             self.params.imgIds = sorted(cocoGt.getImgIds())
             self.params.catIds = sorted(cocoGt.getCatIds())
 
+    def _getImgFilenames(self, cocoGt):
+        """
+        The input image ids do not correspond to the output image ids, therefore coco evaluator is complaining.
+        If we set the input image id to be the imae filename, then it will correspond to the structure of the
+        output file.
+        """
     def _prepare(self):
         """
         Prepare ._gts and ._dts for evaluation based on params
@@ -788,25 +794,20 @@ class CustomCOCOEvaluator(DatasetEvaluator):
             outputs: the outputs of a COCO model. It is a list of dicts with key
                 "instances" that contains :class:`Instances`.
         """
-        for input, output in zip(inputs, outputs):
-            # prediction = {"image_id": input["image_id"]}
 
-            # image_id is the panorama id instead of a digit.
+        for input, output in zip(inputs, outputs):
             pano_id = input["file_name"].split("/")[-1]
-            prediction = {"image_id": pano_id}
-            print(50 * "=")
-            print(prediction)
+            prediction = {"image_id": input["image_id"]}
 
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
-                prediction["instances"] = instances_to_coco_json(instances, pano_id)
+                prediction["instances"] = instances_to_coco_json(instances, input["image_id"], pano_id)
+                if len(prediction["instances"]) == 0:
+                    self._empty_predictions.append({"image_id": input["image_id"], "pano_id": pano_id})
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             if len(prediction) > 1:
                 self._predictions.append(prediction)
-
-            if len(prediction) == 1:
-                self._empty_predictions.append(prediction)
 
     def evaluate(self, img_ids=None):
         """
@@ -818,14 +819,10 @@ class CustomCOCOEvaluator(DatasetEvaluator):
             predictions = comm.gather(self._predictions, dst=0)
             predictions = list(itertools.chain(*predictions))
 
-            empty_predictions = comm.gather(self._empty_predictions, dst=0)
-            empty_predictions = list(itertools.chain(*empty_predictions))
-
             if not comm.is_main_process():
                 return {}
         else:
-            predictions = self._predictions
-            empty_predictions = self._empty_predictions
+            predictions = self._prediction
 
         if len(predictions) == 0:
             self._logger.warning("[COCOEvaluator] Did not receive valid predictions.")
@@ -841,7 +838,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         if "proposals" in predictions[0]:
             self._eval_box_proposals(predictions)
         if "instances" in predictions[0]:
-            self._eval_predictions(predictions, empty_predictions, img_ids=img_ids)
+            self._eval_predictions(predictions, img_ids=img_ids)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
@@ -857,7 +854,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 tasks.add("keypoints")
         return sorted(tasks)
 
-    def _eval_predictions(self, predictions, empty_predictions, img_ids=None):
+    def _eval_predictions(self, predictions, img_ids=None):
         """
         Evaluate predictions. Fill self._results with the metrics of the tasks.
         """
@@ -894,13 +891,12 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 f.write(json.dumps(coco_results))
                 f.flush()
 
-            # save pano ids where there are no predictions
-            empty_pred_file_path = os.path.join(
-                self._output_dir, "empty_predictions.json"
-            )
-            self._logger.info("Saving results to {}".format(empty_pred_file_path))
-            with PathManager.open(empty_pred_file_path, "w") as f:
-                f.write(json.dumps(empty_predictions))
+        # save json file with panorama info for which there are no detected containers
+        if self._output_dir:
+            file_path = os.path.join(self._output_dir, "empty_predictions.json")
+            self._logger.info("Saving results to {}".format(file_path))
+            with PathManager.open(file_path, "w") as f:
+                f.write(json.dumps(self._empty_predictions))
                 f.flush()
 
         if not self._do_evaluation:
@@ -1053,20 +1049,19 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         return results
 
 
-def instances_to_coco_json(instances, img_id):
+def instances_to_coco_json(instances, img_id, pano_id):
     """
     Dump an "Instances" object to a COCO-format json that's used for evaluation.
 
     Args:
         instances (Instances):
         img_id (int): the image id
+        pano_id (str): the panorama id
 
     Returns:
         list[dict]: list of json annotations in COCO format.
     """
 
-    print(50 * "=")
-    print(f"image id {img_id}")
     num_instance = len(instances)
     if num_instance == 0:
         return []
@@ -1100,6 +1095,7 @@ def instances_to_coco_json(instances, img_id):
     for k in range(num_instance):
         result = {
             "image_id": img_id,
+            "pano_id": pano_id,
             "category_id": classes[k],
             "bbox": boxes[k],
             "score": scores[k],
