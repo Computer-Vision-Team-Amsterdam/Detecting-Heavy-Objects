@@ -13,7 +13,7 @@ import pandas as pd
 from folium.plugins import MarkerCluster
 from panorama.client import PanoramaClient
 
-from visualizations.model import ModelPrediction
+from model import ModelPrediction
 
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
@@ -33,7 +33,7 @@ def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
     for c in coordinates:
         # create dict
         # we store the coordinate in this format to be consistent with detectron output files.
-        container_loc = ModelPrediction(filename="", coords=c)
+        container_loc = ModelPrediction(pano_id="", coords=c)
         # append it to output list
         container_locations.append(container_loc)
 
@@ -118,8 +118,8 @@ def generate_map(
         for i in range(0, len(predictions)):
 
             # get link to panorama to display
-            filename = predictions[i].filename
-            image = PanoramaClient.get_panorama(filename)
+            pano_id = predictions[i].pano_id
+            image = PanoramaClient.get_panorama(pano_id)
             image_link = image.links.equirectangular_small.href
 
             # create HTML with more info

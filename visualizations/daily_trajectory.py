@@ -13,90 +13,27 @@ from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 from tqdm import tqdm, trange
 
-from visualizations.model import ModelPrediction
-from visualizations.unique_instance_prediction import generate_map
+from model import ModelPrediction
+from unique_instance_prediction import generate_map
 
 
-def remove_faulty_annotations(
-    annotations: Dict[str, Any]
-) -> Tuple[Dict[str, Any], List[str]]:
-    correct_images = []
-    faulty_ids = []
-    for ann in annotations["images"]:
-        filename = ann["file_name"]
-        is_correct = not filename.split("/")[1].startswith("pano")
-        if is_correct:
-            correct_images.append(ann)
-        else:
-            faulty_ids.append(ann["id"])
-
-    annotations["images"] = correct_images
-
-    return annotations, faulty_ids
-
-
-def remove_corresponding_predictions(
-    predictions: Dict[Any, Any], faulty_ids: List[str]
-) -> List[Any]:
-    correct_predictions = []
-    for pred in predictions:
-        is_correct = not pred["image_id"] in faulty_ids
-        if is_correct:
-            correct_predictions.append(pred)
-
-    return correct_predictions
-
-
-def unify_model_output(
-    coco_annotations: Union[Path, str], instances_results: Union[Path, str]
-) -> List[ModelPrediction]:
+def create_prediction_objects(instances_results: Union[Path, str]
+                              ) -> List[ModelPrediction]:
     """
-    This method merges information from output files of the model.
-    Rationale: The instances results do not have file_name, therefore we cannot map
-    predictions to panorama objects. We update the predictions with information about
-    file name from the auto-generated coco format file.
-
-    :param coco_annotations: path to coco annotations file
+    This method create prediction objects with metadata needed for the map
     :param instances_results: path to model predictions/instances results output file
 
-    :returns: instances_results dict with information about file names
+    :returns: instances_results dict with information about pano ids
     """
-    # Opening JSON files
-    coco_file = open(coco_annotations)
-    annotations = json.load(coco_file)
-    coco_file.close()
-
+    # Opening JSON file
     instances_file = open(instances_results)
     predictions_loaded = json.load(instances_file)
     instances_file.close()
 
-    #   TODO remove these 2 lines if the data is in the correct format
-    # EXTRA STEP: discard predictions where ann file contains FAULTY image IDs, i.e. filename instead of pano id
-    # annotations, faulty_ids = remove_faulty_annotations(annotations)
-    # predictions_loaded = remove_corresponding_predictions(predictions_loaded, faulty_ids)
-
     predictions = []
-    # get file_name for each prediction
     for prediction in predictions_loaded:
-        # get id of prediction
-        pred_id = prediction["image_id"]
-        # extract corresponding file_name from annotations
-        found = False
-        for ann in annotations["images"]:
-            if ann["id"] == pred_id:
-                if len(ann["file_name"].split("/")) > 1:
-                    file_name = ann["file_name"].split("/")[1]
-                else:
-                    file_name = ann["file_name"]
-                # append it to prediction dictionary
-                predictions.append(
-                    ModelPrediction(filename=file_name, score=prediction["score"])
-                )
-                found = True
-                break
-
-        if found is False:
-            raise Exception("No annotation was found")
+        pano_id = prediction["pano_id"].split(".")[0]
+        predictions.append(ModelPrediction(pano_id=pano_id, score=prediction["score"]))
 
     return predictions
 
@@ -109,19 +46,15 @@ def append_prediction_coordinates(
     Rationale: We want to plot the predictions of the model on a map, therefore we need to retrieve
     information about coordinates from the API.
 
-    :param predictions: model predictions/instances results dict (with information about file names)
+    :param predictions: model predictions/instances results dict (with information about panorama ids)
 
     :returns: predictions dict with information about coordinates
     """
 
-    for i, prediction in tqdm(enumerate(predictions), total=len(predictions)):
-        # query API for panorama object based on panorama id
-
-        # get panorama_id
-        pano_id = prediction.filename.split(".")[0]  # remove .jpg extension
+    for i, prediction in tqdm(enumerate(predictions), total=len(predictions), desc="Collect predictions' coords"):
 
         # query API for panorama object based on panorama id
-        pano_obj = PanoramaClient.get_panorama(pano_id)
+        pano_obj = PanoramaClient.get_panorama(prediction.pano_id)
 
         # get coordinates
         long, lat, _ = pano_obj.geometry.coordinates
@@ -197,7 +130,6 @@ def get_panorama_coords(
 def run(
     day_to_plot: datetime.date,
     location_query: models.LocationQuery,
-    coco_annotations: Union[Path, str],
     instances_results: Union[Path, str],
 ) -> None:
     """
@@ -205,7 +137,6 @@ def run(
 
     :param day_to_plot: target date for which we want to see the trajectory and detections.
     :param location_query: location information for API search
-    :param coco_annotations: path to coco annotations file.
     :param instances_results: path to model predictions/instances results output file.
     """
     # dummy trajectory coordinates which map the dummy containers coordinates
@@ -239,13 +170,9 @@ def run(
     daily_query_result = get_daily_panoramas(day_to_plot, location_query)
     coords = get_panorama_coords(daily_query_result)
 
-    model_predictions = unify_model_output(
-        coco_annotations=coco_annotations, instances_results=instances_results
-    )
-    # TODO use this variable when model is trained instead of the temporary dummy
+    model_predictions = create_prediction_objects(instances_results=instances_results)
     model_predictions_with_coords = append_prediction_coordinates(model_predictions)
     generate_map(trajectory=coords, predictions=model_predictions_with_coords)
-    # generate_map(trajectory=coords, predictions=model_predictions)
 
 
 if __name__ == "__main__":
@@ -255,13 +182,10 @@ if __name__ == "__main__":
     # Address: Kloveniersburgwal 45
     lat = 52.370670
     long = 4.898990
-    # radius = 2000
     radius = 2000
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
-    coco_val_annotations_file = (
-        "../combined/containers-annotated-COCO-test-first-11-batches.json"
-    )
+
     predictions_file = (
-        "../outputs/INFER_2kx4k_resolution_1_Mar-27-01:43/coco_instances_results.json"
+        "../outputs/INFER_detectron_map2_2_May-09-14:55/coco_instances_results.json"
     )
-    run(target_day, location_query, coco_val_annotations_file, predictions_file)
+    run(target_day, location_query, predictions_file)

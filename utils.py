@@ -380,6 +380,7 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
             ann_path,
             image_root=f"{expCfg.data_folder}",
         )
+        print(f"INFO:::{expCfg.dataset_name}_{expCfg.subset} has been registered!")
     if expCfg.data_format == "via":
         DatasetCatalog.register(
             f"{expCfg.dataset_name}_{expCfg.subset}",

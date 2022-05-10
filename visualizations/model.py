@@ -4,7 +4,7 @@ from typing import Tuple
 
 @dataclass
 class ModelPrediction:
-    filename: str
+    pano_id: str
     coords: Tuple[float, float] = (-1, -1)
     geohash: str = ""
     cluster: int = 0
