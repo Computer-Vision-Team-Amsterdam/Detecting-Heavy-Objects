@@ -18,17 +18,17 @@ class Test(TestCase):
     def test_geo_clustering(self) -> None:
         container_metadata_with_geohash = []
         pred_one = ModelPrediction(
-            filename="",
+            pano_id="",
             coords=(52.3508179052329, 5.0029046131412),
             geohash="u179cf5j85u0",
         )
         pred_two = ModelPrediction(
-            filename="",
+            pano_id="",
             coords=(52.3767806850864, 4.89314072016433),
             geohash="u173zqghf7w4",
         )
         pred_three = ModelPrediction(
-            filename="",
+            pano_id="",
             coords=(52.3472723292609, 4.91466061641611),
             geohash="u173zcd8zyud",
         )
@@ -40,19 +40,19 @@ class Test(TestCase):
 
         expected_containter_info = []
         expected_one = ModelPrediction(
-            filename="",
+            pano_id="",
             coords=(52.3508179052329, 5.0029046131412),
             geohash="u179cf5j85u0",
             cluster=0,
         )
         expected_two = ModelPrediction(
-            filename="",
+            pano_id="",
             coords=(52.3767806850864, 4.89314072016433),
             geohash="u173zqghf7w4",
             cluster=1,
         )
         expected_three = ModelPrediction(
-            filename="",
+            pano_id="",
             coords=(52.3472723292609, 4.91466061641611),
             geohash="u173zcd8zyud",
             cluster=1,
