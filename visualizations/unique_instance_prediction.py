@@ -11,9 +11,8 @@ import folium
 import geohash as gh
 import pandas as pd
 from folium.plugins import MarkerCluster
-from panorama.client import PanoramaClient
-
 from model import ModelPrediction
+from panorama.client import PanoramaClient
 
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:

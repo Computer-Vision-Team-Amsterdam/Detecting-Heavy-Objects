@@ -9,16 +9,16 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from model import ModelPrediction
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 from tqdm import tqdm, trange
-
-from model import ModelPrediction
 from unique_instance_prediction import generate_map
 
 
-def create_prediction_objects(instances_results: Union[Path, str]
-                              ) -> List[ModelPrediction]:
+def create_prediction_objects(
+    instances_results: Union[Path, str]
+) -> List[ModelPrediction]:
     """
     This method create prediction objects with metadata needed for the map
     :param instances_results: path to model predictions/instances results output file
@@ -51,7 +51,11 @@ def append_prediction_coordinates(
     :returns: predictions dict with information about coordinates
     """
 
-    for i, prediction in tqdm(enumerate(predictions), total=len(predictions), desc="Collect predictions' coords"):
+    for i, prediction in tqdm(
+        enumerate(predictions),
+        total=len(predictions),
+        desc="Collect predictions' coords",
+    ):
 
         # query API for panorama object based on panorama id
         pano_obj = PanoramaClient.get_panorama(prediction.pano_id)
