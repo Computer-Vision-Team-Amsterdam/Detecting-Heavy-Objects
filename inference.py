@@ -4,6 +4,7 @@ incorporated into the Azure batch processing pipeline"""
 # import os
 # print(os.system("ls azureml-models/detectron_28feb/2"))
 import json
+import logging
 import pickle
 from datetime import datetime
 from pathlib import Path
@@ -12,21 +13,17 @@ from typing import Any, Dict, Iterable, List, Union
 import cv2
 import numpy as np
 import torch
-
 from detectron2.config import CfgNode, get_cfg
-from detectron2.data import build_detection_test_loader, MetadataCatalog
+from detectron2.data import MetadataCatalog, build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
-
-from PIL import Image
 from detectron2.utils.visualizer import Visualizer
+from PIL import Image
 
 from configs.config_parser import arg_parser
-from utils import register_dataset
 from evaluation import CustomCOCOEvaluator  # type:ignore
-from utils import ExperimentConfig
+from utils import ExperimentConfig, register_dataset
 
-import logging
 logging.basicConfig(level=logging.INFO)
 
 CONTAINER_DETECTION_MODEL = None
@@ -72,8 +69,8 @@ def run(minibatch: Iterable[Union[Path, str]]) -> List[Dict[Union[Path, str], An
     """
 
     input_tensors = [
-        {"image": torch.from_numpy(np.array(Image.open(path)))}
-        for path in minibatch]
+        {"image": torch.from_numpy(np.array(Image.open(path)))} for path in minibatch
+    ]
 
     with torch.no_grad():  # type: ignore
 
@@ -105,8 +102,14 @@ def evaluate_model(flags, expCfg: ExperimentConfig) -> None:
     output_dir = f"{cfg.OUTPUT_DIR}/INFER_{flags.name}_{flags.version}_{run_name}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    evaluator = CustomCOCOEvaluator(f"{expCfg.dataset_name}_{expCfg.subset}", output_dir=output_dir, tasks=("bbox", "segm"))
-    loader = build_detection_test_loader(cfg, f"{expCfg.dataset_name}_{expCfg.subset}", mapper=None)
+    evaluator = CustomCOCOEvaluator(
+        f"{expCfg.dataset_name}_{expCfg.subset}",
+        output_dir=output_dir,
+        tasks=("bbox", "segm"),
+    )
+    loader = build_detection_test_loader(
+        cfg, f"{expCfg.dataset_name}_{expCfg.subset}", mapper=None
+    )
     print(inference_on_dataset(CONTAINER_DETECTION_MODEL.model, loader, evaluator))
 
 
@@ -130,10 +133,12 @@ if __name__ == "__main__":
 
     flags = arg_parser()
 
-    experimentConfig = ExperimentConfig(dataset_name=flags.dataset_name,
-                                        subset=flags.subset,
-                                        data_format=flags.data_format,
-                                        data_folder=flags.data_folder)
+    experimentConfig = ExperimentConfig(
+        dataset_name=flags.dataset_name,
+        subset=flags.subset,
+        data_format=flags.data_format,
+        data_folder=flags.data_folder,
+    )
     evaluate_model(flags, experimentConfig)
 
     """    
@@ -141,5 +146,3 @@ if __name__ == "__main__":
     image = "/Users/dianaepureanu/Downloads/blurred.jpg"
     single_instance_prediction(flags, experimentConfig, image)
     """
-
-

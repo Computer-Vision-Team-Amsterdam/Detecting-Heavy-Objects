@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from training import collect_nested_lists
+
 ROOT = Path(__file__).parent.parent
 
 
@@ -10,17 +11,10 @@ class Test(TestCase):
         data = {
             "A": "Blue",
             "B": ["Green", "Red"],
-            "C": {
-                "c_a": "O2",
-                "c_b": "05",
-                "c_c": ["D", "E", "F", "f"]
-            }
+            "C": {"c_a": "O2", "c_b": "05", "c_c": ["D", "E", "F", "f"]},
         }
 
-        expected_result = {
-            "B": ['Green', 'Red'],
-            "C.c_c": ['D', 'E', 'F', 'f']
-        }
+        expected_result = {"B": ["Green", "Red"], "C.c_c": ["D", "E", "F", "f"]}
 
         actual_result = collect_nested_lists(data, "", {})
 

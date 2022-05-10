@@ -89,7 +89,9 @@ class CustomCOCOeval:
     # Data, paper, and tutorials available at:  http://mscoco.org/
     # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
     # Licensed under the Simplified BSD License [see coco/license.txt]
-    def __init__(self, cocoGt=None, cocoDt=None, iouType: str = "segm", output_dir: str = None) -> None:
+    def __init__(
+        self, cocoGt=None, cocoDt=None, iouType: str = "segm", output_dir: str = None
+    ) -> None:
         """
         Initialize CocoEval using coco APIs for gt and dt
         :param cocoGt: coco object with ground truth annotations
@@ -221,7 +223,7 @@ class CustomCOCOeval:
         inds = np.argsort([-d["score"] for d in dt], kind="mergesort")
         dt = [dt[i] for i in inds]
         if len(dt) > p.maxDets[-1]:
-            dt = dt[0: p.maxDets[-1]]
+            dt = dt[0 : p.maxDets[-1]]
 
         if p.iouType == "segm":
             g = [g["segmentation"] for g in gt]
@@ -245,7 +247,7 @@ class CustomCOCOeval:
         inds = np.argsort([-d["score"] for d in dts], kind="mergesort")
         dts = [dts[i] for i in inds]
         if len(dts) > p.maxDets[-1]:
-            dts = dts[0: p.maxDets[-1]]
+            dts = dts[0 : p.maxDets[-1]]
         # if len(gts) == 0 and len(dts) == 0:
         if len(gts) == 0 or len(dts) == 0:
             return []
@@ -623,28 +625,28 @@ class Params:
         self.areaRngLbl = ["all", "medium", "large"]
         self.useCats = 1
         self.kpt_oks_sigmas = (
-                np.array(
-                    [
-                        0.26,
-                        0.25,
-                        0.25,
-                        0.35,
-                        0.35,
-                        0.79,
-                        0.79,
-                        0.72,
-                        0.72,
-                        0.62,
-                        0.62,
-                        1.07,
-                        1.07,
-                        0.87,
-                        0.87,
-                        0.89,
-                        0.89,
-                    ]
-                )
-                / 10.0
+            np.array(
+                [
+                    0.26,
+                    0.25,
+                    0.25,
+                    0.35,
+                    0.35,
+                    0.79,
+                    0.79,
+                    0.72,
+                    0.72,
+                    0.62,
+                    0.62,
+                    1.07,
+                    1.07,
+                    0.87,
+                    0.87,
+                    0.89,
+                    0.89,
+                ]
+            )
+            / 10.0
         )
 
     def __init__(self, iouType="segm"):
@@ -673,15 +675,15 @@ class CustomCOCOEvaluator(DatasetEvaluator):
     """
 
     def __init__(
-            self,
-            dataset_name,
-            tasks=None,
-            distributed=True,
-            output_dir=None,
-            *,
-            max_dets_per_image=None,
-            use_fast_impl=True,
-            kpt_oks_sigmas=(),
+        self,
+        dataset_name,
+        tasks=None,
+        distributed=True,
+        output_dir=None,
+        *,
+        max_dets_per_image=None,
+        use_fast_impl=True,
+        kpt_oks_sigmas=(),
     ):
         """
         Args:
@@ -857,8 +859,8 @@ class CustomCOCOEvaluator(DatasetEvaluator):
             all_contiguous_ids = list(dataset_id_to_contiguous_id.values())
             num_classes = len(all_contiguous_ids)
             assert (
-                    min(all_contiguous_ids) == 0
-                    and max(all_contiguous_ids) == num_classes - 1
+                min(all_contiguous_ids) == 0
+                and max(all_contiguous_ids) == num_classes - 1
             )
 
             reverse_id_mapping = {v: k for k, v in dataset_id_to_contiguous_id.items()}
@@ -898,7 +900,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                     use_fast_impl=self._use_fast_impl,
                     img_ids=img_ids,
                     max_dets_per_image=self._max_dets_per_image,
-                    output_dir=self._output_dir
+                    output_dir=self._output_dir,
                 )
                 if len(coco_results) > 0
                 else None  # cocoapi does not handle empty results very well
@@ -933,7 +935,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 "bbox_mode": bbox_mode,
             }
             with PathManager.open(
-                    os.path.join(self._output_dir, "box_proposals.pkl"), "wb"
+                os.path.join(self._output_dir, "box_proposals.pkl"), "wb"
             ) as f:
                 pickle.dump(proposal_data, f)
 
@@ -1093,7 +1095,7 @@ def instances_to_coco_json(instances, img_id):
 # inspired from Detectron:
 # https://github.com/facebookresearch/Detectron/blob/a6a835f5b8208c45d0dce217ce9bbda915f44df7/detectron/datasets/json_dataset_evaluator.py#L255 # noqa
 def _evaluate_box_proposals(
-        dataset_predictions, coco_api, thresholds=None, area="all", limit=None
+    dataset_predictions, coco_api, thresholds=None, area="all", limit=None
 ):
     """
     Evaluate detection proposal recall metrics. This function is a much
@@ -1221,14 +1223,15 @@ def _evaluate_box_proposals(
 
 
 def _evaluate_predictions_on_coco(
-        coco_gt,
-        coco_results,
-        iou_type,
-        kpt_oks_sigmas=None,
-        use_fast_impl=True,
-        img_ids=None,
-        max_dets_per_image=None,
-        output_dir=None):  # added by CVT
+    coco_gt,
+    coco_results,
+    iou_type,
+    kpt_oks_sigmas=None,
+    use_fast_impl=True,
+    img_ids=None,
+    max_dets_per_image=None,
+    output_dir=None,
+):  # added by CVT
     """
     Evaluate the coco results using COCOEval API.
     """
@@ -1246,15 +1249,22 @@ def _evaluate_predictions_on_coco(
     coco_dt = coco_gt.loadRes(coco_results)
     # TODO [what was changed]: modified line below to use the custom coco eval instead of the one from pycocotools
     # coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
-    coco_eval = CustomCOCOeval(cocoGt=coco_gt, cocoDt=coco_dt, iouType=iou_type, output_dir=output_dir)
+    coco_eval = CustomCOCOeval(
+        cocoGt=coco_gt, cocoDt=coco_dt, iouType=iou_type, output_dir=output_dir
+    )
     # coco_eval.params.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 176 ** 2], [176 ** 2, 353 ** 2], [353 ** 2, 1e5 ** 2]]
-    coco_eval.params.areaRng = [[0, 1e5**2], [0, 12000], [12000, 30000], [30000, 1e5**2]]
+    coco_eval.params.areaRng = [
+        [0, 1e5 ** 2],
+        [0, 12000],
+        [12000, 30000],
+        [30000, 1e5 ** 2],
+    ]
     # For COCO, the default max_dets_per_image is [1, 10, 100].
     if max_dets_per_image is None:
         max_dets_per_image = [1, 5, 20]  # Default from COCOEval
     else:
         assert (
-                len(max_dets_per_image) >= 3
+            len(max_dets_per_image) >= 3
         ), "COCOeval requires maxDets (and max_dets_per_image) to have length at least 3"
         # In the case that user supplies a custom input for max_dets_per_image,
         # apply COCOevalMaxDets to evaluate AP with the custom input.

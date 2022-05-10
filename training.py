@@ -5,11 +5,12 @@ This module contains functionality to train a default detectron2 model.
 import os
 from datetime import datetime
 from pathlib import Path
+
 from detectron2.engine import DefaultTrainer
 
 from configs.config_parser import arg_parser
-from utils import register_dataset
 from inference import setup_cfg
+from utils import register_dataset
 
 CONTAINER_DETECTION_MODEL = None
 

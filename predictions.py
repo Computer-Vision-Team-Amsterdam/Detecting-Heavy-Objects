@@ -3,21 +3,20 @@ Visualize predictions or annotations on a data subset.
 """
 
 import os
-import shutil
 import random
-import cv2
-from typing import List, Any, Dict
+import shutil
+from typing import Any, Dict, List
 
-from azureml.core import Workspace, Model
+import cv2
+from azureml.core import Model, Workspace
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
-from detectron2.utils.visualizer import Visualizer, ColorMode
+from detectron2.utils.visualizer import ColorMode, Visualizer
 from tqdm import tqdm
 
 from configs import config_parser
-from utils import register_dataset
 from inference import init_inference
-from utils import ExperimentConfig, get_container_dicts
+from utils import ExperimentConfig, get_container_dicts, register_dataset
 
 CONTAINER_DETECTION_MODEL = None
 
@@ -44,7 +43,9 @@ def plot_instance_segm(
     """
     temp_output_dir = "temp"
     os.mkdir(temp_output_dir)
-    for i, dataset_dict in tqdm(enumerate(random.sample(dataset_dicts, n_sample)), total=n_sample):
+    for i, dataset_dict in tqdm(
+        enumerate(random.sample(dataset_dicts, n_sample)), total=n_sample
+    ):
         img = cv2.imread(dataset_dict["file_name"])
         visualizer = Visualizer(
             img[:, :, ::-1],
@@ -95,9 +96,10 @@ def visualize_predictions(flags, expCfg: ExperimentConfig) -> None:
 if __name__ == "__main__":
     flags = config_parser.arg_parser()
 
-    experimentConfig = ExperimentConfig(dataset_name=flags.dataset_name,
-                                        subset=flags.subset,
-                                        data_format=flags.data_format,
-                                        data_folder=flags.data_folder)
+    experimentConfig = ExperimentConfig(
+        dataset_name=flags.dataset_name,
+        subset=flags.subset,
+        data_format=flags.data_format,
+        data_folder=flags.data_folder,
+    )
     visualize_predictions(flags, experimentConfig)
-
