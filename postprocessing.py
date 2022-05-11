@@ -68,7 +68,7 @@ class PostProcessing:
         print("Filtering based on angle")
         for prediction in tqdm(self.stats.data):
             response = PanoramaClient.get_panorama(
-                prediction["image_id"].rsplit(".", 1)[0]
+                prediction["pano_id"].rsplit(".", 1)[0]
             )  # TODO: Not query, look at the database!
             heading = response.heading
             height, width = prediction["segmentation"]["size"]

@@ -34,6 +34,16 @@ jobs:
         displayName: 'Install dependencies'
 
       - script: |
+          source activate det2
+          pip install git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
+        displayName: 'Install panorama'
+
+      - script: |
+          source activate det2
+          pip install git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@convert-and-package
+        displayName: 'triangulatie'
+
+      - script: |
           conda env create -f det2.yml
           source activate det2
           pytest -s --cov=. --cov-report html --cov-report term-missing
