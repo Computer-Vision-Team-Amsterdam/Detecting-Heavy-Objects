@@ -117,6 +117,8 @@ def generate_map(
         for i in range(0, len(predictions)):
 
             # get link to panorama to display
+
+
             pano_id = predictions[i].pano_id
             image = PanoramaClient.get_panorama(pano_id)
             image_link = image.links.equirectangular_small.href

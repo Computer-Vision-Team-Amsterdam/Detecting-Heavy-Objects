@@ -32,40 +32,9 @@ def create_prediction_objects(
 
     predictions = []
     for prediction in predictions_loaded:
-        pano_id = prediction["pano_id"].split(".")[0]
-        predictions.append(ModelPrediction(pano_id=pano_id, score=prediction["score"]))
-
-    return predictions
-
-
-def append_prediction_coordinates(
-    predictions: List[ModelPrediction],
-) -> List[ModelPrediction]:
-    """
-    This method adds an extra entry in the predictions dicts with information about coordinates.
-    Rationale: We want to plot the predictions of the model on a map, therefore we need to retrieve
-    information about coordinates from the API.
-
-    :param predictions: model predictions/instances results dict (with information about panorama ids)
-
-    :returns: predictions dict with information about coordinates
-    """
-
-    for i, prediction in tqdm(
-        enumerate(predictions),
-        total=len(predictions),
-        desc="Collect predictions' coords",
-    ):
-
-        # query API for panorama object based on panorama id
-        pano_obj = PanoramaClient.get_panorama(prediction.pano_id)
-
-        # get coordinates
-        long, lat, _ = pano_obj.geometry.coordinates
-
-        # update predictions dict with coordinates
-        prediction.coords = [lat, long]
-
+        # TODO : query API to retrieve the closest image here
+        # TODO import triangulation: call:get panorama from locations
+        predictions.append(ModelPrediction(pano_id="pano_id", score="", coords=prediction))
     return predictions
 
 
@@ -143,53 +112,24 @@ def run(
     :param location_query: location information for API search
     :param instances_results: path to model predictions/instances results output file.
     """
-    # dummy trajectory coordinates which map the dummy containers coordinates
-    coords = [
-        [52.337909, 4.892184],
-        [52.340400, 4.892549],
-        [52.340701, 4.892993],
-        [52.340570, 4.896835],
-        [52.340400, 4.901105],
-        [52.340190, 4.905375],
-        [52.340374, 4.908250],
-        [52.341173, 4.911040],
-        [52.342655, 4.912950],
-        [52.344136, 4.912863],
-        [52.346260, 4.912219],
-        [52.348331, 4.910653],
-        [52.349654, 4.909859],
-        [52.352158, 4.908507],
-        [52.354163, 4.906640],
-        [52.356221, 4.904988],
-        [52.358082, 4.904001],
-        [52.358724, 4.903851],
-        [52.359169, 4.906641],
-        [52.359956, 4.908143],
-        [52.360322, 4.908593],
-        [52.361161, 4.908143],
-    ]
-
     # for actual trajectory coordinates retrieved from the API uncomment the two lines below
 
     daily_query_result = get_daily_panoramas(day_to_plot, location_query)
     coords = get_panorama_coords(daily_query_result)
 
     model_predictions = create_prediction_objects(instances_results=instances_results)
-    model_predictions_with_coords = append_prediction_coordinates(model_predictions)
-    generate_map(trajectory=coords, predictions=model_predictions_with_coords)
+    generate_map(trajectory=coords, predictions=model_predictions)
 
 
 if __name__ == "__main__":
 
     target_day = date(2021, 3, 17)
 
-    # Address: Kloveniersburgwal 45
+    # Kloveniersburgwal 45
     lat = 52.370670
     long = 4.898990
     radius = 2000
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
 
-    predictions_file = (
-        "../outputs/INFER_detectron_map2_2_May-09-14:55/coco_instances_results.json"
-    )
-    run(target_day, location_query, predictions_file)
+    coordinates = "points_of_interest.csv"
+    run(target_day, location_query, coordinates)
