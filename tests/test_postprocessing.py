@@ -15,6 +15,7 @@ class Test(TestCase):
         script_location = Path(__file__).absolute().parent
         self.results_file = Path(script_location, "coco_instances_results.json")
 
+    @pytest.mark.skip(reason="temporarily skipping this because it requires GDAL")
     def test_discard_objects(self) -> None:
         postprocessing = PostProcessing(json_predictions=self.results_file)
         postprocessing.filter_by_size()
