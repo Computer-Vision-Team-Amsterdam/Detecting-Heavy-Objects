@@ -14,10 +14,6 @@ jobs:
       matrix:
         Python3.7:
           python.version: '3.7'
-        Python3.8:
-          python.version: '3.8'
-        Python3.9:
-          python.version: '3.9'
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -51,10 +47,6 @@ jobs:
       matrix:
         Python3.7:
           python.version: '3.7'
-        Python3.8:
-          python.version: '3.8'
-        Python3.9:
-          python.version: '3.9'
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -95,8 +87,8 @@ jobs:
       vmImage: ubuntu-latest
     strategy:
       matrix:
-        Python3.9:
-          python.version: '3.9'
+        Python3.7:
+          python.version: '3.7'
     steps:
       - task: UsePythonVersion@0
         inputs:

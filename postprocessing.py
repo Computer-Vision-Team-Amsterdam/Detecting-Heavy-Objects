@@ -115,7 +115,7 @@ class PostProcessing:
 
 if __name__ == "__main__":
     postprocess = PostProcessing(
-        Path("coco_instances_results.json"), output_folder=Path("Test")
+        Path("coco_instances_results-2.json"), output_folder=Path("Test")
     )
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
