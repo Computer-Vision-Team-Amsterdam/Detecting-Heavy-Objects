@@ -49,6 +49,10 @@ class PostProcessing:
         Finds the points of interest given by COCO format json file, outputs a csv file
         with lon lat coordinates
         """
+
+        if not (self.output_folder / self.data_file).exists():
+            self.save_data()
+            
         triangulate(
             self.output_folder / self.data_file,
             self.output_folder / self.objects_file,
