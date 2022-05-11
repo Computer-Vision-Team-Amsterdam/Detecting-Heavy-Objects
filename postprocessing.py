@@ -9,8 +9,8 @@ import pycocotools.mask as mask_util
 import torch
 from panorama.client import PanoramaClient
 from tqdm import tqdm
-from triangulation.masking import get_side_view_of_pano # pylint: disable=import-error
-from triangulation.triangulate import triangulate # pylint: disable=import-error
+from triangulation.masking import get_side_view_of_pano  # pylint: disable=import-error
+from triangulation.triangulate import triangulate  # pylint: disable=import-error
 
 from visualizations.stats import DataStatistics
 

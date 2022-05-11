@@ -82,7 +82,7 @@ jobs:
       - script: |
           source activate det2
           pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
-          displayName: 'Install panorama'
+        displayName: 'Install panorama'
 
       - script: |
           source activate det2
