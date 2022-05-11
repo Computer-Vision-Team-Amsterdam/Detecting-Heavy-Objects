@@ -3,6 +3,7 @@ This module implements several methods to remove multiple predictions for the sa
 It is likely that the same container is detected in multiple images, thus we want to prevent that
 we plot/register the same container instance multiple time on the map/result file.
 """
+import json
 import random
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -13,6 +14,7 @@ import pandas as pd
 from folium.plugins import MarkerCluster
 from model import PointOfInterest
 from panorama.client import PanoramaClient
+from tqdm import tqdm
 
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[PointOfInterest]:
@@ -200,6 +202,21 @@ def geo_clustering(
     return container_locations, nr_clusters
 
 
+def gather_panoramas_from_COCO_results(input: Path):
+    with open(input) as f:
+        predictions = json.load(f)
+
+    for prediction in tqdm(predictions):
+        pano_id = prediction["pano_id"].split(".")[0]  # remove .jpg extension
+
+        panorama = PanoramaClient.get_panorama(pano_id)
+
+        output_path = "results_17mar2021"
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+        PanoramaClient.download_image(panorama, output_location=output_path)
+
+
+"""
 if __name__ == "__main__":
     container_metadata = read_coordinates("../decos/Decos.xlsx")
     container_metadata_with_geohash = append_geohash(container_metadata)
@@ -212,3 +229,5 @@ if __name__ == "__main__":
         name="Decos containers",
         colors=color_generator(total_clusters),
     )
+
+"""
