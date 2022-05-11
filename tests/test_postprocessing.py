@@ -25,4 +25,4 @@ class Test(TestCase):
     #             f"There are still containers smaller than "
     #             f"{postprocessing.threshold} pixels"
     #             f" which have not been discarded."
-            )
+    #         )
