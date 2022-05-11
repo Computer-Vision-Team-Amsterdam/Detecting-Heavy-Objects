@@ -20,19 +20,24 @@ INPUT:
   CROP:
     ENABLED: True
     TYPE: "relative_range"
-    SIZE: [0.50, 0.50]
+    SIZE: [0.90, 0.90]
   RANDOM_FLIP: "horizontal"
 
 SOLVER:
   IMS_PER_BATCH: 2
-  MAX_ITER: 10000
+  MAX_ITER: 15000
   BASE_LR: 0.00025
   STEPS: [] # do not perform decay on the learning rate
+  CHECKPOINT_PERIOD: 1000
 
 
 DATASETS:
   TRAIN: ("container_train",)
-  TEST: ()
+  TEST: ("container_val", )
+
+TEST:
+  EVAL_PERIOD: 1000
+
 DATALOADER:
   NUM_WORKERS: 1
 

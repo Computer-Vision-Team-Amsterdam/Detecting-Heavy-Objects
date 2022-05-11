@@ -564,6 +564,8 @@ def collect_dimensions(data: Any) -> Tuple[List[int], List[int]]:
     return widths, heights
 
 
+
+
 # correct_faulty_panoramas()
 
 """

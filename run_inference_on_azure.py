@@ -23,13 +23,13 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "detectron_map2_inference_val"
+EXPERIMENT_NAME = "detectron_map2_inference_17mar"
 
 
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()
-dataset = Dataset.get_by_name(ws, "blurred-container-data")
+dataset = Dataset.get_by_name(ws, "17mar2021")
 mounted_dataset = dataset.as_mount(path_on_compute="data/")
 compute_target = ComputeTarget(ws, "quick-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
