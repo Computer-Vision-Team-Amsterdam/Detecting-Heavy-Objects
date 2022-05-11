@@ -13,7 +13,9 @@ import pandas as pd
 from folium.plugins import MarkerCluster
 from panorama.client import PanoramaClient
 
-from visualizations.model import ModelPrediction
+from model import ModelPrediction
+import json
+from tqdm import tqdm
 
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
@@ -201,6 +203,23 @@ def geo_clustering(
     return container_locations, nr_clusters
 
 
+def gather_panoramas_from_COCO_results(input: Path):
+    with open(input) as f:
+        predictions = json.load(f)
+
+    for prediction in tqdm(predictions):
+        pano_id = prediction["pano_id"].split(".")[0]  # remove .jpg extension
+
+        panorama = PanoramaClient.get_panorama(pano_id)
+
+        output_path = "results_17mar2021"
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+        PanoramaClient.download_image(panorama, output_location=output_path)
+
+
+gather_panoramas_from_COCO_results("/Users/dianaepureanu/Downloads/coco_instances_results-2.json")
+
+"""
 if __name__ == "__main__":
     container_metadata = read_coordinates("../decos/Decos.xlsx")
     container_metadata_with_geohash = append_geohash(container_metadata)
@@ -213,3 +232,5 @@ if __name__ == "__main__":
         name="Decos containers",
         colors=color_generator(total_clusters),
     )
+
+"""

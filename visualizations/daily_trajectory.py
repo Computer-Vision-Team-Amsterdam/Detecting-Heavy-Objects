@@ -9,7 +9,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from panorama import models  # pylint: disable=import-error
+from panorama import models
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 from tqdm import tqdm, trange
 
