@@ -3,15 +3,8 @@ This module contains functionality to run a training script on Azure.
 """
 import json
 
-from azureml.core import (
-    ComputeTarget,
-    Dataset,
-    Datastore,
-    Environment,
-    Experiment,
-    ScriptRunConfig,
-    Workspace,
-)
+from azureml.core import (ComputeTarget, Dataset, Datastore, Environment,
+                          Experiment, ScriptRunConfig, Workspace)
 from tqdm import trange
 
 from utils import handle_hyperparameters

@@ -10,16 +10,8 @@ from azureml.exceptions import WebserviceException
 
 azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 1000000000
 
-from azureml.core import (
-    ComputeTarget,
-    Dataset,
-    Datastore,
-    Environment,
-    Experiment,
-    Model,
-    ScriptRunConfig,
-    Workspace,
-)
+from azureml.core import (ComputeTarget, Dataset, Datastore, Environment,
+                          Experiment, Model, ScriptRunConfig, Workspace)
 
 from configs.config_parser import arg_parser
 

@@ -20,7 +20,6 @@ from collections import OrderedDict, defaultdict
 from pathlib import Path
 
 import detectron2.utils.comm as comm
-
 # coco eval imports
 import numpy as np
 import pycocotools.coco

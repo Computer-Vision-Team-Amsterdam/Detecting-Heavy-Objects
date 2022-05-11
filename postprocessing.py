@@ -1,18 +1,22 @@
 """
 This model applies different post processing steps on the results file of the detectron2 model
 """
+
 import json
 from copy import deepcopy
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 
 import pycocotools.mask as mask_util
 import torch
 from panorama.client import PanoramaClient
 from tqdm import tqdm
-from triangulation.masking import get_side_view_of_pano  # pylint: disable=import-error
-from triangulation.triangulate import triangulate  # pylint: disable=import-error
-from triangulation.helpers import get_panos_from_points_of_interest  # pylint: disable=import-error
+from triangulation.helpers import \
+    get_panos_from_points_of_interest  # pylint: disable=import-error
+from triangulation.masking import \
+    get_side_view_of_pano # pylint: disable=import-error
+from triangulation.triangulate import \
+    triangulate # pylint: disable=import-error
 
 from visualizations.stats import DataStatistics
 

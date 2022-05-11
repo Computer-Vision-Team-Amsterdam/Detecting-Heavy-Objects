@@ -129,6 +129,6 @@ jobs:
 
       - script: |
           source activate det2
-          pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
+          pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py postprocessing.py
         displayName: 'pylint'
 
