@@ -4,6 +4,7 @@ This model applies different post processing steps on the results file of the de
 import json
 from copy import deepcopy
 from pathlib import Path
+from datetime import date
 
 import pycocotools.mask as mask_util
 import torch
@@ -11,6 +12,7 @@ from panorama.client import PanoramaClient
 from tqdm import tqdm
 from triangulation.masking import get_side_view_of_pano  # pylint: disable=import-error
 from triangulation.triangulate import triangulate  # pylint: disable=import-error
+from triangulation.helpers import get_panos_from_points_of_interest # pylint: disable=import-error
 
 from visualizations.stats import DataStatistics
 
@@ -121,10 +123,6 @@ if __name__ == "__main__":
     postprocess.filter_by_angle()
     postprocess.save_data()
     postprocess.find_points_of_interest()
-    from datetime import date
-
-    from triangulation.helpers import get_panos_from_points_of_interest
-
     get_panos_from_points_of_interest(
         "Test/points_of_interest.csv", "Test", date(2021, 3, 18), date(2021, 3, 17)
     )
