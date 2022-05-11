@@ -20,6 +20,7 @@ To create the environment from the .yml file, run
 conda env create -f det2.yml
 ```
 
+
 To activate the environment, run 
 ```shell
 conda activate det2
@@ -39,18 +40,20 @@ configuration. The model performs both instance segmentation and object detectio
 
 To train the model on your local machine, run 
 ```shell
-python training.py
-```
-The output files are stored according to the [training configuration file](./configs/container_detection_train.yaml).
-
-
-To train the model on GPU, run 
-```shell
-python run_on_azure.py --train --config ${CONFIG_FILE} --name ${MODEL_NAME} 
+python training.py --name &{MODEL_NAME} --device cpu
 ```
 
 ```${MODEL_NAME}``` is the name you give to your model; can be anything.
 
+The output files are stored according to the [configuration file](./configs/container_detection.yaml).
+By default, output files are stored in the ```outputs``` folder.
+
+
+To train the model on GPU, run 
+```shell
+python run_train_on_azure.py --name ${MODEL_NAME} --subset train
+
+```
 Latest model is registered on Azure.
 The output files are stored on Azure in the ```outputs``` folder and contain the following:
 
@@ -70,15 +73,15 @@ python -m tensorboard.main --logdir $PWD/outputs/TRAIN_${MODEL_NAME}_${MODEL_VER
 
 To perform inference on your local machine, run
 ```shell
-python inference.py --config ${CONFIG} --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu
+python inference.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu
 
 ```
 Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
 
 
-To perform inference on GPU, run
+To perform inference on the validation set on GPU, run
 ```shell
-python run_on_azure.py --inference --name ${MODEL_NAME} --version ${MODEL_VERSION} --config ${CONFIG_FILE}
+python run_inference_on_azure.py --name ${MODEL_NAME} --version ${VERSION} --subset val 
 ```
 The output files are as follows:
 - *container_val_coco_format.json* -- automatically generated COCO file for Detectron2. It contains metadata of the 
@@ -93,9 +96,19 @@ The output files are downloaded locally in ```outputs/INFER_${MODEL_NAME}_${MODE
 
 ---
 To visualize some detected containers, run
-``` python predictions.py --config ${CONFIG} --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu```
 
-Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
+``` python predictions.py  --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu```
+
+
+## Single Image Prediction
+Firstly, make sure you have the the model weights with ```${MODEL_NAME}``` and ```${MODEL_VERSION}``` locally in 
+```outputs/${MODEL_NAME}_${MODEL_VERSION}``` folder.
+
+To detect containers on a given image, run
+
+```python predictions.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --image ${PATH}``` 
+
+The output image is stored in the same folder as ```${ORIGINAL_IMAGE_NAME}:out```
 ## Evaluation Metrics
 
 To compute and store evaluation metrics, run
@@ -163,3 +176,24 @@ python daily_trajectory.py
 ```
 The day to plot can be configured in the script.
 The HTML map is created in the same folder. 
+
+---
+## Self notes: Creating a new dataset via Data Labelling
+We first finish annotations
+Download images
+Merge all folders into one
+Download the annotation from AzureML
+
+Run clustering notebook.
+Now we have 3 folders: train, validation, test
+
+Now we need to resize all images to 2000x4000 aka run correct_faulty_panoramas()
+
+This will generate folder with upscaled images.
+These images must be manually moved and replace the downscaled ones in the 3 folders that result from the notebook.
+
+Then we apply the data format converter aka run
+The converter on the output of the correct_faulty_panoramas()
+
+
+These output files we can rename and upload to Azure.

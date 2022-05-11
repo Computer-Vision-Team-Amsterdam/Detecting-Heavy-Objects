@@ -1,7 +1,7 @@
 import json
 import shutil
 from pathlib import Path
-from typing import List
+from typing import Any, List
 from unittest import TestCase
 from unittest.mock import Mock, call
 
@@ -9,13 +9,17 @@ from utils import DataFormatConverter
 
 
 class Test(TestCase):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super(Test, self).__init__(*args, **kwargs)
-        input = "/Users/dianaepureanu/Documents/Projects/containers-annotated-1151-4000x2000.json"
-        output_dir = "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/converter_output"
+
+        input = Path("containers-annotated-1151-4000x2000.json")
+        output_dir = "converter_output"
+
+        script_location = Path(__file__).absolute().parent
+        input = script_location / input
         self.converter = DataFormatConverter(input, output_dir)
 
-    def test__add_key(self):
+    def test__add_key(self) -> None:
 
         # firstly, discard all images with bad resolution
         # make sure we resize the 2000x1000 images to 4000x2000, then re-create the input file for this test.
@@ -23,7 +27,7 @@ class Test(TestCase):
         for ann in self.converter._input["annotations"]:
             self.assertTrue(("iscrowd", 0) in ann.items())
 
-    def test__calculate_area(self):
+    def test__calculate_area(self) -> None:
         self.converter._to_absolute()
         self.converter._calculate_area()
         for ann in self.converter._input["annotations"]:
@@ -34,7 +38,7 @@ class Test(TestCase):
                                    output_dir="/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/")
         """
 
-    def test__to_absolute(self):
+    def test__to_absolute(self) -> None:
 
         relative_segm: List[List[float]] = [
             ann["segmentation"][0] for ann in self.converter._input["annotations"]
@@ -72,7 +76,7 @@ class Test(TestCase):
             self.assertListEqual(rel_xs, abs_xs)
             self.assertListEqual(rel_ys, abs_ys)
 
-    def test__split(self):
+    def test__split(self) -> None:
 
         self.converter._split()
 
@@ -83,6 +87,7 @@ class Test(TestCase):
 
             with path_to_subset.open("r") as f:
                 subset_data = json.load(f)
+            f.close()
             subset_count += len(subset_data["images"])
 
         self.assertEqual(subset_count, len(self.converter._input["images"]))
@@ -90,13 +95,13 @@ class Test(TestCase):
         print("Deleting dummy jsons if the test passes.")
         shutil.rmtree(self.converter._output_dir)
 
-    def test__convert_data(self):
+    def test__convert_data(self) -> None:
 
-        self.converter._dimensions_to_int = Mock()
-        self.converter._add_key = Mock()
-        self.converter._to_absolute = Mock()
-        self.converter._calculate_area = Mock()
-        self.converter._split = Mock()
+        self.converter._dimensions_to_int = Mock()  # type: ignore
+        self.converter._add_key = Mock()  # type: ignore
+        self.converter._to_absolute = Mock()  # type: ignore
+        self.converter._calculate_area = Mock()  # type: ignore
+        self.converter._split = Mock()  # type: ignore
 
         m = Mock()
         m.configure_mock(
@@ -110,37 +115,10 @@ class Test(TestCase):
         self.converter.convert_data()
         m.assert_has_calls(
             [
-                call.one(key="iscrowd", value=0),
-                call.two(),
+                call.one(),
+                call.two(key="iscrowd", value=0),
                 call.three(),
                 call.four(),
                 call.five(),
             ]
         )
-
-    #  OBSOLETE
-    def test_hyperparameter_search(self):
-        """
-        params_info = {
-            "x": [ 1, 2, 3],
-            "y": [ "a", "b", "c"],
-            "z": [ "A", "B", "C"],
-            }
-
-        for param_vals in itertools.product(*params_info.values()):
-            params = dict(zip(params_info.keys(), param_vals))
-            data = {
-              "A": params["x"],
-              "B": "Green",
-              "C": {
-                "c_a": "O2",
-                "c_b": params["y"],
-                "c_c": ["D", "E", "F", params["z"]]
-              }
-            }
-            jsonstr = json.dumps(data) # use json.dump if you want to dump to a file
-            print(jsonstr)
-
-        """
-
-        assert False

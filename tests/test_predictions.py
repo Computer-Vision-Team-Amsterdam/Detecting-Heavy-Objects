@@ -4,13 +4,15 @@ import shutil
 from pathlib import Path
 
 import cv2
+import pytest
 from detectron2.data import MetadataCatalog
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
 from utils import ExperimentConfig, get_container_dicts, register_dataset
 
 
-def test_visualize_predictions():
+@pytest.mark.skip(reason="this is plotting images for sanity checks")
+def test_visualize_predictions() -> None:
 
     # sanity check for upscaled images
 
@@ -18,14 +20,11 @@ def test_visualize_predictions():
         dataset_name="container-subset-upscaled-images",
         subset="train",
         data_format="coco",
+        data_folder="/Users/dianaepureanu/Documents/Projects/versions_of_data/data_extended/final",
     )
 
-    register_dataset(
-        name=experimentConfig.dataset_name,
-        data_format=experimentConfig.data_format,
-        data_folder="data_resized",
-    )
-    container_dicts = get_container_dicts(experimentConfig, data_folder="data_resized")
+    register_dataset(experimentConfig)
+    container_dicts = get_container_dicts(experimentConfig)
     metadata = MetadataCatalog.get(
         f"{experimentConfig.dataset_name}_{experimentConfig.subset}"
     )
@@ -33,7 +32,9 @@ def test_visualize_predictions():
     temp_output_dir = "temp"
     os.mkdir(temp_output_dir)
 
-    available_panos = Path("data_resized", "train").glob("*.jpg")
+    script_location = Path(__file__).absolute().parent
+
+    available_panos = Path(script_location, "data_resized", "train").glob("*.jpg")
     upscaled_subset_annotations = []
 
     pano_filenames = [pano.parts[-1] for pano in available_panos]
@@ -45,7 +46,7 @@ def test_visualize_predictions():
                 upscaled_subset_annotations.append(image)
                 break
 
-    for i, dataset_dict in enumerate(random.sample(upscaled_subset_annotations, 10)):
+    for i, dataset_dict in enumerate(random.sample(upscaled_subset_annotations, 2)):
         img = cv2.imread(dataset_dict["file_name"])
         visualizer = Visualizer(
             img[:, :, ::-1],

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 
@@ -12,12 +12,13 @@ class DataStatistics:
     Compute and visualize different statistics from the data
     """
 
-    def __init__(self, json_file, output_dir=None):
+    def __init__(self, json_file: Path, output_dir: Optional[str] = None) -> None:
         """
-        json file can be either annotation or results file
+        json file can be either COCO annotation or COCO results file
         """
         with open(json_file) as f:
             self.data = json.load(f)
+        f.close()
 
         self.output_dir = output_dir
         self.widths, self.heights = utils.collect_dimensions(self.data)
@@ -25,13 +26,14 @@ class DataStatistics:
             width * height for width, height in zip(self.widths, self.heights)
         ]
 
-    def plot_dimensions_distribution(self, plot_name: str):
+    def plot_dimensions_distribution(self, plot_name: str) -> None:
         """
         Scatter plot with height and widths of containers
 
          plot_name : includes the file type, i.e. jpg
         """
-        assert self.output_dir is not None, "output_dir cannot be None"
+        if self.output_dir is None:
+            raise ValueError("output_dir cannot be None")
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
         plt.figure()
@@ -40,13 +42,14 @@ class DataStatistics:
         plt.ylabel("height")
         plt.savefig(Path(self.output_dir, plot_name))
 
-    def plot_areas_distribution(self, plot_name: str):
+    def plot_areas_distribution(self, plot_name: str) -> None:
         """
         Histogram with containers areas
         plot_name : includes the file type, i.e. jpg
         """
 
-        assert self.output_dir is not None, "output_dir cannot be None"
+        if self.output_dir is None:
+            raise ValueError("output_dir cannot be None")
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
         plt.figure()
@@ -55,7 +58,12 @@ class DataStatistics:
         plt.ylabel("Count")
         plt.savefig(Path(self.output_dir, plot_name))
 
-    def update(self, data):
+    def update(self, data: List[Dict[str, Any]]) -> None:
+        """
+        Update object with new data and recalcute its statistics
+        :param data:
+        :return:
+        """
         self.data = data
         self.widths, self.heights = utils.collect_dimensions(self.data)
         self.areas = [

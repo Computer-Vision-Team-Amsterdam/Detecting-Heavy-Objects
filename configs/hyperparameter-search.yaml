@@ -1,4 +1,4 @@
-_BASE_: "container_detection_train.yaml"
+_BASE_: "container_detection.yaml"
 
 SOLVER:
   IMS_PER_BATCH: [2, 4]

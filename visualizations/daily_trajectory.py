@@ -17,7 +17,9 @@ from visualizations.model import ModelPrediction
 from visualizations.unique_instance_prediction import generate_map
 
 
-def remove_faulty_annotations(annotations):
+def remove_faulty_annotations(
+    annotations: Dict[str, Any]
+) -> Tuple[Dict[str, Any], List[str]]:
     correct_images = []
     faulty_ids = []
     for ann in annotations["images"]:
@@ -33,7 +35,9 @@ def remove_faulty_annotations(annotations):
     return annotations, faulty_ids
 
 
-def remove_corresponding_predictions(predictions, faulty_ids):
+def remove_corresponding_predictions(
+    predictions: Dict[Any, Any], faulty_ids: List[str]
+) -> List[Any]:
     correct_predictions = []
     for pred in predictions:
         is_correct = not pred["image_id"] in faulty_ids
@@ -60,9 +64,11 @@ def unify_model_output(
     # Opening JSON files
     coco_file = open(coco_annotations)
     annotations = json.load(coco_file)
+    coco_file.close()
 
     instances_file = open(instances_results)
     predictions_loaded = json.load(instances_file)
+    instances_file.close()
 
     #   TODO remove these 2 lines if the data is in the correct format
     # EXTRA STEP: discard predictions where ann file contains FAULTY image IDs, i.e. filename instead of pano id
@@ -90,7 +96,7 @@ def unify_model_output(
                 break
 
         if found is False:
-            raise "No annotation was found"
+            raise Exception("No annotation was found")
 
     return predictions
 
@@ -182,7 +188,7 @@ def get_panorama_coords(
             print("No next page available")
             break
 
-    sorted_lists = sorted(zip(timestamps, scan_coords), key=lambda x: x[0])
+    sorted_lists = sorted(zip(timestamps, scan_coords), key=lambda x: x[0])  # type: ignore
     sorted_timestamps, sorted_coords = [[x[i] for x in sorted_lists] for i in range(2)]
 
     return sorted_coords

@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest import TestCase
 
-from training import collect_nested_lists
+from utils import collect_nested_lists
 
 ROOT = Path(__file__).parent.parent
 
@@ -17,5 +17,5 @@ class Test(TestCase):
         expected_result = {"B": ["Green", "Red"], "C.c_c": ["D", "E", "F", "f"]}
 
         actual_result = collect_nested_lists(data, "", {})
-
+        print(actual_result)
         self.assertDictEqual(expected_result, actual_result)

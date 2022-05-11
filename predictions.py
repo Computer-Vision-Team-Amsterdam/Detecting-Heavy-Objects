@@ -1,10 +1,11 @@
 """
 Visualize predictions or annotations on a data subset.
 """
-
+import argparse
 import os
 import random
 import shutil
+from pathlib import Path
 from typing import Any, Dict, List
 
 import cv2
@@ -18,8 +19,6 @@ from configs import config_parser
 from inference import init_inference
 from utils import ExperimentConfig, get_container_dicts, register_dataset
 
-CONTAINER_DETECTION_MODEL = None
-
 
 def plot_instance_segm(
     dataset_dicts: List[Dict[str, Any]],
@@ -31,7 +30,6 @@ def plot_instance_segm(
     Visualize the annotations of randomly selected samples in the dataset.
     Additionally, you can specify a trained model to display
     the confidence score for each annotation
-
     :param dataset_dicts: images metadata
     :param dataset_metadata: dataset metadata
     :param mode: the type of visualization, i.e. whether to view the object annotations
@@ -41,6 +39,11 @@ def plot_instance_segm(
     :param n_sample: number of samples to be visualized
     :
     """
+
+    if mode == "pred":
+        cfg = init_inference(flags)
+        predictor = DefaultPredictor(cfg)
+
     temp_output_dir = "temp"
     os.mkdir(temp_output_dir)
     for i, dataset_dict in tqdm(
@@ -53,9 +56,8 @@ def plot_instance_segm(
             scale=1,
             instance_mode=ColorMode.IMAGE,
         )
-        out: DefaultPredictor = None
         if mode == "pred":
-            outputs = CONTAINER_DETECTION_MODEL(img)  # type: ignore
+            outputs = predictor(img)
             out = visualizer.draw_instance_predictions(outputs["instances"].to("cpu"))
         if mode == "ann":
             out = visualizer.draw_dataset_dict(dataset_dict)
@@ -74,32 +76,60 @@ def plot_instance_segm(
     shutil.rmtree(temp_output_dir)
 
 
-def visualize_predictions(flags, expCfg: ExperimentConfig) -> None:
+def visualize_predictions(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     """
     This method takes a trained model from Azure, downloads it locally and plots
     visualization of randomly selected images from the validation folder
-
+    :param flags: console arguments
     :param expCfg: experiment configuration
     """
 
     register_dataset(expCfg)
     container_dicts = get_container_dicts(expCfg)
-    cfg = init_inference(flags)
-
-    global CONTAINER_DETECTION_MODEL
-    CONTAINER_DETECTION_MODEL = DefaultPredictor(cfg)
 
     metadata = MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}")
-    plot_instance_segm(container_dicts, metadata, mode="pred", n_sample=50)
+    plot_instance_segm(
+        container_dicts, metadata, mode=flags.mode, n_sample=flags.n_sample
+    )
+
+
+def single_instance_prediction(
+    flags: argparse.Namespace, expCfg: ExperimentConfig, image_path: Path
+) -> None:
+    register_dataset(expCfg)
+    im = cv2.imread(image_path)
+
+    ws = Workspace.from_config()
+
+    _ = Model.get_model_path(
+        model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+    )
+
+    cfg = init_inference(flags)
+    predictor = DefaultPredictor(cfg)
+    outputs = predictor(im)
+
+    metadata = MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}")
+    v = Visualizer(im[:, :, ::-1], metadata, scale=1.2)
+    out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+
+    # save image in current directory
+    image_name = Path(image_path).stem
+    cv2.imwrite(f"{image_name}:out.jpg", out.get_image()[:, :, ::-1])
 
 
 if __name__ == "__main__":
     flags = config_parser.arg_parser()
-
+    flags.device = "cpu"
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
         data_format=flags.data_format,
         data_folder=flags.data_folder,
     )
-    visualize_predictions(flags, experimentConfig)
+
+    if flags.image:
+        # SINGLE IMAGE PREDICTION
+        single_instance_prediction(flags, experimentConfig, flags.image)
+    if not flags.image:
+        visualize_predictions(flags, experimentConfig)

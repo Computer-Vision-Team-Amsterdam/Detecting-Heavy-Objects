@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     nr_experiments = handle_hyperparameters("configs/hyperparameter-search.yaml")
 
-    for exp in trange(1):
+    for exp in trange(nr_experiments):
         CONFIG = f"configs/temp_{exp}.yaml"
         # Create a script config for the experiment
         script_config = ScriptRunConfig(

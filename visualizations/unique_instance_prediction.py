@@ -11,6 +11,7 @@ import folium
 import geohash as gh
 import pandas as pd
 from folium.plugins import MarkerCluster
+from panorama.client import PanoramaClient
 
 from visualizations.model import ModelPrediction
 
@@ -115,13 +116,28 @@ def generate_map(
     if predictions:
         marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
         for i in range(0, len(predictions)):
+
+            # get link to panorama to display
+            filename = predictions[i].filename
+            image = PanoramaClient.get_panorama(filename)
+            image_link = image.links.equirectangular_small.href
+
+            # create HTML with more info
+            html = (
+                f"""
+                   <!DOCTYPE html>
+                   <html>
+                   <h3> Score: {predictions[i].score} </h3>
+                   <center><img src=\""""
+                + image_link
+                + """\" width=400 height=200 ></center>
+                   </html>
+                   """
+            )
+            popup = folium.Popup(folium.Html(html, script=True), max_width=500)
             folium.Marker(
                 location=[predictions[i].coords[0], predictions[i].coords[1]],
-                popup="Score: {:.0%}. \n Cluster: {}".format(
-                    predictions[i].score, predictions[i].cluster
-                )
-                if colors
-                else "Score: {:.0%}.".format(predictions[i].score),
+                popup=popup,
                 icon=folium.Icon(
                     color="lightgreen",
                     icon_color=color(predictions[i].cluster, colors)

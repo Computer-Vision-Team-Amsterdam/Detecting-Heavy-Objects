@@ -7,9 +7,7 @@ from pathlib import Path
 
 import pycocotools.mask as mask_util
 import torch
-from panorama import models
 from panorama.client import PanoramaClient
-from PIL import Image, ImageDraw
 from tqdm import tqdm
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
@@ -28,36 +26,40 @@ class PostProcessing:
         threshold: float = 20000,
         mask_degrees: float = 90,
         output_folder: Path = Path.cwd(),
-        output_file=Path("points_of_interest.csv"),
-    ):
+    ) -> None:
         """
         Args:
             :param json_predictions: path to ouput file with predictions from detectron2
             :param threshold: objects with a bbox smaller and equal to this arg are discarded. value is in pixels
-            :param output_path: where the filtered json with predictions is stored
-            :param predictions_to_keep: list with predictions of the model that we keep throughout postprocessing steps
+            :param mask_degrees: Area from side of the car, eg 90 means that on both sides of the 90 degrees is kept
+            :param output_folder: where the filtered json with predictions is stored
+            :
         """
         self.stats = DataStatistics(json_file=json_predictions)
         self.non_filtered_stats = deepcopy(self.stats)
         self.threshold = threshold
         self.mask_degrees = mask_degrees  # todo: Add to args list
         self.output_folder = output_folder
-        if isinstance(self.output_folder, str):
-            self.output_folder = Path(self.output_folder)
         self.output_folder.mkdir(exist_ok=True, parents=True)
-        self.output_file = output_file
+        self.objects_file = "points_of_interest.csv"
+        self.data_file = "processed_predictions.csv"
 
-    def find_points_of_interest(self):
+    def find_points_of_interest(self) -> None:
         """
         Finds the points of interest given by COCO format json file, outputs a csv file
         with lon lat coordinates
         """
         triangulate(
-            self.output_folder / "processed_predictions.json",
-            self.output_folder / self.output_file,
+            self.output_folder / self.data_file,
+            self.output_folder / self.objects_file,
         )
 
-    def filter_by_angle(self):
+    def filter_by_angle(self) -> None:
+        """
+        Filters the predictions or annotation based on the view angle from the car. If an objects lies within the
+        desired angle, then it will be kept
+        :return:
+        """
         predictions_to_keep = []
         print("Filtering based on angle")
         for prediction in tqdm(self.stats.data):
@@ -90,7 +92,7 @@ class PostProcessing:
         )
         self.stats.update(predictions_to_keep)
 
-    def filter_by_size(self):
+    def filter_by_size(self) -> None:
         """
         Removes predictions of small objects and writes results to json file
         """
@@ -99,14 +101,26 @@ class PostProcessing:
         ]
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def save_filtered_predictions(self, name):
-        with open(self.output_folder / "processed_predictions.json", "w") as f:
+    def save_data(self) -> None:
+        """
+        Write the data to a json file
+        """
+        with open(self.output_folder / self.data_file, "w") as f:
             json.dump(self.stats.data, f)
 
 
 if __name__ == "__main__":
-    postprocess = PostProcessing("coco_instances_results.json")
+    postprocess = PostProcessing(
+        Path("coco_instances_results.json"), output_folder=Path("Test")
+    )
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
-    postprocess.save_filtered_predictions("filtered_predictions.json")
+    postprocess.save_data()
     postprocess.find_points_of_interest()
+    from datetime import date
+
+    from triangulation.helpers import get_panos_from_points_of_interest
+
+    get_panos_from_points_of_interest(
+        "Test/points_of_interest.csv", "Test", date(2021, 3, 18), date(2021, 3, 17)
+    )

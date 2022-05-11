@@ -28,3 +28,6 @@ ignore_missing_imports = True
 
 [mypy-haversine]
 ignore_missing_imports = True
+
+[mypy-panorama]
+ignore_missing_imports = True

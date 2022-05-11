@@ -86,6 +86,7 @@ dependencies:
   - wrapt=1.13.3
   - x264=1!157.20191217
   - xz=5.2.5
+  - yaml=0.2.5
   - zlib=1.2.11.1
   - zstd=1.4.9
   - pip:
@@ -185,6 +186,7 @@ dependencies:
     - tomli==1.2.2
     - tqdm==4.62.3
     - typed-ast==1.5.0
+    - types-pyyaml==6.0.7
     - urllib3==1.26.7
     - websocket-client==1.2.1
     - werkzeug==2.0.2
