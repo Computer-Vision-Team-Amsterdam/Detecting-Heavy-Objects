@@ -130,8 +130,7 @@ if __name__ == "__main__":
         data_folder=flags.data_folder,
     )
 
-    if flags.image:
-        # SINGLE IMAGE PREDICTION
-        single_instance_prediction(flags, experimentConfig, flags.image)
-    if not flags.image:
+    if flags.image is "":  # Azure does not accept None flags, thus we use ""
         visualize_predictions(flags, experimentConfig)
+    else:  # actual path to an image
+        single_instance_prediction(flags, experimentConfig, flags.image)
