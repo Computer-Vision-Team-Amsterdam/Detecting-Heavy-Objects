@@ -4,7 +4,7 @@ import folium
 import pytest
 from folium.plugins import MarkerCluster
 
-from visualizations.model import ModelPrediction
+from visualizations.model import PointOfInterest
 
 # from panorama.client import PanoramaClient  # pylint: disable=import-error
 
@@ -17,18 +17,18 @@ class Test(TestCase):
     )
     def test_geo_clustering(self) -> None:
         container_metadata_with_geohash = []
-        pred_one = ModelPrediction(
-            filename="",
+        pred_one = PointOfInterest(
+            pano_id="",
             coords=(52.3508179052329, 5.0029046131412),
             geohash="u179cf5j85u0",
         )
-        pred_two = ModelPrediction(
-            filename="",
+        pred_two = PointOfInterest(
+            pano_id="",
             coords=(52.3767806850864, 4.89314072016433),
             geohash="u173zqghf7w4",
         )
-        pred_three = ModelPrediction(
-            filename="",
+        pred_three = PointOfInterest(
+            pano_id="",
             coords=(52.3472723292609, 4.91466061641611),
             geohash="u173zcd8zyud",
         )
@@ -39,20 +39,20 @@ class Test(TestCase):
         prefix_length = 5
 
         expected_containter_info = []
-        expected_one = ModelPrediction(
-            filename="",
+        expected_one = PointOfInterest(
+            pano_id="",
             coords=(52.3508179052329, 5.0029046131412),
             geohash="u179cf5j85u0",
             cluster=0,
         )
-        expected_two = ModelPrediction(
-            filename="",
+        expected_two = PointOfInterest(
+            pano_id="",
             coords=(52.3767806850864, 4.89314072016433),
             geohash="u173zqghf7w4",
             cluster=1,
         )
-        expected_three = ModelPrediction(
-            filename="",
+        expected_three = PointOfInterest(
+            pano_id="",
             coords=(52.3472723292609, 4.91466061641611),
             geohash="u173zcd8zyud",
             cluster=1,

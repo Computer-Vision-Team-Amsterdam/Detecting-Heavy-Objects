@@ -83,6 +83,9 @@ To perform inference on the validation set on GPU, run
 ```shell
 python run_inference_on_azure.py --name ${MODEL_NAME} --version ${VERSION} --subset val 
 ```
+
+To run inference on a test dataset with no corresponding annotation file, use ```--subset test``` instead.
+
 The output files are as follows:
 - *container_val_coco_format.json* -- automatically generated COCO file for Detectron2. It contains metadata of the 
 dataset used at inference time 
