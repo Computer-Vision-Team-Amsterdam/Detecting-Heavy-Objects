@@ -2,6 +2,7 @@
 This module is responsible for visualizing the trajectory and container found on a day.
 Show the containers that were found on the particular trajectory that was driven for a particular day.
 """
+import csv
 import datetime
 import json
 import re
@@ -13,29 +14,8 @@ from model import ModelPrediction
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 from tqdm import tqdm, trange
+from triangulation.helpers import get_panos_from_points_of_interest
 from unique_instance_prediction import generate_map
-
-
-def create_prediction_objects(
-    instances_results: Union[Path, str]
-) -> List[ModelPrediction]:
-    """
-    This method create prediction objects with metadata needed for the map
-    :param instances_results: path to model predictions/instances results output file
-
-    :returns: instances_results dict with information about pano ids
-    """
-    # Opening JSON file
-    instances_file = open(instances_results)
-    predictions_loaded = json.load(instances_file)
-    instances_file.close()
-
-    predictions = []
-    for prediction in predictions_loaded:
-        # TODO : query API to retrieve the closest image here
-        # TODO import triangulation: call:get panorama from locations
-        predictions.append(ModelPrediction(pano_id="pano_id", score="", coords=prediction))
-    return predictions
 
 
 def get_daily_panoramas(
@@ -103,22 +83,41 @@ def get_panorama_coords(
 def run(
     day_to_plot: datetime.date,
     location_query: models.LocationQuery,
-    instances_results: Union[Path, str],
+    points_of_interest: Union[Path, str],
 ) -> None:
     """
     This method creates visualization of a path and detected containers based on trajectory on a specific date.
 
-    :param day_to_plot: target date for which we want to see the trajectory and detections.
+    :param day_to_plot: target date.
     :param location_query: location information for API search
-    :param instances_results: path to model predictions/instances results output file.
+    :param points_of_interest: path to triangulation output file.
     """
-    # for actual trajectory coordinates retrieved from the API uncomment the two lines below
+
+    # ========= CREATE CAR TRAJECTORY =================
 
     daily_query_result = get_daily_panoramas(day_to_plot, location_query)
-    coords = get_panorama_coords(daily_query_result)
 
-    model_predictions = create_prediction_objects(instances_results=instances_results)
-    generate_map(trajectory=coords, predictions=model_predictions)
+    trajectory = get_panorama_coords(daily_query_result)  # only keep their coordinates
+
+    # ======== CREATE LIST OF DETECTIONS ============
+
+    detections = []
+    panoramas = get_panos_from_points_of_interest(
+        points_of_interest,
+        timestamp_after=day_to_plot,
+        timestamp_before=day_to_plot + timedelta(days=1),
+    )
+
+    with open(points_of_interest, "r") as file:
+        reader = csv.reader(file)
+        next(reader)  # skip first line
+        for i, row in enumerate(reader):
+            detections.append(
+                ModelPrediction(pano_id=panoramas[i].id, coords=(row[0], row[1]))
+            )
+
+    # ========== CREATE MAP =================
+    generate_map(trajectory=trajectory, detections=detections)
 
 
 if __name__ == "__main__":

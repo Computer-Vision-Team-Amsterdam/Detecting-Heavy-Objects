@@ -91,7 +91,7 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
 def generate_map(
     trajectory: Optional[List[List[float]]] = None,
-    predictions: Optional[List[ModelPrediction]] = None,
+    detections: Optional[List[ModelPrediction]] = None,
     name: Optional[str] = None,
     colors: Optional[List[str]] = None,
 ) -> None:
@@ -100,7 +100,7 @@ def generate_map(
     corresponding to detected containers on the path.
 
     :param trajectory: list of coordinates that define the path.
-    :param predictions: model predictions dict (with information about file names and coordinates).
+    :param detections: model predictions dict (with information about file names and coordinates).
     :param name: custom name for the map. If not passed, name is created based on what the map contains.
     :param colors: colors to be assigned to each cluster
     """
@@ -112,14 +112,13 @@ def generate_map(
     Map = folium.Map(location=[latitude, longitude], zoom_start=12)
 
     # add container locations to the map
-    if predictions:
+    if detections:
         marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
-        for i in range(0, len(predictions)):
+        for i in range(0, len(detections)):
 
             # get link to panorama to display
 
-
-            pano_id = predictions[i].pano_id
+            pano_id = detections[i].pano_id
             image = PanoramaClient.get_panorama(pano_id)
             image_link = image.links.equirectangular_small.href
 
@@ -128,7 +127,6 @@ def generate_map(
                 f"""
                    <!DOCTYPE html>
                    <html>
-                   <h3> Score: {predictions[i].score} </h3>
                    <center><img src=\""""
                 + image_link
                 + """\" width=400 height=200 ></center>
@@ -137,11 +135,11 @@ def generate_map(
             )
             popup = folium.Popup(folium.Html(html, script=True), max_width=500)
             folium.Marker(
-                location=[predictions[i].coords[0], predictions[i].coords[1]],
+                location=[detections[i].coords[0], detections[i].coords[1]],
                 popup=popup,
                 icon=folium.Icon(
                     color="lightgreen",
-                    icon_color=color(predictions[i].cluster, colors)
+                    icon_color=color(detections[i].cluster, colors)
                     if colors
                     else "darkgreen",
                     icon="square",
@@ -157,13 +155,13 @@ def generate_map(
 
     # create name for the map
     if not name:
-        if predictions and trajectory:
+        if detections and trajectory:
             name = "Daily trajectory and predicted containers"
-        if predictions and not trajectory:
+        if detections and not trajectory:
             name = "Daily predicted containers"
-        if not predictions and trajectory:
+        if not detections and trajectory:
             name = "Daily trajectory"
-        if not predictions and not trajectory:
+        if not detections and not trajectory:
             name = "Empty map"
 
     Map.save(f"{name}.html")
@@ -210,7 +208,7 @@ if __name__ == "__main__":
     )
 
     generate_map(
-        predictions=container_metadata_clustered,
+        detections=container_metadata_clustered,
         name="Decos containers",
         colors=color_generator(total_clusters),
     )
