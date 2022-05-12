@@ -180,24 +180,32 @@ def geo_clustering(
 
     :param container_locations: container latitude, longitudes, geohash + metadata such as confidence score
     :param prefix_length: length of the common geohash prefix.
+
+    :return (list with container detections with extra info about the cluster to which they belong,
+            total nr of clusters)
     """
 
     if prefix_length < 0 or prefix_length > 12:
         raise ValueError("Prefix must be an integer in [0, 12] interval.")
 
+    # assign a cluster_id: int for each prefix
     unique_prefixes: Dict[str, int] = {}
     cluster_id = 0
+    # for each detection object
     for container_loc in container_locations:
+
+        # get its geohash prefix
         geohash = container_loc.geohash
         geo_prefix = geohash[:prefix_length]
         if geo_prefix in unique_prefixes:
+            # add the cluster_id for this detection
             container_loc.cluster = unique_prefixes[geo_prefix]
         else:
             unique_prefixes[geo_prefix] = cluster_id
             container_loc.cluster = cluster_id
             cluster_id = cluster_id + 1
 
-    nr_clusters = cluster_id
+    nr_clusters = cluster_id  # we use this variable when generating distinct cluster colors
 
     return container_locations, nr_clusters
 
