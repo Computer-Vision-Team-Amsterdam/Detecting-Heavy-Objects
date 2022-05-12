@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from model import PointOfInterest
 from panorama import models  # pylint: disable=import-error
+
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 from triangulation.helpers import (
     get_panos_from_points_of_interest,

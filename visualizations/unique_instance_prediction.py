@@ -16,6 +16,9 @@ from model import PointOfInterest
 from panorama.client import PanoramaClient
 from tqdm import tqdm
 
+import json
+from tqdm import tqdm
+
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[PointOfInterest]:
     """
@@ -224,6 +227,8 @@ def gather_panoramas_from_COCO_results(input: Path):
         PanoramaClient.download_image(panorama, output_location=output_path)
 
 
+gather_panoramas_from_COCO_results("/Users/dianaepureanu/Downloads/coco_instances_results-2.json")
+
 """
 if __name__ == "__main__":
     container_metadata = read_coordinates("../decos/Decos.xlsx")
@@ -238,4 +243,6 @@ if __name__ == "__main__":
         colors=color_generator(total_clusters),
     )
 
+
 """
+
