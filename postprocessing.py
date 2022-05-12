@@ -11,13 +11,13 @@ import pycocotools.mask as mask_util
 import torch
 from panorama.client import PanoramaClient
 from tqdm import tqdm
-from triangulation.helpers import \
-    get_panos_from_points_of_interest # pylint: disable-all
-from triangulation.masking import \
-    get_side_view_of_pano
-from triangulation.triangulate import \
-    triangulate
+from triangulation.helpers import (
+    get_panos_from_points_of_interest,
+)  # pylint: disable-all
+from triangulation.masking import get_side_view_of_pano
+from triangulation.triangulate import triangulate
 
+from utils import save_json_data
 from visualizations.stats import DataStatistics
 
 
@@ -44,11 +44,11 @@ class PostProcessing:
         self.stats = DataStatistics(json_file=json_predictions)
         self.non_filtered_stats = deepcopy(self.stats)
         self.threshold = threshold
-        self.mask_degrees = mask_degrees  # todo: Add to args list
+        self.mask_degrees = mask_degrees
         self.output_folder = output_folder
         self.output_folder.mkdir(exist_ok=True, parents=True)
-        self.objects_file = "points_of_interest.csv"
-        self.data_file = "processed_predictions.json"
+        self.objects_file = Path("points_of_interest.csv")
+        self.data_file = Path("processed_predictions.json")
 
     def find_points_of_interest(self) -> None:
         """
@@ -57,7 +57,7 @@ class PostProcessing:
         """
 
         if not (self.output_folder / self.data_file).exists():
-            self.save_data()
+            save_json_data(self.stats.data, self.data_file, self.output_folder)
 
         triangulate(
             self.output_folder / self.data_file,
@@ -109,6 +109,10 @@ class PostProcessing:
         indices_to_keep = [
             idx for idx, area in enumerate(self.stats.areas) if area > self.threshold
         ]
+        print(
+            f"{len(self.stats.data) - len(indices_to_keep)} out of the {len(self.stats.data)} are filtered based on the size"
+        )
+
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
     def save_data(self) -> None:
@@ -120,13 +124,17 @@ class PostProcessing:
 
 
 if __name__ == "__main__":
+    output_path = Path("Test")
     postprocess = PostProcessing(
-        Path("coco_instances_results-2.json"), output_folder=Path("Test")
+        Path("coco_instances_results_14ckpt.json"), output_folder=output_path
     )
     postprocess.filter_by_size()
+
     postprocess.filter_by_angle()
-    postprocess.save_data()
     postprocess.find_points_of_interest()
-    get_panos_from_points_of_interest(
-        "Test/points_of_interest.csv", "Test", date(2021, 3, 18), date(2021, 3, 17)
+    panoramas = get_panos_from_points_of_interest(
+        output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
     )
+    for pano in postprocess.stats.data:
+        response = PanoramaClient.get_panorama(pano["pano_id"].replace(".jpg", ""))
+        PanoramaClient.download_image(response, output_location=output_path)
