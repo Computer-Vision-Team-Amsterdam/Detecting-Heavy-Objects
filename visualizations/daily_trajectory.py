@@ -4,8 +4,7 @@ Show the containers that were found on the particular trajectory that was driven
 """
 import csv
 import datetime
-import json
-import re
+
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -13,8 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from model import ModelPrediction
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
-from tqdm import tqdm, trange
-from triangulation.helpers import get_panos_from_points_of_interest
+from triangulation.helpers import get_panos_from_points_of_interest  # pylint: disable-all
 from unique_instance_prediction import generate_map
 
 
