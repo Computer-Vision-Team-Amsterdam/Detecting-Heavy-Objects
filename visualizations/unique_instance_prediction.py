@@ -11,11 +11,11 @@ import folium
 import geohash as gh
 import pandas as pd
 from folium.plugins import MarkerCluster
-from model import ModelPrediction
+from model import PointOfInterest
 from panorama.client import PanoramaClient
 
 
-def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
+def read_coordinates(decos_file: Union[Path, str]) -> List[PointOfInterest]:
     """
     This method reads data from Decos.xlsx. We run the clustering algorithm on the geocoordinates from Decos
     until we have a trained model whose output coordinates we can use.
@@ -32,7 +32,7 @@ def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
     for c in coordinates:
         # create dict
         # we store the coordinate in this format to be consistent with detectron output files.
-        container_loc = ModelPrediction(pano_id="", coords=c)
+        container_loc = PointOfInterest(pano_id="", coords=c)
         # append it to output list
         container_locations.append(container_loc)
 
@@ -40,8 +40,8 @@ def read_coordinates(decos_file: Union[Path, str]) -> List[ModelPrediction]:
 
 
 def append_geohash(
-    container_locations: List[ModelPrediction],
-) -> List[ModelPrediction]:
+    container_locations: List[PointOfInterest],
+) -> List[PointOfInterest]:
     """
     This method takes each coordinate pair, computes and stores its geohash alongside with the coordinates.
 
@@ -91,7 +91,7 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
 def generate_map(
     trajectory: Optional[List[List[float]]] = None,
-    detections: Optional[List[ModelPrediction]] = None,
+    detections: Optional[List[PointOfInterest]] = None,
     name: Optional[str] = None,
     colors: Optional[List[str]] = None,
 ) -> None:
@@ -168,8 +168,8 @@ def generate_map(
 
 
 def geo_clustering(
-    container_locations: List[ModelPrediction], prefix_length: int
-) -> Tuple[List[ModelPrediction], int]:
+    container_locations: List[PointOfInterest], prefix_length: int
+) -> Tuple[List[PointOfInterest], int]:
     """
     This method looks at all container geocodes and clusters them based on the first prefix_length digits.
     For example: We have 2 geocodes u173yffw8qjy and u173yffvndbb.

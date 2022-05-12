@@ -4,15 +4,16 @@ Show the containers that were found on the particular trajectory that was driven
 """
 import csv
 import datetime
-
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from model import ModelPrediction
+from model import PointOfInterest
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
-from triangulation.helpers import get_panos_from_points_of_interest  # pylint: disable-all
+from triangulation.helpers import (
+    get_panos_from_points_of_interest,
+)  # pylint: disable-all
 from unique_instance_prediction import generate_map
 
 
@@ -111,7 +112,7 @@ def run(
         next(reader)  # skip first line
         for i, row in enumerate(reader):
             detections.append(
-                ModelPrediction(pano_id=panoramas[i].id, coords=(row[0], row[1]))
+                PointOfInterest(pano_id=panoramas[i].id, coords=(row[0], row[1]))
             )
 
     # ========== CREATE MAP =================

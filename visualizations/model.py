@@ -3,7 +3,7 @@ from typing import Tuple
 
 
 @dataclass
-class ModelPrediction:
+class PointOfInterest:
     pano_id: str
     coords: Tuple[float, float] = (-1, -1)
     geohash: str = ""
