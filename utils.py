@@ -564,6 +564,14 @@ def collect_dimensions(data: Any) -> Tuple[List[int], List[int]]:
     return widths, heights
 
 
+def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
+    """
+    Write the data to a json file
+    """
+    with open(output_folder / filename, "w") as f:
+        json.dump(data, f)
+
+
 # correct_faulty_panoramas()
 
 """

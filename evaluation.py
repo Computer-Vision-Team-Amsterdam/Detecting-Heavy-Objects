@@ -671,7 +671,6 @@ class CustomCOCOEvaluator(DatasetEvaluator):
     http://cocodataset.org/#keypoints-eval to understand its metrics.
     The metrics range from 0 to 100 (instead of 0 to 1), where a -1 or NaN means
     the metric cannot be computed (e.g. due to no predictions made).
-
     In addition to COCO, this evaluator is able to support any bounding box detection,
     instance segmentation, or keypoint detection dataset.
     """
@@ -691,9 +690,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         Args:
             dataset_name (str): name of the dataset to be evaluated.
                 It must have either the following corresponding metadata:
-
                     "json_file": the path to the COCO format annotation
-
                 Or it must be in detectron2's standard dataset format
                 so it can be converted to COCO format automatically.
             tasks (tuple[str]): tasks that can be evaluated under the given
@@ -704,7 +701,6 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 Otherwise, will only evaluate the results in the current process.
             output_dir (str): optional, an output directory to dump all
                 results predicted on the dataset. The dump contains two files:
-
                 1. "instances_predictions.pth" a file that can be loaded with `torch.load` and
                    contains all the results in the format they are produced by the model.
                 2. "coco_instances_results.json" a json file in COCO's result format.
@@ -976,13 +972,11 @@ class CustomCOCOEvaluator(DatasetEvaluator):
     def _derive_coco_results(self, coco_eval, iou_type, class_names=None):
         """
         Derive the desired score numbers from summarized COCOeval.
-
         Args:
             coco_eval (None or COCOEval): None represents no predictions from model.
             iou_type (str):
             class_names (None or list[str]): if provided, will use it to predict
                 per-category AP.
-
         Returns:
             a dict of {metric name: score}
         """
@@ -1050,12 +1044,10 @@ class CustomCOCOEvaluator(DatasetEvaluator):
 def instances_to_coco_json(instances, img_id, pano_id):
     """
     Dump an "Instances" object to a COCO-format json that's used for evaluation.
-
     Args:
         instances (Instances):
         img_id (int): the image id
         pano_id (str): the panorama id
-
     Returns:
         list[dict]: list of json annotations in COCO format.
     """

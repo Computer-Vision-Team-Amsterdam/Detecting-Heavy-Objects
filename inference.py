@@ -41,7 +41,6 @@ def setup_cfg(config_file: Union[Path, str]) -> CfgNode:
 def init_inference(flags: argparse.Namespace) -> CfgNode:
     """
     Initializes the trained model
-
     :param flags: console arguments
     Returns the configuration object
     """

@@ -30,7 +30,6 @@ def plot_instance_segm(
     Visualize the annotations of randomly selected samples in the dataset.
     Additionally, you can specify a trained model to display
     the confidence score for each annotation
-
     :param dataset_dicts: images metadata
     :param dataset_metadata: dataset metadata
     :param mode: the type of visualization, i.e. whether to view the object annotations
@@ -81,7 +80,6 @@ def visualize_predictions(flags: argparse.Namespace, expCfg: ExperimentConfig) -
     """
     This method takes a trained model from Azure, downloads it locally and plots
     visualization of randomly selected images from the validation folder
-
     :param flags: console arguments
     :param expCfg: experiment configuration
     """

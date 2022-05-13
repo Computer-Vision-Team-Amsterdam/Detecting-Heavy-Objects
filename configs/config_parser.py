@@ -7,7 +7,6 @@ import argparse
 def arg_parser() -> argparse.Namespace:
     """
     This method parses command line arguments.
-
     :returns: namespace with set flags.
     """
     parser = argparse.ArgumentParser()

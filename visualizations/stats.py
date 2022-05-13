@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 
@@ -57,3 +57,15 @@ class DataStatistics:
         plt.xlabel("Container bbox area")
         plt.ylabel("Count")
         plt.savefig(Path(self.output_dir, plot_name))
+
+    def update(self, data: List[Dict[str, Any]]) -> None:
+        """
+        Update object with new data and recalcute its statistics
+        :param data:
+        :return:
+        """
+        self.data = data
+        self.widths, self.heights = utils.collect_dimensions(self.data)
+        self.areas = [
+            width * height for width, height in zip(self.widths, self.heights)
+        ]

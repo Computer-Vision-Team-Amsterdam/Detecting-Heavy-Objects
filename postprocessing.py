@@ -1,10 +1,22 @@
 """
 This model applies different post processing steps on the results file of the detectron2 model
 """
-import json
-from pathlib import Path
-from typing import List
 
+import json
+from copy import deepcopy
+from datetime import date
+from pathlib import Path
+
+import pycocotools.mask as mask_util
+import torch
+from panorama.client import PanoramaClient
+from tqdm import tqdm
+from triangulation.helpers import \
+    get_panos_from_points_of_interest  # pylint: disable-all
+from triangulation.masking import get_side_view_of_pano
+from triangulation.triangulate import triangulate
+
+from utils import save_json_data
 from visualizations.stats import DataStatistics
 
 
@@ -17,43 +29,102 @@ class PostProcessing:
         self,
         json_predictions: Path,
         threshold: float = 20000,
-        output_path: Path = Path.cwd() / "postprocessed.json",
+        mask_degrees: float = 90,
+        output_folder: Path = Path.cwd(),
     ) -> None:
         """
         Args:
             :param json_predictions: path to ouput file with predictions from detectron2
             :param threshold: objects with a bbox smaller and equal to this arg are discarded. value is in pixels
-            :param output_path: where the filtered json with predictions is stored
+            :param mask_degrees: Area from side of the car, eg 90 means that on both sides of the 90 degrees is kept
+            :param output_folder: where the filtered json with predictions is stored
+            :
         """
         self.stats = DataStatistics(json_file=json_predictions)
+        self.non_filtered_stats = deepcopy(self.stats)
         self.threshold = threshold
-        self.output_path = output_path
-        self.predictions_to_keep: List[str] = []
+        self.mask_degrees = mask_degrees
+        self.output_folder = output_folder
+        self.output_folder.mkdir(exist_ok=True, parents=True)
+        self.objects_file = Path("points_of_interest.csv")
+        self.data_file = Path("processed_predictions.json")
+
+    def find_points_of_interest(self) -> None:
+        """
+        Finds the points of interest given by COCO format json file, outputs a csv file
+        with lon lat coordinates
+        """
+
+        if not (self.output_folder / self.data_file).exists():
+            save_json_data(self.stats.data, self.data_file, self.output_folder)
+
+        triangulate(
+            self.output_folder / self.data_file,
+            self.output_folder / self.objects_file,
+        )
+
+    def filter_by_angle(self) -> None:
+        """
+        Filters the predictions or annotation based on the view angle from the car. If an objects lies within the
+        desired angle, then it will be kept
+        :return:
+        """
+        predictions_to_keep = []
+        print("Filtering based on angle")
+        for prediction in tqdm(self.stats.data):
+            response = PanoramaClient.get_panorama(
+                prediction["pano_id"].rsplit(".", 1)[0]
+            )  # TODO: Not query, look at the database!
+            heading = response.heading
+            height, width = prediction["segmentation"]["size"]
+            mask = torch.from_numpy(
+                get_side_view_of_pano(width, height, heading, self.mask_degrees)
+            )[
+                :, :, 0
+            ]  # mask is 3D
+            mask = (
+                1 - mask.float()
+            )  # Inverse mask to have region that we would like to keep
+            segmentation_mask = torch.from_numpy(
+                mask_util.decode(prediction["segmentation"])
+            ).float()
+            overlap = segmentation_mask * mask
+            # prediction fully in side view
+            if torch.sum(overlap) == torch.sum(segmentation_mask):
+                predictions_to_keep.append(prediction)
+            # prediction partially in side view
+            # Keep predictions if minimal 50% is in the side view
+            elif torch.sum(overlap) / torch.sum(segmentation_mask) > 0.5:
+                predictions_to_keep.append(prediction)
+        print(
+            f"{len(self.stats.data) - len(predictions_to_keep)} out of the {len(self.stats.data)} are filtered based on the angle"
+        )
+        self.stats.update(predictions_to_keep)
 
     def filter_by_size(self) -> None:
         """
         Removes predictions of small objects and writes results to json file
         """
+        indices_to_keep = [
+            idx for idx, area in enumerate(self.stats.areas) if area > self.threshold
+        ]
+        print(
+            f"{len(self.stats.data) - len(indices_to_keep)} out of the {len(self.stats.data)} are filtered based on the size"
+        )
 
-        def remove_predictions() -> None:
-            """
-            Filter out all predictions where area of the bbox of object is smaller and equal to @param threshold pixels
-            """
-            indices_to_keep = [
-                idx
-                for idx, area in enumerate(self.stats.areas)
-                if area > self.threshold
-            ]
-            self.predictions_to_keep = [self.stats.data[idx] for idx in indices_to_keep]
+        self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-        def write_json() -> None:
-            """
-            Write filtered list of predictions to another json file
-            """
-            with open(self.output_path, "w") as f:
-                json.dump(self.predictions_to_keep, f)
-            f.close()
 
-        remove_predictions()
-        write_json()
-        print(self.output_path)
+if __name__ == "__main__":
+    output_path = Path("Test")
+    postprocess = PostProcessing(
+        Path("coco_instances_results_14ckpt.json"), output_folder=output_path
+    )
+    postprocess.filter_by_size()
+    postprocess.filter_by_angle()
+    postprocess.find_points_of_interest()
+    panoramas = get_panos_from_points_of_interest(
+        output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
+    )
+    for pano in panoramas:
+        PanoramaClient.download_image(pano, output_location=output_path)
