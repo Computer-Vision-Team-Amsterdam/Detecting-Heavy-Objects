@@ -11,9 +11,8 @@ import pycocotools.mask as mask_util
 import torch
 from panorama.client import PanoramaClient
 from tqdm import tqdm
-from triangulation.helpers import (
-    get_panos_from_points_of_interest,
-)  # pylint: disable-all
+from triangulation.helpers import \
+    get_panos_from_points_of_interest  # pylint: disable-all
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
@@ -115,13 +114,6 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def save_data(self) -> None:
-        """
-        Write the data to a json file
-        """
-        with open(self.output_folder / self.data_file, "w") as f:
-            json.dump(self.stats.data, f)
-
 
 if __name__ == "__main__":
     output_path = Path("Test")
@@ -129,12 +121,10 @@ if __name__ == "__main__":
         Path("coco_instances_results_14ckpt.json"), output_folder=output_path
     )
     postprocess.filter_by_size()
-
     postprocess.filter_by_angle()
     postprocess.find_points_of_interest()
     panoramas = get_panos_from_points_of_interest(
         output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
     )
-    for pano in postprocess.stats.data:
-        response = PanoramaClient.get_panorama(pano["pano_id"].replace(".jpg", ""))
-        PanoramaClient.download_image(response, output_location=output_path)
+    for pano in panoramas:
+        PanoramaClient.download_image(pano, output_location=output_path)
