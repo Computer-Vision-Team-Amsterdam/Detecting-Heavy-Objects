@@ -12,7 +12,7 @@ import folium
 import geohash as gh
 import pandas as pd
 from folium.plugins import MarkerCluster
-from model import PointOfInterest
+from visualizations.model import PointOfInterest
 from panorama.client import PanoramaClient
 from tqdm import tqdm
 
@@ -195,7 +195,7 @@ def geo_clustering(
     unique_prefixes: Dict[str, int] = {}
     cluster_id = 0
     # for each detection object
-    for container_loc in container_locations:
+    for container_loc in tqdm(container_locations, desc="Performing geoclustering"):
 
         # get its geohash prefix
         geohash = container_loc.geohash
