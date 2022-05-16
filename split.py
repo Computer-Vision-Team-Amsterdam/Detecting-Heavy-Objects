@@ -113,8 +113,8 @@ class CoordinateSplit:
         print(f"20% out of {self.n_total} is {self.n_val}")
         print(f"10% out of {self.n_total} is {self.n_test}")
 
-        self.n_train = self.n_train - self.n_moved
-        print(f"{self.n_moved} files were already moved, {self.n_train} are left for the training set.")
+        #self.n_train = self.n_train - self.n_moved
+        print(f"{self.n_moved} files were already moved, {self.n_train-self.n_moved} are left for the training set.")
 
         def _get_cluster(id: int):
             single_cluster: List[PointOfInterest] = []
@@ -181,7 +181,7 @@ class CoordinateSplit:
 
             cluster = _get_cluster(curr)
             print("test")
-            while not _subset_complete("test_new_split", to_add=len(cluster), max_size=self.n_test+ len(cluster)):
+            while not _subset_complete("test_new_split", to_add=len(cluster), max_size=self.n_test + len(cluster)):
                 print(f"current cluster : {curr}, max: {self.n_test}")
                 _add_cluster_to_subset(cluster=cluster, dst_folder="test_new_split")
                 curr = curr + 1
@@ -191,8 +191,9 @@ class CoordinateSplit:
 
             # add the rest to train
 
-            _add_cluster_to_subset(cluster=cluster, dst_folder="test_new_split")
-            curr = curr + 1
+            #_add_cluster_to_subset(cluster=cluster, dst_folder="train_new_split")
+            # skip the last 3 clusters
+            curr = self.nr_clusters
 
     def _regenerate_annotation_files(self):
         """
@@ -271,9 +272,9 @@ class CoordinateSplit:
             # SEARCH IN OLD_TRAIN.JSON
             for image in old_train_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"train/{name}"
-                    new_train_anns["image"].append(image)
+                    new_train_anns["images"].append(image)
                     id = image["id"]
                     for ann in old_train_annotations["annotations"]:
                         if ann["image_id"] == id:
@@ -282,9 +283,9 @@ class CoordinateSplit:
             # SEARCH IN OLD_VAL.JSON
             for image in old_val_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"train/{name}"
-                    new_train_anns["image"].append(image)
+                    new_train_anns["images"].append(image)
                     id = image["id"]
                     for ann in old_val_annotations["annotations"]:
                         if ann["image_id"] == id:
@@ -293,9 +294,9 @@ class CoordinateSplit:
             # SEARCH IN OLD_TEST.JSON
             for image in old_test_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"train/{name}"
-                    new_train_anns["image"].append(image)
+                    new_train_anns["images"].append(image)
                     id = image["id"]
                     for ann in old_test_annotations["annotations"]:
                         if ann["image_id"] == id:
@@ -319,7 +320,7 @@ class CoordinateSplit:
             # SEARCH IN OLD_TRAIN.JSON
             for image in old_train_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"val/{name}"
                     new_val_anns["images"].append(image)
                     id = image["id"]
@@ -330,7 +331,7 @@ class CoordinateSplit:
             # SEARCH IN OLD_VAL.JSON
             for image in old_val_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"val/{name}"
                     new_val_anns["images"].append(image)
                     id = image["id"]
@@ -341,7 +342,7 @@ class CoordinateSplit:
             # SEARCH IN OLD_TEST.JSON
             for image in old_test_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"val/{name}"
                     new_val_anns["images"].append(image)
                     id = image["id"]
@@ -366,7 +367,7 @@ class CoordinateSplit:
             # SEARCH IN OLD_TRAIN.JSON
             for image in old_train_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"test/{name}"
                     new_test_anns["images"].append(image)
                     id = image["id"]
@@ -377,7 +378,7 @@ class CoordinateSplit:
             # SEARCH IN OLD_VAL.JSON
             for image in old_val_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"test/{name}"
                     new_test_anns["images"].append(image)
                     id = image["id"]
@@ -388,7 +389,7 @@ class CoordinateSplit:
             # SEARCH IN OLD_TEST.JSON
             for image in old_test_annotations["images"]:
                 name = image["file_name"].split("/")[-1]
-                if name == filename:
+                if name == filename and name.startswith("T"):
                     image["file_name"] = f"test/{name}"
                     new_test_anns["images"].append(image)
                     id = image["id"]
