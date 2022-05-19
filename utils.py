@@ -9,7 +9,8 @@ import os
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Tuple, Union
-
+import geojson
+from osgeo import osr
 import cv2
 import numpy as np
 import pycocotools.mask as mask
@@ -571,6 +572,37 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
     with open(output_folder / filename, "w") as f:
         json.dump(data, f)
 
+
+def get_permit_locations(file: Path) -> None:
+    pass
+
+def get_bridge_information(file: Path) -> List[Dict[str, Any]]:
+    """
+    Return a list of coordinates where to find vulnerable bridges and canal walls
+    """
+    def rd_to_wgs(coords):
+        """
+        Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
+        """
+        epsg28992 = osr.SpatialReference()
+        epsg28992.ImportFromEPSG(28992)
+
+        epsg4326 = osr.SpatialReference()
+        epsg4326.ImportFromEPSG(4326)
+
+        rd2latlon = osr.CoordinateTransformation(epsg28992, epsg4326)
+        lonlatz = rd2latlon.TransformPoint(coords[0], coords[1])
+        return lonlatz[:2]
+
+
+    with open(file) as f:
+        gj = geojson.load(f)
+    features = gj['features']
+    for feature in features:
+        if feature["geometry"]["coordinates"]:
+            for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
+                feature["geometry"]["coordinates"][0][idx] = rd_to_wgs(coords)
+    return features
 
 # correct_faulty_panoramas()
 

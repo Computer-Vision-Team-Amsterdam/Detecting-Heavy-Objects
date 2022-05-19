@@ -16,7 +16,7 @@ from triangulation.helpers import \
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
-from utils import save_json_data
+from utils import save_json_data, get_permit_locations, get_bridge_information
 from visualizations.stats import DataStatistics
 
 
@@ -30,6 +30,8 @@ class PostProcessing:
         json_predictions: Path,
         threshold: float = 20000,
         mask_degrees: float = 90,
+        permits_file: Path = "decos.txt",
+        bridges_file: Path = "bridges.geojson",
         output_folder: Path = Path.cwd(),
     ) -> None:
         """
@@ -45,6 +47,8 @@ class PostProcessing:
         self.threshold = threshold
         self.mask_degrees = mask_degrees
         self.output_folder = output_folder
+        self.permits_file = permits_file
+        self.bridges_file = bridges_file
         self.output_folder.mkdir(exist_ok=True, parents=True)
         self.objects_file = Path("points_of_interest.csv")
         self.data_file = Path("processed_predictions.json")
@@ -114,17 +118,21 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
+    def prioritize_notifications(self):
+        get_permit_locations(self.permits_file)
+        get_bridge_information(self.bridges_file)
 
 if __name__ == "__main__":
     output_path = Path("Test")
     postprocess = PostProcessing(
         Path("coco_instances_results_14ckpt.json"), output_folder=output_path
     )
-    postprocess.filter_by_size()
-    postprocess.filter_by_angle()
-    postprocess.find_points_of_interest()
-    panoramas = get_panos_from_points_of_interest(
-        output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
-    )
-    for pano in panoramas:
-        PanoramaClient.download_image(pano, output_location=output_path)
+    # postprocess.filter_by_size()
+    # postprocess.filter_by_angle()
+    # postprocess.find_points_of_interest()
+    # panoramas = get_panos_from_points_of_interest(
+    #     output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
+    # )
+    postprocess.prioritize_notifications()
+    # for pano in panoramas:
+    #     PanoramaClient.download_image(pano, output_location=output_path)
