@@ -3,6 +3,7 @@ pretty = True
 show_absolute_path = True
 show_column_numbers = True
 show_error_codes = True
+exclude = yolov5
 
 check_untyped_defs = True
 disallow_any_generics = True
