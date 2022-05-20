@@ -49,7 +49,6 @@ def blur_imagery(
         img = img.to(device, non_blocking=True)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        nb, _, height, width = img.shape  # batch size, channels, height, width
 
         with torch.no_grad():
             inf_out, train_out = model(img)  # inference and training outputs
@@ -82,7 +81,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="blur.py")
     parser.add_argument(
         "--weights",
-        nargs="+",
         type=str,
         default="weights/best.pt",
         help="model.pt path(s)",
