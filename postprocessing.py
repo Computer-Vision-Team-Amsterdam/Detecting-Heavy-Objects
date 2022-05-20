@@ -3,9 +3,12 @@ This model applies different post processing steps on the results file of the de
 """
 import csv
 from copy import deepcopy
+from datetime import datetime, date
 from pathlib import Path
+from typing import List
 
 import geopy.distance
+import numpy as np
 import pycocotools.mask as mask_util
 import torch
 from panorama.client import PanoramaClient
@@ -20,6 +23,7 @@ from triangulation.triangulate import triangulate
 from utils import (
     calculate_distance_in_meters,
     get_bridge_information,
+    get_container_locations,
     get_permit_locations,
     save_json_data,
 )
@@ -36,8 +40,9 @@ class PostProcessing:
         json_predictions: Path,
         threshold: float = 20000,
         mask_degrees: float = 90,
-        permits_file: Path = "decos.xml",
-        bridges_file: Path = "bridges.geojson",
+        date_to_check: datetime = datetime(2021, 3, 17),
+        permits_file: Path = Path("decos.xml"),
+        bridges_file: Path = Path("bridges.geojson"),
         output_folder: Path = Path.cwd(),
     ) -> None:
         """
@@ -55,9 +60,11 @@ class PostProcessing:
         self.output_folder = output_folder
         self.permits_file = permits_file
         self.bridges_file = bridges_file
+        self.date_to_check = date_to_check
         self.output_folder.mkdir(exist_ok=True, parents=True)
         self.objects_file = Path("points_of_interest.csv")
         self.data_file = Path("processed_predictions.json")
+        self.prioritized_file = Path("prioritized_objects.csv")
 
     def find_points_of_interest(self) -> None:
         """
@@ -124,40 +131,74 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self) -> None:
-        permit_locations = get_permit_locations(self.permits_file)
-        permit_locations = [Point(permit_location) for permit_location in permit_locations]
-        bridge_locations = get_bridge_information(self.bridges_file)
-        bridge_locations = [
-            LineString(bridge_location["geometry"]["coordinates"][0])
-            for bridge_location in bridge_locations
-            if bridge_location["geometry"]["coordinates"]
+    def prioritize_notifications(self) -> List[List[float]]:
+        """
+        Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
+        """
+
+        def calculate_score(bridge_distance: float, permit_distance: float) -> float:
+            """
+            Calculate score for bridge and permit distance;
+            High score --> Permit big, bridge  small
+            medium --> Permit high, bridge high or permit low, bridge high
+            low --> permit low, bridge high
+            """
+            return permit_distance + max([25 - bridge_distance, 0])
+
+        permit_locations = get_permit_locations(self.permits_file, self.date_to_check)
+        permit_locations_geom = [
+            Point(permit_location) for permit_location in permit_locations
         ]
-        container_locations = []
-        with open(self.output_folder / self.objects_file) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=",")
-            next(csv_reader)  # skip first line
-            for row in csv_reader:
-                container_locations.append(Point(float(row[0]), float(row[1])))
+        bridge_locations = get_bridge_information(self.bridges_file)
+        bridge_locations_geom = [
+            LineString(bridge_location)
+            for bridge_location in bridge_locations
+            if bridge_location
+        ]
+        container_locations = get_container_locations(
+            self.output_folder / self.objects_file
+        )
+        container_locations_geom = [Point(location) for location in container_locations]
+
         bridges_distances = []
         permit_distances = []
-        for container_location in container_locations:
+        for container_location in container_locations_geom:
             closest_bridge_distance = min(
                 [
                     calculate_distance_in_meters(bridge_location, container_location)
-                    for bridge_location in bridge_locations
+                    for bridge_location in bridge_locations_geom
                 ]
             )
             bridges_distances.append(closest_bridge_distance)
 
             closest_permit_distance = min(
                 [
-                    geopy.distance.distance(container_location.coords, permit_location.coords).meters
-                    for permit_location in permit_locations
+                    geopy.distance.distance(
+                        container_location.coords, permit_location.coords
+                    ).meters
+                    for permit_location in permit_locations_geom
                 ]
             )
             permit_distances.append(closest_permit_distance)
-            print(closest_permit_distance)
+        scores = [
+            calculate_score(bridges_distances[idx], permit_distances[idx])
+            for idx in range(len(container_locations))
+        ]
+        sorted_indices = list(np.argsort(scores))
+        sorted_indices.reverse()
+        prioritized_containers = [container_locations[idx] for idx in sorted_indices]
+        header = ["lat", "lon", "score", "permit_distance", "bridge_distance"]
+        with open(self.output_folder / self.prioritized_file, "w") as file:
+            writer = csv.writer(
+                file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
+            writer.writerow(header)
+            for idx in sorted_indices:
+                writer.writerow(
+                    container_locations[idx]
+                    + [scores[idx], permit_distances[idx], bridges_distances[idx]]
+                )
+        return prioritized_containers
 
 
 if __name__ == "__main__":
@@ -165,12 +206,12 @@ if __name__ == "__main__":
     postprocess = PostProcessing(
         Path("coco_instances_results_14ckpt.json"), output_folder=output_path
     )
-    # postprocess.filter_by_size()
-    # postprocess.filter_by_angle()
-    # postprocess.find_points_of_interest()
-    # panoramas = get_panos_from_points_of_interest(
-    #     output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
-    # )
+    postprocess.filter_by_size()
+    postprocess.filter_by_angle()
+    postprocess.find_points_of_interest()
+    panoramas = get_panos_from_points_of_interest(
+        output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
+    )
     postprocess.prioritize_notifications()
-    # for pano in panoramas:
-    #     PanoramaClient.download_image(pano, output_location=output_path)
+    for pano in panoramas:
+        PanoramaClient.download_image(pano, output_location=output_path)

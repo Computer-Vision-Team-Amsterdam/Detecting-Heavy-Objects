@@ -2,16 +2,17 @@
 This module contains general functionality to handle the annotated data
 """
 import copy
+import csv
 import itertools
 import json
 import logging
 import os
 import shutil
-from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Tuple, Union
-from tqdm import tqdm
 import xml.etree.ElementTree as Xet
 from datetime import datetime
+from difflib import get_close_matches
+from pathlib import Path
+from typing import Any, Dict, List, NamedTuple, Tuple, Union
 
 import cv2
 import geojson
@@ -23,7 +24,9 @@ from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
 from osgeo import osr
 from PIL import Image
+from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
+from tqdm import tqdm
 
 
 class DataFormatConverter:
@@ -578,35 +581,55 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
         json.dump(data, f)
 
 
-def get_permit_locations(file: Path) -> None:
+def get_permit_locations(file: Path, date_to_check: datetime) -> List[List[float]]:
     xmlparse = Xet.parse(file)
     root = xmlparse.getroot()
-
-    locator = geopy.Nominatim(user_agent='myGeocoder')
-    container_words = ["puinbak", "puincontainer", "container", "puincontainer", "afvalcontainer", "zeecontainer", "keet", "schaftkeet" ]
+    locator = geopy.Nominatim(user_agent="myGeocoder")
+    container_words = [
+        "puinbak",
+        "puincontainer",
+        "container",
+        "puincontainer",
+        "afvalcontainer",
+        "zeecontainer",
+        "keet",
+        "schaftkeet",
+        "vuilcontainer",
+    ]
     permit_locations = []
+    print("Parsing the permits information")
     for item in tqdm(root):
-        description = item.find("TEXT8").text
-        if not any(container_word in description for container_word in container_words):
-            continue
+        # The permits seem to have a quite free format. Let's catch some exceptions
+        try:
+            description = item.find("TEXT8").text
+            # Check if permit is for containers
+            if not any(
+                get_close_matches(word, container_words) for word in description.split(" ")
+            ):
+                continue
 
-        start_date = datetime.strptime(item.find("DATE6").text, '%Y-%m-%dT%H:%M:%S')
-        end_date = datetime.strptime(item.find("DATE8").text, '%Y-%m-%dT%H:%M:%S')
+            start_date = datetime.strptime(item.find("DATE6").text, "%Y-%m-%dT%H:%M:%S")
+            end_date = datetime.strptime(item.find("DATE7").text, "%Y-%m-%dT%H:%M:%S")
 
-        adress = item.find("TEXT6").text
-        location = locator.geocode(adress + ", Amsterdam, Netherlands")
-        lonlat = [location.latitude, location.longitude]
-        permit_locations.append(lonlat)
+            # Check if permit is valid
+            if not (end_date >= date_to_check >= start_date):
+                continue
+
+            address = item.find("TEXT6").text
+            location = locator.geocode(address + ", Amsterdam, Netherlands")
+            lonlat = [location.latitude, location.longitude]
+            permit_locations.append(lonlat)
+        except Exception as e:
+            print(f"Error {e} has occured with one of the permits")
     return permit_locations
 
 
-
-def get_bridge_information(file: Path) -> List[Dict[str, Union[List]]]:
+def get_bridge_information(file: Path) -> List[List[List[float]]]:
     """
     Return a list of coordinates where to find vulnerable bridges and canal walls
     """
 
-    def rd_to_wgs(coords: List[float]) -> List[Dict[str, Union[str, List, Dict]]]:
+    def rd_to_wgs(coordinates: List[float]) -> List[float]:
         """
         Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
         """
@@ -617,22 +640,36 @@ def get_bridge_information(file: Path) -> List[Dict[str, Union[List]]]:
         epsg4326.ImportFromEPSG(4326)
 
         rd2latlon = osr.CoordinateTransformation(epsg28992, epsg4326)
-        lonlatz = rd2latlon.TransformPoint(coords[0], coords[1])
+        lonlatz = rd2latlon.TransformPoint(coordinates[0], coordinates[1])
         return [float(value) for value in lonlatz[:2]]
 
+    bridges_coords = []
     with open(file) as f:
         gj = geojson.load(f)
     features = gj["features"]
-    for feature in features:
+    print("Parsing the bridges information")
+    for feature in tqdm(features):
+        bridge_coords = []
         if feature["geometry"]["coordinates"]:
             for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
-                feature["geometry"]["coordinates"][0][idx] = rd_to_wgs(coords)
-    return features
+                bridge_coords.append(rd_to_wgs(coords))
+        bridges_coords.append(bridge_coords)
+    return bridges_coords
 
 
-def calculate_distance_in_meters(line, point):
+def get_container_locations(file: Path) -> List[List[float]]:
+    container_locations = []
+    with open(file) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=",")
+        next(csv_reader)  # skip first line
+        for row in csv_reader:
+            container_locations.append([float(row[0]), float(row[1])])
+    return container_locations
+
+
+def calculate_distance_in_meters(line: LineString, point: Point) -> float:
     closest_point = nearest_points(line, point)[0]
-    return geopy.distance.distance(closest_point.coords, point.coords).meters
+    return float(geopy.distance.distance(closest_point.coords, point.coords).meters)
 
 
 """
