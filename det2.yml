@@ -2,100 +2,108 @@ name: det2
 channels:
   - pytorch
   - intel
-  - anaconda
   - conda-forge
+  - anaconda
   - defaults
 dependencies:
-  - astroid=2.5
-  - blas=1.0
-  - bottleneck=1.3.2
-  - bzip2=1.0.8
-  - ca-certificates=2021.10.26
-  - certifi=2021.10.8
-  - dpcpp-cpp-rt=2021.4.0
-  - dpcpp_cpp_rt=2021.4.0
-  - ffmpeg=4.2.2
-  - folium=0.12.1.post1
-  - freetype=2.11.0
-  - gettext=0.21.0
-  - gmp=6.2.1
-  - gnutls=3.6.15
-  - icc_rt=2021.4.0
-  - icu=58.2
-  - intel-cmplr-lic-rt=2021.4.0
-  - intel-openmp=2021.4.0
-  - intelpython=2021.4.0
-  - isort=5.10.1
-  - joblib=1.1.0
-  - jpeg=9b
-  - lame=3.100
-  - lazy-object-proxy=1.6.0
-  - lcms2=2.12
-  - libcxx=12.0.0
-  - libffi=3.3
-  - libiconv=1.16
-  - libidn2=2.3.2
-  - libopus=1.3.1
-  - libpng=1.6.37
-  - libtasn1=4.16.0
-  - libtiff=4.2.0
-  - libunistring=0.9.10
-  - libuv=1.40.0
-  - libvpx=1.7.0
-  - libwebp-base=1.2.0
-  - libxml2=2.9.12
-  - llvm-openmp=10.0.0
-  - lz4-c=1.9.3
-  - mccabe=0.6.1
-  - mkl=2021.4.0
-  - mkl-service=2.4.0
-  - mkl_fft=1.3.1
-  - mkl_random=1.2.2
-  - mypy=0.910
-  - mypy_extensions=0.4.3
-  - ncurses=6.3
-  - nettle=3.7.3
-  - ninja=1.10.2
-  - numexpr=2.7.3
-  - olefile=0.46
-  - openh264=2.1.0
-  - openssl=1.1.1l
-  - pandas=1.3.4
-  - pillow=8.0.0
-  - pip=21.2.2
-  - psutil=5.8.0
-  - pylint=2.6.0
-  - python=3.7.11
-  - python-dateutil=2.8.2
-  - python_abi=3.7
-  - python-geohash=0.8.5
-  - pytorch=1.8.0
-  - readline=8.1
-  - setuptools=58.0.4
-  - six=1.16.0
-  - sqlite=3.36.0
-  - shapely=1.8.0
-  - tbb=2021.4.0
-  - tcl=8.6.10
-  - tk=8.6.11
-  - toml=0.10.2
-  - torchaudio=0.8.0
-  - torchvision=0.9.0
-  - typing_extensions=3.10.0.2
-  - wheel=0.37.0
-  - wrapt=1.13.3
-  - x264=1!157.20191217
-  - xz=5.2.5
-  - yaml=0.2.5
-  - zlib=1.2.11.1
-  - zstd=1.4.9
+  - astroid=2.5=py37hecd8cb5_1
+  - blas=1.0=mkl
+  - bottleneck=1.3.2=py37hf1fa96c_1
+  - branca=0.5.0=pyhd8ed1ab_0
+  - brotlipy=0.7.0=py37h9ed2024_1003
+  - bzip2=1.0.8=h23dc21b_9
+  - ca-certificates=2021.10.26=hecd8cb5_2
+  - cffi=1.15.0=py37hc55c11b_1
+  - chardet=4.0.0=py37hecd8cb5_1003
+  - dpcpp-cpp-rt=2021.4.0=intel_3538
+  - dpcpp_cpp_rt=2021.4.0=intel_3538
+  - ffmpeg=4.2.2=h97e5cf8_0
+  - folium=0.12.1.post1=pyhd8ed1ab_1
+  - freetype=2.11.0=hd8bbffd_0
+  - geos=3.10.2=he49afe7_0
+  - gettext=0.21.0=h7535e17_0
+  - gmp=6.2.1=h23ab428_2
+  - gnutls=3.6.15=hed9c0bf_0
+  - icc_rt=2021.4.0=intel_3538
+  - icu=58.2=h0a44026_3
+  - intel-cmplr-lic-rt=2021.4.0=intel_3538
+  - intel-openmp=2021.4.0=intel_3538
+  - intelpython=2021.4.0=0
+  - joblib=1.1.0=pyhd3eb1b0_0
+  - jpeg=9b=he5867d9_2
+  - lame=3.100=h1de35cc_0
+  - lazy-object-proxy=1.6.0=py37h9ed2024_0
+  - lcms2=2.12=hf1fd2bf_0
+  - libcxx=12.0.0=h2f01273_0
+  - libffi=3.3=14
+  - libiconv=1.16=h81f303f_1
+  - libidn2=2.3.2=h9ed2024_0
+  - libopus=1.3.1=h1de35cc_0
+  - libpng=1.6.37=8
+  - libtasn1=4.16.0=h9ed2024_0
+  - libtiff=4.2.0=h87d7836_0
+  - libunistring=0.9.10=h9ed2024_0
+  - libuv=1.40.0=haf1e3a3_0
+  - libvpx=1.7.0=h378b8a2_0
+  - libwebp-base=1.2.0=h9ed2024_0
+  - libxml2=2.9.12=h83f727e_2
+  - llvm-openmp=10.0.0=h28b9765_0
+  - lz4-c=1.9.3=hf24a2c9_1
+  - markupsafe=2.0.1=py37h9ed2024_0
+  - mccabe=0.6.1=py37_1
+  - mkl=2021.4.0=intel_637
+  - mkl-service=2.4.0=py37hb1f5fab_1
+  - mkl_fft=1.3.1=py37h52c5b4f_0
+  - mkl_random=1.2.2=py37hd708486_1
+  - mypy=0.910=py37h271585c_4
+  - mypy_extensions=0.4.3=py37hecd8cb5_1
+  - ncurses=6.3=hca72f7f_2
+  - nettle=3.7.3=h230ac6f_1
+  - ninja=1.10.2=hecd8cb5_5
+  - ninja-base=1.10.2=haf03e11_5
+  - numexpr=2.7.3=py37h429be29_1
+  - numpy-base=1.21.2=py37he0bd621_0
+  - olefile=0.46=pyhd3eb1b0_0
+  - openh264=2.1.0=hd9629dc_0
+  - openssl=1.1.1l=h9ed2024_0
+  - pandas=1.3.4=py37h743cdd8_0
+  - psutil=5.8.0=py37h9ed2024_1
+  - pycparser=2.21=pyhd3eb1b0_0
+  - pylint=2.6.0=py37_0
+  - pysocks=1.7.1=py37hecd8cb5_0
+  - python=3.7.11=h9d3246d_6
+  - python-dateutil=2.8.2=py37_1
+  - python-geohash=0.8.5=py37hd8d24ac_3
+  - python_abi=3.7=2_cp37m
+  - pytorch=1.8.0=py3.7_0
+  - pytz=2021.3=pyhd3eb1b0_0
+  - readline=8.1.2=hca72f7f_1
+  - setuptools=58.0.4=py37hecd8cb5_0
+  - six=1.16.0=pyhd3eb1b0_1
+  - sqlite=3.36.0=hd543cf0_3
+  - tbb=2021.4.0=intel_617
+  - tcl=8.6.10=2
+  - tk=8.6.11=h7bc2e8c_0
+  - toml=0.10.2=pyhd3eb1b0_0
+  - torchaudio=0.8.0=py37
+  - torchvision=0.9.0=py37_cpu
+  - typed-ast=1.4.3=py37h9ed2024_1
+  - typing_extensions=3.10.0.2=pyh06a4308_0
+  - wheel=0.37.0=pyhd3eb1b0_1
+  - x264=1!157.20191217=h1de35cc_0
+  - xz=5.2.5=hc21d12f_2
+  - yaml=0.2.5=haf1e3a3_0
+  - zlib=1.2.11.1=h6ba8802_5
+  - zstd=1.4.9=h322a384_0
   - pip:
     - absl-py==1.0.0
     - adal==1.2.7
+    - alabaster==0.7.12
     - antlr4-python3-runtime==4.8
     - anyio==3.4.0
     - appdirs==1.4.4
     - astunparse==1.6.3
+    - attrs==21.2.0
     - azure-common==1.1.27
     - azure-core==1.20.1
     - azure-graphrbac==0.61.1
@@ -106,92 +114,150 @@ dependencies:
     - azure-mgmt-resource==13.0.0
     - azure-mgmt-storage==11.2.0
     - azureml-core==1.36.0.post2
+    - babel==2.9.1
     - backports-tempfile==1.0
     - backports-weakref==1.0.post1
     - black==21.4b2
+    - bleach==5.0.0
     - cachetools==4.2.4
-    - cffi==1.15.0
+    - certifi==2021.5.30
     - charset-normalizer==2.0.8
     - click==8.0.3
+    - click-plugins==1.1.1
+    - cligj==0.7.2
     - cloudpickle==2.0.0
+    - commonmark==0.9.1
     - contextlib2==21.6.0
+    - coverage==5.5
     - cryptography==3.4.8
     - cycler==0.11.0
     - cython==0.29.24
+    - deprecation==2.1.0
+    - detectron2==0.6
+    - dill==0.3.4
     - docker==5.0.3
+    - docutils==0.17.1
+    - eyed3==0.9.6
+    - filetype==1.0.13
+    - fiona==1.8.21
     - flatbuffers==2.0
     - fonttools==4.28.2
     - future==0.18.2
     - fvcore==0.1.5.post20211023
     - gast==0.4.0
+    - gdal==3.4.3
+    - geographiclib==1.52
     - geojson==2.5.0
+    - geopandas==0.10.2
+    - geopy==2.2.0
     - google-auth==2.3.3
     - google-auth-oauthlib==0.4.6
     - grpcio==1.42.0
     - h11==0.12.0
+    - haversine==2.5.1
     - httpcore==0.13.7
     - httpx==0.19.0
     - hydra-core==1.1.1
     - idna==3.3
+    - imagesize==1.2.0
+    - imantics==0.1.12
     - importlib-metadata==4.8.2
     - importlib-resources==5.4.0
+    - iniconfig==1.1.1
     - iopath==0.1.9
     - isodate==0.6.0
+    - isort==5.9.3
     - jeepney==0.7.1
+    - jinja2==3.0.2
     - jmespath==0.10.0
     - jsonpickle==2.0.0
     - keras==2.7.0
+    - keyring==23.5.0
     - kiwisolver==1.3.2
     - libclang==12.0.0
+    - lxml==4.8.0
     - markdown==3.3.6
     - matplotlib==3.5.0
+    - more-itertools==8.10.0
     - msrest==0.6.21
     - msrestazure==0.6.4
+    - multidict==5.1.0
+    - munch==2.5.0
     - ndg-httpsclient==0.5.1
-    - numpy==1.21.4
+    - numpy==1.21.6
     - oauthlib==3.1.1
     - omegaconf==2.1.1
     - opencv-python==4.5.4.60
+    - osr==0.0.1
     - packaging==21.3
-    - panorama==0.2.0
+    - panorama==0.2.2
     - pathspec==0.9.0
+    - pillow==9.1.0
+    - pip==22.0.4
+    - pkginfo==1.8.2
+    - platformdirs==2.4.0
+    - pluggy==0.13.1
     - portalocker==2.3.2
     - protobuf==3.19.1
+    - py==1.10.0
     - pyasn1==0.4.8
     - pyasn1-modules==0.2.8
-    - pycocotools==2.0.3
-    - pycparser==2.21
+    - pycocotools==2.0.4
     - pydantic==1.8.2
     - pydot==1.4.2
+    - pyglet==1.1.4
+    - pygments==2.10.0
     - pyjwt==2.3.0
     - pyopenssl==20.0.1
-    - pytest==6.2.5
-    - pytest-cov==3.0.0
     - pyparsing==3.0.6
+    - pyproj==3.2.1
+    - pytest==6.2.5
+    - pytest-asyncio==0.15.1
+    - pytest-cov==3.0.0
+    - pytest-vcr==1.0.2
     - python-resize-image==1.1.20
-    - pytz==2021.3
     - pyyaml==6.0
+    - readme-renderer==35.0
     - regex==2021.11.10
     - requests==2.26.0
     - requests-oauthlib==1.3.0
+    - requests-toolbelt==0.9.1
     - rfc3986==1.5.0
+    - rich==12.3.0
     - rsa==4.8
+    - scipy==1.7.3
     - secretstorage==3.3.1
     - setuptools-scm==6.3.2
+    - shapely==1.8.2
     - sniffio==1.2.0
+    - snowballstemmer==2.1.0
+    - sphinx==4.2.0
+    - sphinxcontrib-applehelp==1.0.2
+    - sphinxcontrib-devhelp==1.0.2
+    - sphinxcontrib-htmlhelp==2.0.0
+    - sphinxcontrib-jsmath==1.0.1
+    - sphinxcontrib-qthelp==1.0.3
+    - sphinxcontrib-serializinghtml==1.1.5
     - tabulate==0.8.9
     - tensorboard==2.7.0
     - tensorboard-data-server==0.6.1
     - tensorboard-plugin-wit==1.8.0
     - termcolor==1.1.0
     - tomli==1.2.2
-    - tqdm==4.62.3
-    - typed-ast==1.5.0
+    - tqdm==4.64.0
+    - triangulation==0.1.22
+    - twine==4.0.0
     - types-pyyaml==6.0.7
+    - typing-extensions==4.2.0
     - urllib3==1.26.7
+    - vcrpy==4.1.1
+    - wcwidth==0.2.5
+    - webencodings==0.5.1
     - websocket-client==1.2.1
     - werkzeug==2.0.2
+    - wrapt==1.12.1
+    - xmljson==0.2.1
     - yacs==0.1.8
+    - yarl==1.6.3
     - zipp==3.6.0
-prefix: /Users/dianaepureanu/opt/miniconda3/envs/det2
-
+prefix: /Users/laurenssamson/miniconda3/envs/det2
