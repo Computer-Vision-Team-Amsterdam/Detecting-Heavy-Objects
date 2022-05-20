@@ -149,7 +149,7 @@ config.json
 
 # jupyter notebooks
 *.ipynb
-
+*.pyc
 # generated html and pickle files
 *.html
 visualizations/*.html
