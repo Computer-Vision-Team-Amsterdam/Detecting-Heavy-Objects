@@ -9,16 +9,21 @@ import os
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Tuple, Union
-import geojson
-from osgeo import osr
+from tqdm import tqdm
+import xml.etree.ElementTree as Xet
+from datetime import datetime
+
 import cv2
+import geojson
+import geopy.distance
 import numpy as np
-import pycocotools.mask as mask
 import yaml
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
+from osgeo import osr
 from PIL import Image
+from shapely.ops import nearest_points
 
 
 class DataFormatConverter:
@@ -574,13 +579,34 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
 
 
 def get_permit_locations(file: Path) -> None:
-    pass
+    xmlparse = Xet.parse(file)
+    root = xmlparse.getroot()
 
-def get_bridge_information(file: Path) -> List[Dict[str, Any]]:
+    locator = geopy.Nominatim(user_agent='myGeocoder')
+    container_words = ["puinbak", "puincontainer", "container", "puincontainer", "afvalcontainer", "zeecontainer", "keet", "schaftkeet" ]
+    permit_locations = []
+    for item in tqdm(root):
+        description = item.find("TEXT8").text
+        if not any(container_word in description for container_word in container_words):
+            continue
+
+        start_date = datetime.strptime(item.find("DATE6").text, '%Y-%m-%dT%H:%M:%S')
+        end_date = datetime.strptime(item.find("DATE8").text, '%Y-%m-%dT%H:%M:%S')
+
+        adress = item.find("TEXT6").text
+        location = locator.geocode(adress + ", Amsterdam, Netherlands")
+        lonlat = [location.latitude, location.longitude]
+        permit_locations.append(lonlat)
+    return permit_locations
+
+
+
+def get_bridge_information(file: Path) -> List[Dict[str, Union[List]]]:
     """
     Return a list of coordinates where to find vulnerable bridges and canal walls
     """
-    def rd_to_wgs(coords):
+
+    def rd_to_wgs(coords: List[float]) -> List[Dict[str, Union[str, List, Dict]]]:
         """
         Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
         """
@@ -592,19 +618,22 @@ def get_bridge_information(file: Path) -> List[Dict[str, Any]]:
 
         rd2latlon = osr.CoordinateTransformation(epsg28992, epsg4326)
         lonlatz = rd2latlon.TransformPoint(coords[0], coords[1])
-        return lonlatz[:2]
-
+        return [float(value) for value in lonlatz[:2]]
 
     with open(file) as f:
         gj = geojson.load(f)
-    features = gj['features']
+    features = gj["features"]
     for feature in features:
         if feature["geometry"]["coordinates"]:
             for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
                 feature["geometry"]["coordinates"][0][idx] = rd_to_wgs(coords)
     return features
 
-# correct_faulty_panoramas()
+
+def calculate_distance_in_meters(line, point):
+    closest_point = nearest_points(line, point)[0]
+    return geopy.distance.distance(closest_point.coords, point.coords).meters
+
 
 """
 input = "/Users/dianaepureanu/Documents/Projects/versions_of_data/data_extended/annotations-renamed-filenames-4000x2000.json"

@@ -1,22 +1,28 @@
 """
 This model applies different post processing steps on the results file of the detectron2 model
 """
-
-import json
+import csv
 from copy import deepcopy
-from datetime import date
 from pathlib import Path
 
+import geopy.distance
 import pycocotools.mask as mask_util
 import torch
 from panorama.client import PanoramaClient
+from shapely.geometry import LineString, Point
 from tqdm import tqdm
-from triangulation.helpers import \
-    get_panos_from_points_of_interest  # pylint: disable-all
+from triangulation.helpers import (
+    get_panos_from_points_of_interest,
+)  # pylint: disable-all
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
-from utils import save_json_data, get_permit_locations, get_bridge_information
+from utils import (
+    calculate_distance_in_meters,
+    get_bridge_information,
+    get_permit_locations,
+    save_json_data,
+)
 from visualizations.stats import DataStatistics
 
 
@@ -30,7 +36,7 @@ class PostProcessing:
         json_predictions: Path,
         threshold: float = 20000,
         mask_degrees: float = 90,
-        permits_file: Path = "decos.txt",
+        permits_file: Path = "decos.xml",
         bridges_file: Path = "bridges.geojson",
         output_folder: Path = Path.cwd(),
     ) -> None:
@@ -118,9 +124,41 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self):
-        get_permit_locations(self.permits_file)
-        get_bridge_information(self.bridges_file)
+    def prioritize_notifications(self) -> None:
+        permit_locations = get_permit_locations(self.permits_file)
+        permit_locations = [Point(permit_location) for permit_location in permit_locations]
+        bridge_locations = get_bridge_information(self.bridges_file)
+        bridge_locations = [
+            LineString(bridge_location["geometry"]["coordinates"][0])
+            for bridge_location in bridge_locations
+            if bridge_location["geometry"]["coordinates"]
+        ]
+        container_locations = []
+        with open(self.output_folder / self.objects_file) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=",")
+            next(csv_reader)  # skip first line
+            for row in csv_reader:
+                container_locations.append(Point(float(row[0]), float(row[1])))
+        bridges_distances = []
+        permit_distances = []
+        for container_location in container_locations:
+            closest_bridge_distance = min(
+                [
+                    calculate_distance_in_meters(bridge_location, container_location)
+                    for bridge_location in bridge_locations
+                ]
+            )
+            bridges_distances.append(closest_bridge_distance)
+
+            closest_permit_distance = min(
+                [
+                    geopy.distance.distance(container_location.coords, permit_location.coords).meters
+                    for permit_location in permit_locations
+                ]
+            )
+            permit_distances.append(closest_permit_distance)
+            print(closest_permit_distance)
+
 
 if __name__ == "__main__":
     output_path = Path("Test")
