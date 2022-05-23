@@ -16,6 +16,8 @@ from typing import Any, Dict, List, NamedTuple, Tuple, Union
 
 import cv2
 import geojson
+import pytest
+pytest.importorskip("osgeo")
 import geopy.distance
 import numpy as np
 import yaml
