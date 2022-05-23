@@ -16,15 +16,13 @@ from typing import Any, Dict, List, NamedTuple, Tuple, Union
 
 import cv2
 import geojson
-import pytest
-pytest.importorskip("osgeo")
 import geopy.distance
 import numpy as np
 import yaml
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
-from osgeo import osr  # pylint: disable=import-error
+from osgeo import osr  # pragma: no cover # pylint: disable=import-error
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from tqdm import tqdm
