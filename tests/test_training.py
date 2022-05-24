@@ -1,6 +1,10 @@
 from pathlib import Path
 from unittest import TestCase
 
+import pytest
+
+pytest.importorskip("osr")
+
 from utils import collect_nested_lists
 
 ROOT = Path(__file__).parent.parent

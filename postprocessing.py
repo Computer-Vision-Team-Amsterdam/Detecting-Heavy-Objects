@@ -3,7 +3,7 @@ This model applies different post processing steps on the results file of the de
 """
 import csv
 from copy import deepcopy
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
 from typing import List
 
@@ -26,6 +26,7 @@ from utils import (
     get_container_locations,
     get_permit_locations,
     save_json_data,
+    write_to_csv,
 )
 from visualizations.stats import DataStatistics
 
@@ -131,7 +132,7 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self) -> List[List[float]]:
+    def prioritize_notifications(self) -> None:
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
         """
@@ -140,8 +141,8 @@ class PostProcessing:
             """
             Calculate score for bridge and permit distance;
             High score --> Permit big, bridge  small
-            medium --> Permit high, bridge high or permit low, bridge high
-            low --> permit low, bridge high
+            medium score --> Permit big, bridge big or permit small, bridge big
+            low score --> permit small, bridge big
             """
             return permit_distance + max([25 - bridge_distance, 0])
 
@@ -184,21 +185,23 @@ class PostProcessing:
             calculate_score(bridges_distances[idx], permit_distances[idx])
             for idx in range(len(container_locations))
         ]
-        sorted_indices = list(np.argsort(scores))
-        sorted_indices.reverse()
-        prioritized_containers = [container_locations[idx] for idx in sorted_indices]
-        header = ["lat", "lon", "score", "permit_distance", "bridge_distance"]
-        with open(self.output_folder / self.prioritized_file, "w") as file:
-            writer = csv.writer(
-                file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
-            )
-            writer.writerow(header)
-            for idx in sorted_indices:
-                writer.writerow(
-                    container_locations[idx]
-                    + [scores[idx], permit_distances[idx], bridges_distances[idx]]
-                )
-        return prioritized_containers
+        sorted_indices = np.argsort([score * -1 for score in scores])
+        prioritized_containers = np.array(container_locations)[sorted_indices]
+        permit_distances_sorted = np.array(permit_distances)[sorted_indices]
+        bridges_distances_sorted = np.array(bridges_distances)[sorted_indices]
+        sorted_scores = np.array(scores)[sorted_indices]
+
+        write_to_csv(
+            [
+                prioritized_containers[:, 0],
+                prioritized_containers[:, 1],
+                sorted_scores,
+                permit_distances_sorted,
+                bridges_distances_sorted,
+            ],
+            ["lat", "lon", "score", "permit_distance", "bridge_distance"],
+            self.output_folder / self.prioritized_file,
+        )
 
 
 if __name__ == "__main__":
