@@ -23,7 +23,7 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "detectron_map2_inference_17mar"
+EXPERIMENT_NAME = "augmentations_inference"
 
 
 ws = Workspace.from_config()

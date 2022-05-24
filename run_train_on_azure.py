@@ -23,7 +23,7 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "new_split"
+EXPERIMENT_NAME = "augs"
 
 
 ws = Workspace.from_config()

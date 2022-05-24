@@ -16,4 +16,7 @@ RUN git clone https://github.com/facebookresearch/detectron2.git
 RUN python -m pip install -e detectron2
 RUN python -m pip install azureml-sdk
 RUN python -m pip install shapely
+RUN python -m pip install -U albumentations
+RUN python -m pip install wandb
+
 
