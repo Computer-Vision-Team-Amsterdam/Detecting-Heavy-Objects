@@ -2,7 +2,10 @@ import os
 from pathlib import Path
 from unittest import TestCase
 
+import pytest
 from detectron2.data import MetadataCatalog
+
+pytest.importorskip("osr")
 
 from utils import ExperimentConfig, register_dataset
 

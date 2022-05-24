@@ -5,7 +5,10 @@ from typing import Any, List
 from unittest import TestCase
 from unittest.mock import Mock, call
 
-from utils import DataFormatConverter
+import pytest
+
+pytest.importorskip("osr")
+from utils import DataFormatConverter  # pragma: no cover
 
 
 class Test(TestCase):
