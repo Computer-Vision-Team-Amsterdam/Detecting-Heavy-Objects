@@ -696,7 +696,8 @@ def get_bridge_information(file: Path) -> List[List[List[float]]]:
         if feature["geometry"]["coordinates"]:
             for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
                 bridge_coords.append(rd_to_wgs(coords))
-        bridges_coords.append(bridge_coords)
+            # only add to the list when there are coordinates
+            bridges_coords.append(bridge_coords)
     return bridges_coords
 
 

@@ -4,7 +4,7 @@ Show the containers that were found on the particular trajectory that was driven
 """
 import csv
 import datetime
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -15,6 +15,10 @@ from triangulation.helpers import (
     get_panos_from_points_of_interest,
 )  # pylint: disable-all
 from unique_instance_prediction import generate_map
+
+import sys
+sys.path.append('..')
+from utils import get_bridge_information, get_permit_locations
 
 
 def get_daily_panoramas(
@@ -83,6 +87,8 @@ def run(
     day_to_plot: datetime.date,
     location_query: models.LocationQuery,
     points_of_interest: Union[Path, str],
+    vulnerable_bridges_file: Path,
+    permits_file: Path,
 ) -> None:
     """
     This method creates visualization of a path and detected containers based on trajectory on a specific date.
@@ -90,6 +96,8 @@ def run(
     :param day_to_plot: target date.
     :param location_query: location information for API search
     :param points_of_interest: path to triangulation output file.
+    :param vulnerable_bridges_file: path to vulnerable bridges input file.
+    :param permits_file: path to decos permits input file.
     """
 
     # ========= CREATE CAR TRAJECTORY =================
@@ -115,8 +123,16 @@ def run(
                 PointOfInterest(pano_id=panoramas[i].id, coords=(row[0], row[1]))
             )
 
+    # ======== CREATE LIST OF VULNERABLE BRIDGES ============
+    vulnerable_bridges = get_bridge_information(vulnerable_bridges_file)
+
+    # ======== CREATE LIST OF PERMIT LOCATIONS ============
+    date_to_check = datetime(2021, 3, 17)
+    permit_locations = get_permit_locations(permits_file, date_to_check)
+    print(permit_locations)
+
     # ========== CREATE MAP =================
-    generate_map(trajectory=trajectory, detections=detections)
+    generate_map(vulnerable_bridges, permit_locations, trajectory=trajectory, detections=detections)
 
 
 if __name__ == "__main__":
@@ -130,4 +146,6 @@ if __name__ == "__main__":
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
 
     coordinates = "points_of_interest.csv"
-    run(target_day, location_query, coordinates)
+    vulnerable_bridges_file = "bridges.geojson"
+    permits_file = "decos.xml"
+    run(target_day, location_query, coordinates, vulnerable_bridges_file, permits_file)

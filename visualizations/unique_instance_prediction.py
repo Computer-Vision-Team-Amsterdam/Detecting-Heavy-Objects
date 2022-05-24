@@ -90,6 +90,8 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
 
 def generate_map(
+    vulnerable_bridges,
+    permit_locations,
     trajectory: Optional[List[List[float]]] = None,
     detections: Optional[List[PointOfInterest]] = None,
     name: Optional[str] = None,
@@ -99,6 +101,8 @@ def generate_map(
     This method generates an HTML page with a map containing a path line and randomly chosen points on the line
     corresponding to detected containers on the path.
 
+    :param vulnerable_bridges: list of line string coordinates.
+    :param permit_locations: list of point coordinates.
     :param trajectory: list of coordinates that define the path.
     :param detections: model predictions dict (with information about file names and coordinates).
     :param name: custom name for the map. If not passed, name is created based on what the map contains.
@@ -152,6 +156,20 @@ def generate_map(
     # add line with car trajectory on the map
     if trajectory:
         folium.PolyLine(trajectory, color="green", weight=5, opacity=0.8).add_to(Map)
+
+    vulnerable_bridges_group = folium.FeatureGroup(name="Vulnerable bridges").add_to(Map)
+
+    # add data of vulnerable bridges and canal walls to the map
+    for linestring in vulnerable_bridges:
+        vulnerable_bridges_group.add_child(folium.PolyLine(linestring, color="yellow",
+                                           weight=5, opacity=0.8).add_to(Map))
+
+    # add permit locations on the map
+    for point in permit_locations:
+        folium.CircleMarker(location=[point[0], point[1]], color="red", radius=1,
+                            weight=5).add_to(Map)
+
+    folium.LayerControl().add_to(Map)
 
     # create name for the map
     if not name:
