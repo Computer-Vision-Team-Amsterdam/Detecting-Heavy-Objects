@@ -25,7 +25,7 @@ import yaml
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
-from osgeo import osr
+from osgeo import osr  # pylint: disable=import-error
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from tqdm import tqdm
