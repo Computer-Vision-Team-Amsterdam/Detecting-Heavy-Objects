@@ -129,7 +129,6 @@ def run(
     # ======== CREATE LIST OF PERMIT LOCATIONS ============
     date_to_check = datetime(2021, 3, 17)
     permit_locations = get_permit_locations(permits_file, date_to_check)
-    print(permit_locations)
 
     # ========== CREATE MAP =================
     generate_map(vulnerable_bridges, permit_locations, trajectory=trajectory, detections=detections)
