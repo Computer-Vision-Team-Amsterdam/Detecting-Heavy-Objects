@@ -233,6 +233,8 @@ if __name__ == "__main__":
     )
 
     generate_map(
+        vulnerable_bridges=[],
+        permit_locations=[],
         detections=container_metadata_clustered,
         name="Decos containers",
         colors=color_generator(total_clusters),
