@@ -584,7 +584,7 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
 
 
 def get_permit_locations(
-    file: Path, date_to_check: datetime
+    file: Union[Path, str], date_to_check: datetime
 ) -> List[List[float]]:
     """
     Returns all the containers permits from an decos objects permit file.
@@ -669,7 +669,7 @@ def get_permit_locations(
     return permit_locations
 
 
-def get_bridge_information(file: Path) -> List[List[List[float]]]:
+def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
     """
     Return a list of coordinates where to find vulnerable bridges and canal walls
     """
