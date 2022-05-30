@@ -3,22 +3,19 @@ This module is responsible for visualizing the trajectory and container found on
 Show the containers that were found on the particular trajectory that was driven for a particular day.
 """
 import csv
-import datetime
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from model import PointOfInterest
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
 from triangulation.helpers import (
     get_panos_from_points_of_interest,
 )  # pylint: disable-all
-from unique_instance_prediction import generate_map
-
-sys.path.append("..")
-from utils import get_bridge_information, get_permit_locations
+from .unique_instance_prediction import generate_map
+from .model import PointOfInterest
+import utils
 
 
 def get_daily_panoramas(
@@ -84,11 +81,11 @@ def get_panorama_coords(
 
 
 def run(
-    day_to_plot: datetime.date,
+    day_to_plot: date,
     location_query: models.LocationQuery,
     points_of_interest: Union[Path, str],
-    vulnerable_bridges_file: Path,
-    permits_file: Path,
+    vulnerable_bridges_file: Union[Path, str],
+    permits_file: Union[Path, str],
 ) -> None:
     """
     This method creates visualization of a path and detected containers based on trajectory on a specific date.
@@ -124,11 +121,11 @@ def run(
             )
 
     # ======== CREATE LIST OF VULNERABLE BRIDGES ============
-    vulnerable_bridges = get_bridge_information(vulnerable_bridges_file)
+    vulnerable_bridges = utils.get_bridge_information(vulnerable_bridges_file)
 
     # ======== CREATE LIST OF PERMIT LOCATIONS ============
     date_to_check = datetime(2021, 3, 17)
-    permit_locations = get_permit_locations(permits_file, date_to_check)
+    permit_locations = utils.get_permit_locations(permits_file, date_to_check)
 
     # ========== CREATE MAP =================
     generate_map(

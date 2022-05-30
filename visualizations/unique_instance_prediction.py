@@ -90,8 +90,8 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
 
 def generate_map(
-    vulnerable_bridges,
-    permit_locations,
+    vulnerable_bridges: List,
+    permit_locations: List,
     trajectory: Optional[List[List[float]]] = None,
     detections: Optional[List[PointOfInterest]] = None,
     name: Optional[str] = None,
