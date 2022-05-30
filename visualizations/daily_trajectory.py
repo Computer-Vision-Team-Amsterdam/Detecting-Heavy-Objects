@@ -13,9 +13,11 @@ from panorama.client import PanoramaClient  # pylint: disable=import-error
 from triangulation.helpers import (
     get_panos_from_points_of_interest,
 )  # pylint: disable-all
-from .unique_instance_prediction import generate_map
-from .model import PointOfInterest
+
 import utils
+
+from .model import PointOfInterest
+from .unique_instance_prediction import generate_map
 
 
 def get_daily_panoramas(
@@ -117,7 +119,9 @@ def run(
         next(reader)  # skip first line
         for i, row in enumerate(reader):
             detections.append(
-                PointOfInterest(pano_id=panoramas[i].id, coords=(row[0], row[1]))
+                PointOfInterest(
+                    pano_id=panoramas[i].id, coords=(float(row[0]), float(row[1]))
+                )
             )
 
     # ======== CREATE LIST OF VULNERABLE BRIDGES ============

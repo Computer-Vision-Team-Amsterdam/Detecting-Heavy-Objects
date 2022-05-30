@@ -11,8 +11,9 @@ import folium
 import geohash as gh
 import pandas as pd
 from folium.plugins import MarkerCluster
-from model import PointOfInterest
 from panorama.client import PanoramaClient
+
+from .model import PointOfInterest
 
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[PointOfInterest]:
@@ -90,8 +91,8 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
 
 def generate_map(
-    vulnerable_bridges: List,
-    permit_locations: List,
+    vulnerable_bridges: List[List[List[float]]],
+    permit_locations: List[List[float]],
     trajectory: Optional[List[List[float]]] = None,
     detections: Optional[List[PointOfInterest]] = None,
     name: Optional[str] = None,
