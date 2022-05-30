@@ -583,7 +583,9 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
         json.dump(data, f)
 
 
-def get_permit_locations(file: Path, date_to_check: datetime) -> List[List[float]]:
+def get_permit_locations(
+    file: Path, date_to_check: datetime
+) -> List[List[float]]:
     """
     Returns all the containers permits from an decos objects permit file.
     """
