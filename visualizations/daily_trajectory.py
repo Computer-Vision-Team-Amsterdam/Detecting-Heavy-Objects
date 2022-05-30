@@ -4,7 +4,8 @@ Show the containers that were found on the particular trajectory that was driven
 """
 import csv
 import datetime
-from datetime import date, timedelta, datetime
+import sys
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -16,8 +17,7 @@ from triangulation.helpers import (
 )  # pylint: disable-all
 from unique_instance_prediction import generate_map
 
-import sys
-sys.path.append('..')
+sys.path.append("..")
 from utils import get_bridge_information, get_permit_locations
 
 
@@ -131,7 +131,12 @@ def run(
     permit_locations = get_permit_locations(permits_file, date_to_check)
 
     # ========== CREATE MAP =================
-    generate_map(vulnerable_bridges, permit_locations, trajectory=trajectory, detections=detections)
+    generate_map(
+        vulnerable_bridges,
+        permit_locations,
+        trajectory=trajectory,
+        detections=detections,
+    )
 
 
 if __name__ == "__main__":

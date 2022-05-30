@@ -157,17 +157,23 @@ def generate_map(
     if trajectory:
         folium.PolyLine(trajectory, color="green", weight=5, opacity=0.8).add_to(Map)
 
-    vulnerable_bridges_group = folium.FeatureGroup(name="Vulnerable bridges").add_to(Map)
+    vulnerable_bridges_group = folium.FeatureGroup(name="Vulnerable bridges").add_to(
+        Map
+    )
 
     # add data of vulnerable bridges and canal walls to the map
     for linestring in vulnerable_bridges:
-        vulnerable_bridges_group.add_child(folium.PolyLine(linestring, color="yellow",
-                                           weight=5, opacity=0.8).add_to(Map))
+        vulnerable_bridges_group.add_child(
+            folium.PolyLine(linestring, color="yellow", weight=5, opacity=0.8).add_to(
+                Map
+            )
+        )
 
     # add permit locations on the map
     for point in permit_locations:
-        folium.CircleMarker(location=[point[0], point[1]], color="red", radius=1,
-                            weight=5).add_to(Map)
+        folium.CircleMarker(
+            location=[point[0], point[1]], color="red", radius=1, weight=5
+        ).add_to(Map)
 
     folium.LayerControl().add_to(Map)
 
