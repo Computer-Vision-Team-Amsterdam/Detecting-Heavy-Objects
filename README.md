@@ -175,7 +175,7 @@ Given a day D when the panoramic car drove through the city, we can visualize bo
 detected containers on this trajectory.
 To create the map, navigate to the [visualizations](./visualizations) folder and run
 ```shell
-python daily_trajectory.py
+python -m visualisations.daily_trajectory
 ```
 The day to plot can be configured in the script.
 The HTML map is created in the same folder. 

@@ -583,7 +583,9 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
         json.dump(data, f)
 
 
-def get_permit_locations(file: Path, date_to_check: datetime) -> List[List[float]]:
+def get_permit_locations(
+    file: Union[Path, str], date_to_check: datetime
+) -> List[List[float]]:
     """
     Returns all the containers permits from an decos objects permit file.
     """
@@ -667,7 +669,7 @@ def get_permit_locations(file: Path, date_to_check: datetime) -> List[List[float
     return permit_locations
 
 
-def get_bridge_information(file: Path) -> List[List[List[float]]]:
+def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
     """
     Return a list of coordinates where to find vulnerable bridges and canal walls
     """
@@ -696,7 +698,8 @@ def get_bridge_information(file: Path) -> List[List[List[float]]]:
         if feature["geometry"]["coordinates"]:
             for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
                 bridge_coords.append(rd_to_wgs(coords))
-        bridges_coords.append(bridge_coords)
+            # only add to the list when there are coordinates
+            bridges_coords.append(bridge_coords)
     return bridges_coords
 
 
