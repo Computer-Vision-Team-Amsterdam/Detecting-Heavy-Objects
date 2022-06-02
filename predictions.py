@@ -4,18 +4,26 @@ Visualize predictions or annotations on a data subset.
 import argparse
 import os
 import random
+import numpy as np
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List
+from PIL import Image
 
 import cv2
+import torch
+from detectron2.checkpoint import DetectionCheckpointer
+from detectron2.evaluation import inference_on_dataset
+from detectron2.modeling import build_model
+
 from azureml.core import Model, Workspace
-from detectron2.data import MetadataCatalog
+from detectron2.data import MetadataCatalog, build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from tqdm import tqdm
 
 from configs import config_parser
+from evaluation import CustomCOCOEvaluator
 from inference import init_inference
 from utils import ExperimentConfig, get_container_dicts, register_dataset
 
@@ -92,8 +100,44 @@ def visualize_predictions(flags: argparse.Namespace, expCfg: ExperimentConfig) -
         container_dicts, metadata, mode=flags.mode, n_sample=flags.n_sample
     )
 
+def single_instance_prediction(flags: argparse.Namespace, expCfg: ExperimentConfig, image_path: Path):
+    register_dataset(expCfg)
 
-def single_instance_prediction(
+    #im = cv2.imread(image_path)
+    images_paths = [image_path]
+
+
+    input_tensors = [
+        {"image": torch.from_numpy(np.array(Image.open(path))).permute(2, 0, 1)}
+        for path in images_paths
+    ]
+
+
+    ws = Workspace.from_config()
+
+    _ = Model.get_model_path(
+        model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+    )
+
+    cfg = init_inference(flags)
+    model = build_model(cfg)  # returns a torch.nn.Module
+    DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
+    model.eval()
+
+    with torch.no_grad():  # type: ignore
+        outputs = model(input_tensors)
+
+    evaluator = CustomCOCOEvaluator(
+        f"{expCfg.dataset_name}_{expCfg.subset}",
+        output_dir="OUT",
+        tasks=("bbox", "segm"),
+    )
+    loader = build_detection_test_loader(cfg, mapper=None)
+    print(inference_on_dataset(model, loader, evaluator))
+    # return [{path: outputs[idx]} for idx, path in enumerate(images_paths)]
+
+
+def single_instance_prediction_2(
     flags: argparse.Namespace, expCfg: ExperimentConfig, image_path: Path
 ) -> None:
     register_dataset(expCfg)
@@ -133,3 +177,4 @@ if __name__ == "__main__":
         single_instance_prediction(flags, experimentConfig, flags.image)
     if not flags.image:
         visualize_predictions(flags, experimentConfig)
+

@@ -385,6 +385,7 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
     """
     if expCfg.data_format == "coco":
         ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
+        ann_path = None
         register_coco_instances(
             f"{expCfg.dataset_name}_{expCfg.subset}",
             {},
