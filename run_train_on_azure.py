@@ -23,7 +23,7 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "augs"
+EXPERIMENT_NAME = "augs_area_threshold_10000"
 
 
 ws = Workspace.from_config()

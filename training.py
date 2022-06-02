@@ -29,13 +29,10 @@ class MyTrainer(DefaultTrainer):
 
     @classmethod
     def build_train_loader(cls, cfg):
-        mapper = DatasetMapper(cfg,
-                               is_train=True,
-                               augmentations=[T.RandomFlip(prob=0.5, horizontal=False, vertical=True),
-                                              T.RandomBrightness(intensity_min=0.5, intensity_max=1.5)])
         return build_detection_train_loader(cfg, mapper=custom_mapper_wrapper)
 
     @classmethod
+    # TODO: can i use yield here?
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         output_dir = f"{cfg.OUTPUT_DIR}"
         Path(output_dir).mkdir(parents=True, exist_ok=True)

@@ -10,6 +10,11 @@ import utils
 class DataStatistics:
     """
     Compute and visualize different statistics from the data
+
+    Example:
+        stats = DataStatistics(json_file=Path("example.json"), output_dir="example")
+        stats.plot_areas_distribution(plot_name="example.jpg")
+
     """
 
     def __init__(self, json_file: Path, output_dir: Optional[str] = None) -> None:
