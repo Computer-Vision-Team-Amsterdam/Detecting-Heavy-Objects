@@ -111,7 +111,14 @@ To detect containers on a given image, run
 
 ```python predictions.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --image ${PATH}``` 
 
-The output image is stored in the same folder as ```${ORIGINAL_IMAGE_NAME}:out```
+## Batch prediction
+
+To get predictions for a batch of images, place them at `data/test` (don't rename the test folder), then run
+
+```python inference.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu --subset test```
+
+Output files are stored at `outputs/INFER_${model_name}_${version}_${timestamp}`
+
 ## Evaluation Metrics
 
 To compute and store evaluation metrics, run

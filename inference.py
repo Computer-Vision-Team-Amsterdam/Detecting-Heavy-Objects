@@ -14,6 +14,7 @@ from typing import Any, Dict, Iterable, List, Union
 import cv2
 import numpy as np
 import torch
+from azureml.core import Workspace, Model
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import MetadataCatalog, build_detection_test_loader
 from detectron2.engine import DefaultPredictor
@@ -52,35 +53,11 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
     cfg.MODEL.WEIGHTS = f"azureml-models/{flags.name}/{version}/model_final.pth"
 
     # inference run locally
-    if cfg.MODEL.DEVICE == "cpu":
-        cfg.MODEL.WEIGHTS = f"{cfg.OUTPUT_DIR}/{flags.name}_{version}/model_final.pth"
+    #if cfg.MODEL.DEVICE == "cpu":
+    #    cfg.MODEL.WEIGHTS = f"{cfg.OUTPUT_DIR}/{flags.name}_{version}/model_final.pth"
 
     return cfg
 
-
-# TODO check why this function has no usages
-def run(
-    predictor: DefaultPredictor, minibatch: Iterable[Union[Path, str]]
-) -> List[Dict[Union[Path, str], Any]]:
-    """
-    Processes
-    Args:
-        :param minibatch: Batch of image paths to be processed during one forward pass of the model
-        :param predictor: detectron predictor used at inference time
-    Returns: List of dictionaries with as key unique image name and as value
-    the obtained predictions
-    """
-
-    input_tensors = [
-        {"image": torch.from_numpy(np.array(Image.open(path)))} for path in minibatch
-    ]
-
-    with torch.no_grad():  # type: ignore
-
-        # called, not instantiated here
-        outputs = [predictor(input_tensor["image"]) for input_tensor in input_tensors]
-
-    return [{path: outputs[idx]} for idx, path in enumerate(minibatch)]
 
 
 def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
@@ -95,6 +72,11 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     constructor from another method i.e. _test_loader_from_config
     """
 
+    ws = Workspace.from_config()
+
+    _ = Model.get_model_path(
+        model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+    )
     register_dataset(expCfg)
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)

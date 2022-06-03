@@ -100,44 +100,8 @@ def visualize_predictions(flags: argparse.Namespace, expCfg: ExperimentConfig) -
         container_dicts, metadata, mode=flags.mode, n_sample=flags.n_sample
     )
 
-def single_instance_prediction(flags: argparse.Namespace, expCfg: ExperimentConfig, image_path: Path):
-    register_dataset(expCfg)
 
-    #im = cv2.imread(image_path)
-    images_paths = [image_path]
-
-
-    input_tensors = [
-        {"image": torch.from_numpy(np.array(Image.open(path))).permute(2, 0, 1)}
-        for path in images_paths
-    ]
-
-
-    ws = Workspace.from_config()
-
-    _ = Model.get_model_path(
-        model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
-    )
-
-    cfg = init_inference(flags)
-    model = build_model(cfg)  # returns a torch.nn.Module
-    DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
-    model.eval()
-
-    with torch.no_grad():  # type: ignore
-        outputs = model(input_tensors)
-
-    evaluator = CustomCOCOEvaluator(
-        f"{expCfg.dataset_name}_{expCfg.subset}",
-        output_dir="OUT",
-        tasks=("bbox", "segm"),
-    )
-    loader = build_detection_test_loader(cfg, mapper=None)
-    print(inference_on_dataset(model, loader, evaluator))
-    # return [{path: outputs[idx]} for idx, path in enumerate(images_paths)]
-
-
-def single_instance_prediction_2(
+def single_instance_prediction(
     flags: argparse.Namespace, expCfg: ExperimentConfig, image_path: Path
 ) -> None:
     register_dataset(expCfg)
