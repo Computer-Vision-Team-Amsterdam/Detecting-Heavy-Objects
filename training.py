@@ -22,7 +22,7 @@ from evaluation import CustomCOCOEvaluator
 from inference import setup_cfg
 from utils import ExperimentConfig, register_dataset
 
-from training_with_augs import custom_mapper_wrapper, custom_mapper, CustomMapper
+from training_with_augs import custom_mapper_wrapper
 
 
 class MyTrainer(DefaultTrainer):
