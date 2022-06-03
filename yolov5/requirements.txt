@@ -1,181 +1,40 @@
-absl-py==1.0.0
-adal==1.2.7
-alabaster @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/cd/37/e0/89f7da30c12075ae566ff3d8107abdbc74fd3d19ae5644765d79dd5d47/alabaster-0.7.12-py2.py3-none-any.whl
-antlr4-python3-runtime==4.8
-anyio==3.4.0
-appdirs==1.4.4
-astroid @ file:///opt/concourse/worker/volumes/live/9de2becb-270f-43cf-6533-a7867d89298c/volume/astroid_1613500844589/work
-astunparse==1.6.3
-attrs @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/9e/6f/95/f4bd71c5acad2b4bbea55d3023e8221fce07e7df6b9da06439c5921b89/attrs-21.2.0-py2.py3-none-any.whl
-azure-common==1.1.27
-azure-core==1.20.1
-azure-graphrbac==0.61.1
-azure-mgmt-authorization==0.61.0
-azure-mgmt-containerregistry==8.2.0
-azure-mgmt-core==1.3.0
-azure-mgmt-keyvault==9.3.0
-azure-mgmt-resource==13.0.0
-azure-mgmt-storage==11.2.0
-azureml-core==1.36.0.post2
-Babel @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/7c/17/6c/57e56c9192824e862b3257e733446666f80167d80ad4832243185faf2e/Babel-2.9.1-py2.py3-none-any.whl
-backports.tempfile==1.0
-backports.weakref==1.0.post1
-black==21.4b2
-bleach==5.0.0
-Bottleneck==1.3.2
-branca @ file:///home/conda/feedstock_root/build_artifacts/branca_1650311966802/work
-brotlipy==0.7.0
-cachetools==4.2.4
-certifi==2021.10.8
-cffi @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/croot-2p6q7e2r/cffi_1642701115063/work
-chardet @ file:///opt/concourse/worker/volumes/live/9efbf151-b45b-463d-6340-a5c399bf00b7/volume/chardet_1607706825988/work
-charset-normalizer==2.0.8
-click==8.0.3
-cloudpickle==2.0.0
-commonmark==0.9.1
-contextlib2==21.6.0
-coverage @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/85/f6/de/de4d9d0f3142b8d72b2e1d287ea62cd174618f693a9eac2f0c0b474c03/coverage-5.5-cp37-cp37m-macosx_10_9_x86_64.whl
-cryptography==3.4.8
-cycler==0.11.0
-Cython==0.29.24
-detectron2 @ git+https://github.com/facebookresearch/detectron2.git@f62b8a42e4d995966d0e7d7eb4049f023860b5ff
-dill==0.3.4
-docker==5.0.3
-docutils @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/a0/12/c1/3b4ffddafbabe045055a26db18c018c062d23b16d106c30b01d1cdc66b/docutils-0.17.1-py2.py3-none-any.whl
-flatbuffers==2.0
-folium @ file:///home/conda/feedstock_root/build_artifacts/folium_1638560701663/work
-fonttools==4.28.2
-future==0.18.2
-fvcore==0.1.5.post20211023
-gast==0.4.0
-GDAL==3.4.3
-google-auth==2.3.3
-google-auth-oauthlib==0.4.6
-grpcio==1.42.0
-h11==0.12.0
-haversine @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/6d/0b/2f/b4a1d92001328ab48139b8d7ca80cd9bfd693270fc28a4f81619c3e0b5/haversine-2.5.1-py2.py3-none-any.whl
-httpcore==0.13.7
-httpx==0.19.0
-hydra-core==1.1.1
-idna==3.3
-imagesize @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/b0/0c/4c/2da9b5d688f3d57232a399cd66d8f682f2246dff0008a0253eed36d086/imagesize-1.2.0-py2.py3-none-any.whl
-imantics==0.1.12
-importlib-metadata==4.8.2
-importlib-resources==5.4.0
-iniconfig==1.1.1
-iopath==0.1.9
-isodate==0.6.0
-isort @ file:///home/conda/feedstock_root/build_artifacts/isort_1636447814597/work
-jeepney==0.7.1
-Jinja2 @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/28/03/05/3b898780f3aa814798109d1929b3825ef279d0569447e2d189bb2b3f69/Jinja2-3.0.2-py3-none-any.whl
-jmespath==0.10.0
-joblib @ file:///tmp/build/80754af9/joblib_1635411271373/work
-jsonpickle==2.0.0
-keras==2.7.0
-keyring==23.5.0
-kiwisolver==1.3.2
-lazy-object-proxy @ file:///opt/concourse/worker/volumes/live/62c2169c-fe65-46ff-434a-480cde88c65b/volume/lazy-object-proxy_1616529070475/work
-libclang==12.0.0
-lxml==4.8.0
-Markdown==3.3.6
-MarkupSafe @ file:///opt/concourse/worker/volumes/live/2165c944-5d03-464f-57c1-1df4e51b3ac3/volume/markupsafe_1621528146825/work
-matplotlib==3.5.0
-mccabe==0.6.1
-mkl-fft==1.3.1
-mkl-random==1.2.2
-mkl-service==2.4.0
-more-itertools @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/3f/1b/ac/eb4cb1a366744ebaf77befdf8d7ab99b233568efc6ef2447b3d0176c26/more_itertools-8.10.0-py3-none-any.whl
-msrest==0.6.21
-msrestazure==0.6.4
-multidict @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/72/5c/b8/7eebf8137fb8ec94653daf70638cf2eec066c540f45704cba70293a80f/multidict-5.1.0-cp37-cp37m-macosx_10_14_x86_64.whl
-mypy @ file:///Users/runner/miniforge3/conda-bld/mypy_1639175317869/work
-mypy-extensions==0.4.3
-ndg-httpsclient==0.5.1
-numexpr==2.7.3
-numpy==1.21.6
-oauthlib==3.1.1
-olefile @ file:///Users/ktietz/demo/mc3/conda-bld/olefile_1629805411829/work
-omegaconf==2.1.1
-opencv-python==4.5.4.60
-packaging==21.3
-pandas==1.3.4
-panorama @ git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@98a92686a9ef92b3748f345b137123ea5915c8b1
-pathspec==0.9.0
-Pillow==9.1.0
-pkginfo==1.8.2
-platformdirs @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/b0/d0/e9/f175fe9e6d183b1244e2c0029d117bd543e339549934aa98cec6d284fa/platformdirs-2.4.0-py3-none-any.whl
-pluggy @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/bc/2e/c9/c04063460a7a68d2e59c9ea0a673de9d7930d54f788ed0510cdcf8aa78/pluggy-0.13.1-py2.py3-none-any.whl
-portalocker==2.3.2
-protobuf==3.19.1
-psutil @ file:///opt/concourse/worker/volumes/live/8e01e0e9-ea07-4efa-7afb-fae37c1b9faa/volume/psutil_1612298009056/work
-py @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/56/1d/e3/7dad75e1bf797fbd8937b37dd43d1656357c67a199e9f54d48535697d0/py-1.10.0-py2.py3-none-any.whl
-pyasn1==0.4.8
-pyasn1-modules==0.2.8
-pycocotools==2.0.4
-pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
-pydantic==1.8.2
-pydot==1.4.2
-Pygments @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/1c/b6/34/a2332b60114e05578f61d1f11f5db9d81204fd146b8c90b4ac44eb05c1/Pygments-2.10.0-py3-none-any.whl
-PyJWT==2.3.0
-pylint @ file:///opt/concourse/worker/volumes/live/9eebf2dc-3c74-4778-701c-c55b13929def/volume/pylint_1598624018844/work
-pyOpenSSL==20.0.1
-pyparsing==3.0.6
-PySocks @ file:///opt/concourse/worker/volumes/live/ef943889-94fc-4539-798d-461c60b77804/volume/pysocks_1605305801690/work
-pytest==6.2.5
-pytest-asyncio @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/f5/17/5f/dba4ceedfd07827ed53044ff188f77b8c6f1bd848650b934d2b53bb0b2/pytest_asyncio-0.15.1-py3-none-any.whl
-pytest-cov==3.0.0
-pytest-vcr @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/0a/45/87/f32e2c305bb5e5f46c36f660a843c72b974a014915c77428f65c0efb51/pytest_vcr-1.0.2-py2.py3-none-any.whl
-python-dateutil==2.8.2
-python-geohash @ file:///Users/runner/miniforge3/conda-bld/python-geohash_1636817958181/work
-python-resize-image==1.1.20
-pytz==2021.3
-PyYAML==6.0
-readme-renderer==35.0
-regex==2021.11.10
-requests==2.26.0
-requests-oauthlib==1.3.0
-requests-toolbelt==0.9.1
-rfc3986==1.5.0
-rich==12.3.0
-rsa==4.8
-scipy==1.7.3
-SecretStorage==3.3.1
-setuptools-scm==6.3.2
-Shapely==1.8.2
-six @ file:///tmp/build/80754af9/six_1644875935023/work
-sniffio==1.2.0
-snowballstemmer @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/1b/e7/37/c1ccd5c7451e2f738886b093508276afa6237726b3b8c391d26c98ddee/snowballstemmer-2.1.0-py2.py3-none-any.whl
-Sphinx @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/6a/b1/b0/5fd831d829abd99f16c3d62da5e5469a106c0d8fe420a125e8b375107b/Sphinx-4.2.0-py3-none-any.whl
-sphinxcontrib-applehelp @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/cc/cf/dd/8ba7c4afe2ff84e7204886e2fd837495627b3827a21925726fcc3125d1/sphinxcontrib_applehelp-1.0.2-py2.py3-none-any.whl
-sphinxcontrib-devhelp @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/59/da/dc/900e02cc5452883e989929e3784c1a7094cd7326af3cf4a6d8bb225055/sphinxcontrib_devhelp-1.0.2-py2.py3-none-any.whl
-sphinxcontrib-htmlhelp @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/19/b5/45/a9813fb998fac87b93b1a8107625486704eef431595a9b29d80ec11a0a/sphinxcontrib_htmlhelp-2.0.0-py2.py3-none-any.whl
-sphinxcontrib-jsmath @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/7f/d8/ef/31320102fc49e5beeb72d480f0dab2dc5429fbd8cedf45817e2320d58e/sphinxcontrib_jsmath-1.0.1-py2.py3-none-any.whl
-sphinxcontrib-qthelp @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/81/5b/46/baf9bd9c58b789d2ff445165e5859021ea31139602fffcc773c39da86b/sphinxcontrib_qthelp-1.0.3-py2.py3-none-any.whl
-sphinxcontrib-serializinghtml @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/3c/f8/08/336dac86a5932202472e3b85c90c9ee923e7f71b9d61b4b3a45df84cf7/sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl
-tabulate==0.8.9
-tensorboard==2.7.0
-tensorboard-data-server==0.6.1
-tensorboard-plugin-wit==1.8.0
-termcolor==1.1.0
-toml @ file:///tmp/build/80754af9/toml_1616166611790/work
-tomli==1.2.2
-torch==1.8.0
-torchaudio==0.8.0a0+a751e1d
-torchvision==0.9.0
-tqdm==4.64.0
-triangulation @ git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@0feb555f2225a98b36126e022732e970b60319dc
-twine==4.0.0
-typed-ast @ file:///opt/concourse/worker/volumes/live/22984077-cbd4-449f-4417-2737b09fa494/volume/typed-ast_1624953682230/work
-types-PyYAML==6.0.7
-typing_extensions==4.2.0
-urllib3==1.26.7
-vcrpy @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/12/cd/62/3ab977a78469bdd0907afa7c88f55a113413f776b61f2c217d80f6002c/vcrpy-4.1.1-py2.py3-none-any.whl
-wcwidth @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/92/12/86/71fde978823bd982c22bd549b0ba688e372403269396c892ac8160f4fe/wcwidth-0.2.5-py2.py3-none-any.whl
-webencodings==0.5.1
-websocket-client==1.2.1
-Werkzeug==2.0.2
-wrapt @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/9f/ab/9f/20b5ec8073ba1c685e2c6dcdb1f697c7bd444a693314612ea47a6620fd/wrapt-1.12.1.tar.gz
-xmljson==0.2.1
-yacs==0.1.8
-yarl @ file:///Users/laurenssamson/Library/Caches/pypoetry/artifacts/0c/08/f1/687cd8c741b392d90005e978e1e7db3b02e9396a9fa81163a95a566807/yarl-1.6.3-cp37-cp37m-macosx_10_14_x86_64.whl
-zipp==3.6.0
+# YOLOv5 requirements
+# Usage: pip install -r requirements.txt
+
+# Base ----------------------------------------
+matplotlib>=3.2.2
+numpy>=1.18.5
+opencv-python>=4.1.1
+Pillow>=7.1.2
+PyYAML>=5.3.1
+requests>=2.23.0
+scipy>=1.4.1  # Google Colab version
+torch>=1.7.0
+torchvision>=0.8.1
+tqdm>=4.41.0
+protobuf<=3.20.1  # https://github.com/ultralytics/yolov5/issues/8012
+
+# Logging -------------------------------------
+tensorboard>=2.4.1
+# wandb
+
+# Plotting ------------------------------------
+pandas>=1.1.4
+seaborn>=0.11.0
+
+# Export --------------------------------------
+# coremltools>=4.1  # CoreML export
+# onnx>=1.9.0  # ONNX export
+# onnx-simplifier>=0.3.6  # ONNX simplifier
+# scikit-learn==0.19.2  # CoreML quantization
+# tensorflow>=2.4.1  # TFLite export
+# tensorflowjs>=3.9.0  # TF.js export
+# openvino-dev  # OpenVINO export
+
+# Extras --------------------------------------
+ipython  # interactive notebook
+psutil  # system utilization
+thop  # FLOPs computation
+# albumentations>=1.0.3
+# pycocotools>=2.0  # COCO mAP
+# roboflow
