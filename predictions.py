@@ -153,6 +153,8 @@ def single_instance_prediction_2(
     predictor = DefaultPredictor(cfg)
     outputs = predictor(im)
 
+    print(outputs["instances"])
+
     metadata = MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}")
     v = Visualizer(im[:, :, ::-1], metadata, scale=1.2)
     out = v.draw_instance_predictions(outputs["instances"].to("cpu"))

@@ -3,6 +3,8 @@ This module contains general functionality to handle the annotated data
 """
 import copy
 import csv
+import time
+
 import itertools
 import json
 import logging
@@ -14,6 +16,7 @@ from datetime import datetime
 from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Tuple, Union
+from PIL import Image
 
 import cv2
 import geojson
@@ -379,19 +382,54 @@ def handle_hyperparameters(config: Union[str, Path]) -> int:
     return count
 
 
+def add_images_to_coco(image_dir, coco_filename):
+    print("Creating empty annotations file")
+    coco = {"images": [], "annotations": [], "categories": [{"id": 1, "name": "container"}]}
+    image_filenames = list(Path(image_dir).glob('*.jpg'))
+    images = []
+    for i, image_filename in enumerate(image_filenames):
+        im = Image.open(image_filename)
+        width, height = im.size
+        image_details = {
+            "id": i + 1,
+            "height": height,
+            "width": width,
+            "file_name": str(image_filename.resolve()),
+        }
+        images.append(image_details)
+
+    coco['images'] = images
+
+    with open(coco_filename, 'w') as coco_file:
+        json.dump(coco, coco_file, indent=4)
+
+
 def register_dataset(expCfg: ExperimentConfig) -> None:
     """
     Register dataset.
     """
+
     if expCfg.data_format == "coco":
         ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
-        ann_path = None
-        register_coco_instances(
-            f"{expCfg.dataset_name}_{expCfg.subset}",
-            {},
-            ann_path,
-            image_root=f"{expCfg.data_folder}",
-        )
+        try:
+            with open(ann_path) as f:
+                _ = json.load(f)
+                register_coco_instances(f"{expCfg.dataset_name}_{expCfg.subset}", {}, ann_path, image_root=f"{expCfg.data_folder}")
+        except FileNotFoundError:
+            if expCfg.subset == "test":
+                add_images_to_coco(image_dir=f"{expCfg.data_folder}/{expCfg.subset}",
+                                   coco_filename=f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json")
+                time.sleep(5)
+                ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
+                register_coco_instances(
+                    f"{expCfg.dataset_name}_{expCfg.subset}",
+                    {},
+                    ann_path,
+                    image_root=f"{expCfg.data_folder}",
+                )
+            else:
+                raise FileNotFoundError("No annotation file found")
+
         print(f"INFO:::{expCfg.dataset_name}_{expCfg.subset} has been registered!")
     if expCfg.data_format == "via":
         DatasetCatalog.register(

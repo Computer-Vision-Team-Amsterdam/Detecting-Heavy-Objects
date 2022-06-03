@@ -120,10 +120,13 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 if __name__ == "__main__":
 
     flags = arg_parser()
+
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
         data_format=flags.data_format,
         data_folder=flags.data_folder,
     )
+
     evaluate_model(flags, experimentConfig)
+
