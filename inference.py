@@ -52,10 +52,6 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
     cfg.MODEL.DEVICE = flags.device
     cfg.MODEL.WEIGHTS = f"azureml-models/{flags.name}/{version}/model_final.pth"
 
-    # inference run locally
-    #if cfg.MODEL.DEVICE == "cpu":
-    #    cfg.MODEL.WEIGHTS = f"{cfg.OUTPUT_DIR}/{flags.name}_{version}/model_final.pth"
-
     return cfg
 
 
