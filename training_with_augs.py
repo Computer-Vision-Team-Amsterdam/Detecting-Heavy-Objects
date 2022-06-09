@@ -94,12 +94,8 @@ def custom_mapper_wrapper(dataset_dict):
     # ========== START ALBUMENTATIONS =========== #
 
     augs = T.AugmentationList([
-        AlbumentationsWrapper(A.GaussNoise(p=0.2)),
-        AlbumentationsWrapper(A.MedianBlur(blur_limit=3, p=0.1)),
-        AlbumentationsWrapper(A.CLAHE(clip_limit=2)),
-        AlbumentationsWrapper(A.RandomBrightnessContrast()),
-        AlbumentationsWrapper(A.HueSaturationValue(p=0.3))
-
+        AlbumentationsWrapper(A.ChannelShuffle(p=0.2)),
+        AlbumentationsWrapper(A.ToGray(p=0.2)),
     ])
     input = T.AugInput(image)
     _ = augs(input)
@@ -111,9 +107,9 @@ def custom_mapper_wrapper(dataset_dict):
 
     # ========== START DET2 AUGMENTATIONS =========== #
 
-    transform_list = [T.RandomFlip(prob=0.5, horizontal=True, vertical=False),
-                      T.RandomRotation(angle=[-30, 30], expand=False),
-                      T.RandomCrop(crop_type="relative_range", crop_size=(0.7, 0.7))]
+    transform_list = [T.RandomCrop(crop_type="relative_range", crop_size=(0.9, 0.9)),
+                      T.ResizeShortestEdge(short_edge_length=[800, 1200], max_size=4000, sample_style="range"),
+                      T.RandomFlip(horizontal=True)]
 
     image, transforms = T.apply_transform_gens(transform_list, image)
     dataset_dict["image"] = torch.as_tensor(image.transpose((2, 0, 1)).astype("float32"))
