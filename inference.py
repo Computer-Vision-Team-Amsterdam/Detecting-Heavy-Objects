@@ -6,10 +6,9 @@ incorporated into the Azure batch processing pipeline"""
 import argparse
 import glob
 import logging
-
 from datetime import datetime
 from pathlib import Path
-from typing import  Union
+from typing import Union
 
 from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
@@ -19,7 +18,7 @@ from detectron2.evaluation import inference_on_dataset
 
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
-from utils import ExperimentConfig, register_dataset, is_int
+from utils import ExperimentConfig, is_int, register_dataset
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,7 +46,9 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
     cfg.MODEL.DEVICE = flags.device
     # sometimes Azure downloads the ckpt at different paths, so we search recursively
     # list should contain a single element, so we retrieve it
-    cfg.MODEL.WEIGHTS = glob.glob(f"azureml-models/{flags.name}" + '/**/*.pth', recursive=True)[0]
+    cfg.MODEL.WEIGHTS = glob.glob(
+        f"azureml-models/{flags.name}" + "/**/*.pth", recursive=True
+    )[0]
 
     return cfg
 
@@ -67,9 +68,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     ws = Workspace.from_config()
 
     if flags.version == "latest":
-        _ = Model.get_model_path(
-            model_name=f"{flags.name}", _workspace=ws
-        )
+        _ = Model.get_model_path(model_name=f"{flags.name}", _workspace=ws)
     elif is_int(flags.version):
         _ = Model.get_model_path(
             model_name=f"{flags.name}", version=int(flags.version), _workspace=ws

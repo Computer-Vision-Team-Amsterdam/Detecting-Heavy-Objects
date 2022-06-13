@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import cv2
-
 from azureml.core import Model, Workspace
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
@@ -109,7 +108,6 @@ def single_instance_prediction(
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)
     outputs = predictor(im)
-
 
     metadata = MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}")
     v = Visualizer(im[:, :, ::-1], metadata, scale=1.2)

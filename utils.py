@@ -797,6 +797,7 @@ def is_int(element: Any) -> bool:
     except ValueError:
         return False
 
+
 """
 input = "/Users/dianaepureanu/Documents/Projects/versions_of_data/data_extended/annotations-renamed-filenames-4000x2000.json"
 output_dir = "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/converter_output_data_extended"
