@@ -4,6 +4,7 @@ incorporated into the Azure batch processing pipeline"""
 # import os
 # print(os.system("ls azureml-models/detectron_28feb/2"))
 import argparse
+import glob
 import json
 import logging
 import pickle
@@ -48,9 +49,11 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
     config_file = Path(flags.config)
 
     cfg = setup_cfg(config_file)
-    version = flags.version if flags.version else 1
+
     cfg.MODEL.DEVICE = flags.device
-    cfg.MODEL.WEIGHTS = f"azureml-models/{flags.name}/{version}/model_final.pth"
+    # sometimes Azure downloads the ckpt at different paths, so we search recursively
+    # list should contain a single element, so we retrieve it
+    cfg.MODEL.WEIGHTS = glob.glob(f"azureml-models/{flags.name}" + '/**/*.pth', recursive=True)[0]
 
     return cfg
 

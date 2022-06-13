@@ -76,6 +76,9 @@ To perform inference on your local machine, run
 python inference.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu
 
 ```
+
+The default version is the latest version.
+
 Currently, you need to make sure you have the MODEL_NAME with MODEL_VERSION locally as well as the data folder.
 
 
@@ -116,6 +119,9 @@ To detect containers on a given image, run
 To get predictions for a batch of images, place them at `data/test` (don't rename the test folder), then run
 
 ```python inference.py --name ${MODEL_NAME} --version ${MODEL_VERSION} --device cpu --subset test```
+
+Example:
+```python inference.py --name best --version 1 --device cpu --subset test```
 
 Output files are stored at `outputs/INFER_${model_name}_${version}_${timestamp}`
 
