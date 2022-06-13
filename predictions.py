@@ -9,13 +9,11 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import cv2
-import numpy as np
-import torch
+
 from azureml.core import Model, Workspace
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import ColorMode, Visualizer
-from PIL import Image
 from tqdm import tqdm
 
 from configs import config_parser

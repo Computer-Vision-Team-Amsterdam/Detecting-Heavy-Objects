@@ -2,8 +2,6 @@
 This module contains functionality to train a default detectron2 model.
 """
 import argparse
-import os
-from datetime import datetime
 from pathlib import Path
 
 from detectron2.engine import DefaultTrainer

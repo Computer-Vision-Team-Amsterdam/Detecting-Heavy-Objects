@@ -5,23 +5,17 @@ incorporated into the Azure batch processing pipeline"""
 # print(os.system("ls azureml-models/detectron_28feb/2"))
 import argparse
 import glob
-import json
 import logging
-import pickle
+
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Union
+from typing import  Union
 
-import cv2
-import numpy as np
-import torch
 from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
-from detectron2.data import MetadataCatalog, build_detection_test_loader
+from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
-from detectron2.utils.visualizer import Visualizer
-from PIL import Image
 
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
