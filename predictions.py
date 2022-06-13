@@ -4,26 +4,21 @@ Visualize predictions or annotations on a data subset.
 import argparse
 import os
 import random
-import numpy as np
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List
-from PIL import Image
 
 import cv2
+import numpy as np
 import torch
-from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.evaluation import inference_on_dataset
-from detectron2.modeling import build_model
-
 from azureml.core import Model, Workspace
-from detectron2.data import MetadataCatalog, build_detection_test_loader
+from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import ColorMode, Visualizer
+from PIL import Image
 from tqdm import tqdm
 
 from configs import config_parser
-from evaluation import CustomCOCOEvaluator
 from inference import init_inference
 from utils import ExperimentConfig, get_container_dicts, register_dataset
 
@@ -117,7 +112,6 @@ def single_instance_prediction(
     predictor = DefaultPredictor(cfg)
     outputs = predictor(im)
 
-    print(outputs["instances"])
 
     metadata = MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}")
     v = Visualizer(im[:, :, ::-1], metadata, scale=1.2)
@@ -143,4 +137,3 @@ if __name__ == "__main__":
         single_instance_prediction(flags, experimentConfig, flags.image)
     if not flags.image:
         visualize_predictions(flags, experimentConfig)
-

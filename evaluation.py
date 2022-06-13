@@ -282,7 +282,7 @@ class CustomCOCOeval:
                     z = np.zeros((k))
                     dx = np.max((z, x0 - xd), axis=0) + np.max((z, xd - x1), axis=0)
                     dy = np.max((z, y0 - yd), axis=0) + np.max((z, yd - y1), axis=0)
-                e = (dx**2 + dy**2) / vars / (gt["area"] + np.spacing(1)) / 2
+                e = (dx ** 2 + dy ** 2) / vars / (gt["area"] + np.spacing(1)) / 2
                 if k1 > 0:
                     e = e[vg > 0]
                 ious[i, j] = np.sum(np.exp(-e)) / e.shape[0]
@@ -603,10 +603,10 @@ class Params:
         self.maxDets = [1, 3, 20]
 
         self.areaRng = [
-            [0**2, 1e5**2],
-            [0**2, 32**2],
-            [32**2, 96**2],
-            [96**2, 1e5**2],
+            [0 ** 2, 1e5 ** 2],
+            [0 ** 2, 32 ** 2],
+            [32 ** 2, 96 ** 2],
+            [96 ** 2, 1e5 ** 2],
         ]
 
         self.areaRngLbl = ["all", "small", "medium", "large"]
@@ -623,7 +623,7 @@ class Params:
             0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01)) + 1, endpoint=True
         )
         self.maxDets = [20]
-        self.areaRng = [[0**2, 1e5**2], [32**2, 96**2], [96**2, 1e5**2]]
+        self.areaRng = [[0 ** 2, 1e5 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
         self.areaRngLbl = ["all", "medium", "large"]
         self.useCats = 1
         self.kpt_oks_sigmas = (
@@ -1139,14 +1139,14 @@ def _evaluate_box_proposals(
     ]  # 512-inf
     """
     area_ranges = [
-        [0**2, 1e5**2],  # all
-        [0**2, 176**2],  # small
-        [176**2, 353**2],  # medium
-        [353**2, 1e5**2],  # large
-        [96**2, 128**2],  # 96-128
-        [128**2, 256**2],  # 128-256
-        [256**2, 512**2],  # 256-512
-        [512**2, 1e5**2],
+        [0 ** 2, 1e5 ** 2],  # all
+        [0 ** 2, 176 ** 2],  # small
+        [176 ** 2, 353 ** 2],  # medium
+        [353 ** 2, 1e5 ** 2],  # large
+        [96 ** 2, 128 ** 2],  # 96-128
+        [128 ** 2, 256 ** 2],  # 128-256
+        [256 ** 2, 512 ** 2],  # 256-512
+        [512 ** 2, 1e5 ** 2],
     ]  # 512-inf
 
     assert area in areas, "Unknown area range: {}".format(area)
@@ -1266,10 +1266,10 @@ def _evaluate_predictions_on_coco(
     )
     # coco_eval.params.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 176 ** 2], [176 ** 2, 353 ** 2], [353 ** 2, 1e5 ** 2]]
     coco_eval.params.areaRng = [
-        [0, 1e5**2],
+        [0, 1e5 ** 2],
         [0, 12000],
         [12000, 30000],
-        [30000, 1e5**2],
+        [30000, 1e5 ** 2],
     ]
     # For COCO, the default max_dets_per_image is [1, 10, 100].
     if max_dets_per_image is None:

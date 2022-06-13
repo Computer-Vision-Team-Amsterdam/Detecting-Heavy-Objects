@@ -3,20 +3,18 @@ This module contains general functionality to handle the annotated data
 """
 import copy
 import csv
-import time
-
 import itertools
 import json
 import logging
 import os
 import shutil
+import time
 import xml.etree.ElementTree
 import xml.etree.ElementTree as Xet
 from datetime import datetime
 from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Tuple, Union
-from PIL import Image
 
 import cv2
 import geojson
@@ -29,6 +27,7 @@ from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
 from osgeo import osr  # pylint: disable-all
+from PIL import Image
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from tqdm import tqdm
@@ -382,10 +381,22 @@ def handle_hyperparameters(config: Union[str, Path]) -> int:
     return count
 
 
-def add_images_to_coco(image_dir, coco_filename):
+def add_images_to_coco(image_dir: str, coco_filename: str) -> None:
+    """
+    COCO Evaluator needs annotations file during inference time.
+    When we perform batch processing, we want to creating an empty annotation file on the fly.
+
+    :param image_dir: path to directory with images for inference
+    :param coco_filename: name of the output annotation file
+
+    """
     print("Creating empty annotations file")
-    coco = {"images": [], "annotations": [], "categories": [{"id": 1, "name": "container"}]}
-    image_filenames = list(Path(image_dir).glob('*.jpg'))
+    coco = {
+        "images": [],
+        "annotations": [],
+        "categories": [{"id": 1, "name": "container"}],
+    }
+    image_filenames = list(Path(image_dir).glob("*.jpg"))
     images = []
     for i, image_filename in enumerate(image_filenames):
         im = Image.open(image_filename)
@@ -398,9 +409,9 @@ def add_images_to_coco(image_dir, coco_filename):
         }
         images.append(image_details)
 
-    coco['images'] = images
+    coco["images"] = images
 
-    with open(coco_filename, 'w') as coco_file:
+    with open(coco_filename, "w") as coco_file:
         json.dump(coco, coco_file, indent=4)
 
 
@@ -414,12 +425,18 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
         try:
             with open(ann_path) as f:
                 _ = json.load(f)
-                register_coco_instances(f"{expCfg.dataset_name}_{expCfg.subset}", {}, ann_path, image_root=f"{expCfg.data_folder}")
+                register_coco_instances(
+                    f"{expCfg.dataset_name}_{expCfg.subset}",
+                    {},
+                    ann_path,
+                    image_root=f"{expCfg.data_folder}",
+                )
         except FileNotFoundError:
             if expCfg.subset == "test":
-                add_images_to_coco(image_dir=f"{expCfg.data_folder}/{expCfg.subset}",
-                                   coco_filename=f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json")
-                time.sleep(5)
+                add_images_to_coco(
+                    image_dir=f"{expCfg.data_folder}/{expCfg.subset}",
+                    coco_filename=f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json",
+                )
                 ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
                 register_coco_instances(
                     f"{expCfg.dataset_name}_{expCfg.subset}",
@@ -772,6 +789,13 @@ def write_to_csv(
     dataframe = pd.DataFrame(data)
     dataframe.T.to_csv(filename, header=header)
 
+
+def is_int(element: Any) -> bool:
+    try:
+        int(element)
+        return True
+    except ValueError:
+        return False
 
 """
 input = "/Users/dianaepureanu/Documents/Projects/versions_of_data/data_extended/annotations-renamed-filenames-4000x2000.json"

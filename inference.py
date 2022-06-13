@@ -14,7 +14,7 @@ from typing import Any, Dict, Iterable, List, Union
 import cv2
 import numpy as np
 import torch
-from azureml.core import Workspace, Model
+from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import MetadataCatalog, build_detection_test_loader
 from detectron2.engine import DefaultPredictor
@@ -24,7 +24,7 @@ from PIL import Image
 
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
-from utils import ExperimentConfig, register_dataset
+from utils import ExperimentConfig, register_dataset, is_int
 
 logging.basicConfig(level=logging.INFO)
 
@@ -55,7 +55,6 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
     return cfg
 
 
-
 def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     """
     This method calculates evaluation metrics for the trained model.
@@ -70,9 +69,15 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 
     ws = Workspace.from_config()
 
-    _ = Model.get_model_path(
-        model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
-    )
+    if flags.version == "latest":
+        _ = Model.get_model_path(
+            model_name=f"{flags.name}", _workspace=ws
+        )
+    elif is_int(flags.version):
+        _ = Model.get_model_path(
+            model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+        )
+
     register_dataset(expCfg)
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)
@@ -80,8 +85,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     logging.info(f"Loaded model weights from {cfg.MODEL.WEIGHTS}.")
 
     run_name = datetime.now().strftime("%b-%d-%H:%M")
-    version = flags.version if flags.version else 1
-    output_dir = f"{cfg.OUTPUT_DIR}/INFER_{flags.name}_{version}_{run_name}"
+    output_dir = f"{cfg.OUTPUT_DIR}/INFER_{flags.name}_{flags.version}_{run_name}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     evaluator = CustomCOCOEvaluator(
@@ -107,4 +111,3 @@ if __name__ == "__main__":
     )
 
     evaluate_model(flags, experimentConfig)
-

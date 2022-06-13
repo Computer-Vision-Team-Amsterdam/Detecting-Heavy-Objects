@@ -171,9 +171,9 @@ class Expand(nn.Module):
     def forward(self, x):
         N, C, H, W = x.size()  # assert C / s ** 2 == 0, 'Indivisible gain'
         s = self.gain
-        x = x.view(N, s, s, C // s**2, H, W)  # x(1,2,2,16,80,80)
+        x = x.view(N, s, s, C // s ** 2, H, W)  # x(1,2,2,16,80,80)
         x = x.permute(0, 3, 4, 1, 5, 2).contiguous()  # x(1,16,80,2,80,2)
-        return x.view(N, C // s**2, H * s, W * s)  # x(1,16,160,160)
+        return x.view(N, C // s ** 2, H * s, W * s)  # x(1,16,160,160)
 
 
 class Concat(nn.Module):
