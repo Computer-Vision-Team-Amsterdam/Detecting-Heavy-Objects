@@ -45,8 +45,8 @@ jobs:
       vmImage: macOS-latest
     strategy:
       matrix:
-        Python3.8:
-          python.version: '3.8'
+        Python3.7:
+          python.version: '3.7'
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -68,15 +68,9 @@ jobs:
 
       - script: |
           source activate det2
-          git clone https://github.com/facebookresearch/fairscale.git
-          cd fairscale
-          pip install -r requirements.txt
-          pip install -e .
-        displayName: 'Install fairscale'
-      - script: |
-          source activate det2
           export MACOSX_DEPLOYMENT_TARGET=10.9
           CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+          git checkout https://github.com/facebookresearch/detectron2/tree/523c4023bc79719d2fc3fe0181311f88ad35a271
         displayName: 'Install dependencies'
 
       - script: |
