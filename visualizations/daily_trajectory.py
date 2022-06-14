@@ -1,6 +1,14 @@
 """
 This module is responsible for visualizing the trajectory and container found on a day.
 Show the containers that were found on the particular trajectory that was driven for a particular day.
+
+Pano API sanity check:
+
+from panorama import models
+from panorama.client import PanoramaClient
+
+# Get the first page of panoramas
+response: models.PagedPanoramasResponse = PanoramaClient.list_panoramas()
 """
 import csv
 import sys
