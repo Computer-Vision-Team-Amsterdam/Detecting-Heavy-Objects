@@ -7,6 +7,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import List
 
+import geojson
 import geopy.distance
 import numpy as np
 import pycocotools.mask as mask_util
@@ -20,15 +21,17 @@ from triangulation.helpers import (
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
+from osgeo import osr  # pylint: disable-all
+
 from utils import (
     calculate_distance_in_meters,
-    get_bridge_information,
     get_container_locations,
     get_permit_locations,
     save_json_data,
     write_to_csv,
 )
 from visualizations.stats import DataStatistics
+
 
 
 class PostProcessing:
@@ -202,6 +205,39 @@ class PostProcessing:
             ["lat", "lon", "score", "permit_distance", "bridge_distance"],
             self.output_folder / self.prioritized_file,
         )
+
+def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
+    """
+    Return a list of coordinates where to find vulnerable bridges and canal walls
+    """
+
+    def rd_to_wgs(coordinates: List[float]) -> List[float]:
+        """
+        Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
+        """
+        epsg28992 = osr.SpatialReference()
+        epsg28992.ImportFromEPSG(28992)
+
+        epsg4326 = osr.SpatialReference()
+        epsg4326.ImportFromEPSG(4326)
+
+        rd2latlon = osr.CoordinateTransformation(epsg28992, epsg4326)
+        lonlatz = rd2latlon.TransformPoint(coordinates[0], coordinates[1])
+        return [float(value) for value in lonlatz[:2]]
+
+    bridges_coords = []
+    with open(file) as f:
+        gj = geojson.load(f)
+    features = gj["features"]
+    print("Parsing the bridges information")
+    for feature in tqdm(features):
+        bridge_coords = []
+        if feature["geometry"]["coordinates"]:
+            for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
+                bridge_coords.append(rd_to_wgs(coords))
+            # only add to the list when there are coordinates
+            bridges_coords.append(bridge_coords)
+    return bridges_coords
 
 
 if __name__ == "__main__":
