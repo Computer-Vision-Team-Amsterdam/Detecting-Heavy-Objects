@@ -25,7 +25,6 @@ import yaml
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
-
 from PIL import Image
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
@@ -404,7 +403,7 @@ def add_images_to_coco(image_dir: str, coco_filename: str) -> None:
             "id": i + 1,
             "height": height,
             "width": width,
-            "file_name": f"test/{image_filename.parts[-1]}"
+            "file_name": f"test/{image_filename.parts[-1]}",
         }
         images.append(image_details)
 

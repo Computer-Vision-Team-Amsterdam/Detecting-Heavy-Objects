@@ -22,6 +22,7 @@ from triangulation.helpers import (
     get_panos_from_points_of_interest,
 )  # pylint: disable-all
 
+import postprocessing
 import utils
 
 from .model import PointOfInterest
@@ -133,7 +134,7 @@ def run(
             )
 
     # ======== CREATE LIST OF VULNERABLE BRIDGES ============
-    vulnerable_bridges = utils.get_bridge_information(vulnerable_bridges_file)
+    vulnerable_bridges = postprocessing.get_bridge_information(vulnerable_bridges_file)
 
     # ======== CREATE LIST OF PERMIT LOCATIONS ============
     date_to_check = datetime(2021, 3, 17)

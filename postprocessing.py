@@ -5,13 +5,14 @@ import csv
 from copy import deepcopy
 from datetime import date, datetime
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import geojson
 import geopy.distance
 import numpy as np
 import pycocotools.mask as mask_util
 import torch
+from osgeo import osr  # pylint: disable-all
 from panorama.client import PanoramaClient
 from shapely.geometry import LineString, Point
 from tqdm import tqdm
@@ -21,8 +22,6 @@ from triangulation.helpers import (
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
-from osgeo import osr  # pylint: disable-all
-
 from utils import (
     calculate_distance_in_meters,
     get_container_locations,
@@ -31,7 +30,6 @@ from utils import (
     write_to_csv,
 )
 from visualizations.stats import DataStatistics
-
 
 
 class PostProcessing:
@@ -205,6 +203,7 @@ class PostProcessing:
             ["lat", "lon", "score", "permit_distance", "bridge_distance"],
             self.output_folder / self.prioritized_file,
         )
+
 
 def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
     """
