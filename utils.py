@@ -404,7 +404,7 @@ def add_images_to_coco(image_dir: str, coco_filename: str) -> None:
             "id": i + 1,
             "height": height,
             "width": width,
-            "file_name": str(image_filename.resolve()),
+            "file_name": f"test/{image_filename.parts[-1]}"
         }
         images.append(image_details)
 

@@ -34,7 +34,7 @@ DATASETS:
   TRAIN: ("container_train",)
   TEST: ()
 DATALOADER:
-  NUM_WORKERS: 1
+  NUM_WORKERS: 0
 
 
 OUTPUT_DIR: outputs
