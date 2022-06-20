@@ -682,9 +682,9 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         distributed=True,
         output_dir=None,
         *,
-        max_dets_per_image=None,
         use_fast_impl=True,
         kpt_oks_sigmas=(),
+        cfg_file=None
     ):
         """
         Args:
@@ -704,11 +704,6 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                 1. "instances_predictions.pth" a file that can be loaded with `torch.load` and
                    contains all the results in the format they are produced by the model.
                 2. "coco_instances_results.json" a json file in COCO's result format.
-            max_dets_per_image (int): limit on the maximum number of detections per image.
-                By default in COCO, this limit is to 100, but this can be customized
-                to be greater, as is needed in evaluation metrics AP fixed and AP pool
-                (see https://arxiv.org/pdf/2102.01066.pdf)
-                This doesn't affect keypoint evaluation.
             use_fast_impl (bool): use a fast but **unofficial** implementation to compute AP.
                 Although the results should be very close to the official implementation in COCO
                 API, it is still recommended to compute results with the official API for use in
@@ -722,17 +717,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         self._distributed = distributed
         self._output_dir = output_dir
         self._use_fast_impl = use_fast_impl
-
-        # COCOeval requires the limit on the number of detections per image (maxDets) to be a list
-        # with at least 3 elements. The default maxDets in COCOeval is [1, 10, 100], in which the
-        # 3rd element (100) is used as the limit on the number of detections per image when
-        # evaluating AP. COCOEvaluator expects an integer for max_dets_per_image, so for COCOeval,
-        # we reformat max_dets_per_image into [1, 10, max_dets_per_image], based on the defaults.
-        if max_dets_per_image is None:
-            max_dets_per_image = [1, 5, 20]
-        else:
-            max_dets_per_image = [1, 5, max_dets_per_image]
-        self._max_dets_per_image = max_dets_per_image
+        self._cfg_file = cfg_file
 
         if tasks is not None and isinstance(tasks, CfgNode):
             kpt_oks_sigmas = (
@@ -912,8 +897,8 @@ class CustomCOCOEvaluator(DatasetEvaluator):
                     kpt_oks_sigmas=self._kpt_oks_sigmas,
                     use_fast_impl=self._use_fast_impl,
                     img_ids=img_ids,
-                    max_dets_per_image=self._max_dets_per_image,
                     output_dir=self._output_dir,
+                    cfg_file = self._cfg_file
                 )
                 if len(coco_results) > 0
                 else None  # cocoapi does not handle empty results very well
@@ -1017,7 +1002,7 @@ class CustomCOCOEvaluator(DatasetEvaluator):
         for idx, name in enumerate(class_names):
             # area range index 0: all area ranges
             # max dets index -1: typically 100 per image
-            precision = precisions[:, :, idx, 0, -1]
+            precision = precisions[0, :, idx, 0, -1]
             precision = precision[precision > -1]
             ap = np.mean(precision) if precision.size else float("nan")
             results_per_category.append(("{}".format(name), float(ap * 100)))
@@ -1243,6 +1228,7 @@ def _evaluate_predictions_on_coco(
     img_ids=None,
     max_dets_per_image=None,
     output_dir=None,
+    cfg_file=None
 ):  # added by CVT
     """
     Evaluate the coco results using COCOEval API.
@@ -1259,6 +1245,44 @@ def _evaluate_predictions_on_coco(
             c.pop("bbox", None)
 
     coco_dt = coco_gt.loadRes(coco_results)
+
+    # =========== PR CURVE START ================== #
+    plot = True  # (cfg_file != None) and (isinstance(cfg_file,CfgNode))
+    print(f"plot: {plot}")
+    if plot:
+        from confusion_matrix import ConfusionMatrix, xywh2xyxy, process_batch, ap_per_class
+        C_M = ConfusionMatrix(nc=1, conf=0.999, iou_thres=0.5)
+        stats = []
+        for i in coco_gt.imgs.keys():
+            bbox_gt = np.array([y['bbox'] for y in coco_gt.imgToAnns.get(i)])
+            class_gt = np.array([[y['category_id'] - 1] for y in coco_gt.imgToAnns.get(i)])
+            labels = np.hstack((class_gt, bbox_gt))
+
+            bbox_dt = np.array([y['bbox'] for y in coco_dt.imgToAnns.get(i)])
+            conf_dt = np.array([[y['score']] for y in coco_dt.imgToAnns.get(i)])
+            class_dt = np.array([[y['category_id'] - 1] for y in coco_dt.imgToAnns.get(i)])
+            predictions = np.hstack((np.hstack((bbox_dt, conf_dt)), class_dt))
+
+            C_M.process_batch(predictions, labels)
+
+            detects = torch.tensor(xywh2xyxy(predictions))
+            labs = torch.tensor(np.hstack((labels[:, 0][:, None], xywh2xyxy(labels[:, 1:]))))
+            iouv = torch.linspace(0.5, 0.95, 10)  # iou vector for mAP@0.5:0.95
+            correct = process_batch(detects, labs, iouv)
+            tcls = labs[:, 0].tolist()  # target class
+            stats.append((correct.cpu(), detects[:, 4].cpu(), detects[:, 5].cpu(), tcls))
+
+        C_M.print()
+
+
+        names = {k: v for k, v in enumerate(["container"])}
+        stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
+        if len(stats) and stats[0].any():
+             p, r, ap, f1, ap_class = ap_per_class(*stats, plot=True, save_dir=output_dir, names=names)
+        C_M.plot(save_dir=output_dir + 'confusion_matrix_rec.png', names=["container"], rec_or_pred=0)
+        C_M.plot(save_dir=output_dir + 'confusion_matrix_pred.png', names=["container"], rec_or_pred=1)
+    # =========== PR CURVE END ==================== #
+
     # TODO [what was changed]: modified line below to use the custom coco eval instead of the one from pycocotools
     # coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
     coco_eval = CustomCOCOeval(
