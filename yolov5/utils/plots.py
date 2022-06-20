@@ -90,8 +90,8 @@ def plot_wh_methods():  # from utils.plots import *; plot_wh_methods()
 
     fig = plt.figure(figsize=(6, 3), tight_layout=True)
     plt.plot(x, ya, ".-", label="YOLOv3")
-    plt.plot(x, yb**2, ".-", label="YOLOv5 ^2")
-    plt.plot(x, yb**1.6, ".-", label="YOLOv5 ^1.6")
+    plt.plot(x, yb ** 2, ".-", label="YOLOv5 ^2")
+    plt.plot(x, yb ** 1.6, ".-", label="YOLOv5 ^1.6")
     plt.xlim(left=-4, right=4)
     plt.ylim(bottom=0, top=6)
     plt.xlabel("input")
@@ -134,7 +134,7 @@ def plot_images(
     tf = max(tl - 1, 1)  # font thickness
     bs, _, h, w = images.shape  # batch size, _, height, width
     bs = min(bs, max_subplots)  # limit plot images
-    ns = np.ceil(bs**0.5)  # number of subplots (square)
+    ns = np.ceil(bs ** 0.5)  # number of subplots (square)
 
     # Check if we should resize
     scale_factor = max_size / max(h, w)

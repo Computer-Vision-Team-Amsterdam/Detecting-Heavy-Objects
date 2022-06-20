@@ -4,26 +4,21 @@ incorporated into the Azure batch processing pipeline"""
 # import os
 # print(os.system("ls azureml-models/detectron_28feb/2"))
 import argparse
-import json
+import glob
 import logging
-import pickle
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Union
+from typing import Union
 
-import cv2
-import numpy as np
-import torch
+from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
-from detectron2.data import MetadataCatalog, build_detection_test_loader
+from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
-from detectron2.utils.visualizer import Visualizer
-from PIL import Image
 
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
-from utils import ExperimentConfig, register_dataset
+from utils import ExperimentConfig, is_int, register_dataset
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,40 +42,15 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
     config_file = Path(flags.config)
 
     cfg = setup_cfg(config_file)
-    version = flags.version if flags.version else 1
-    cfg.MODEL.DEVICE = flags.device
-    cfg.MODEL.WEIGHTS = f"azureml-models/{flags.name}/{version}/model_final.pth"
 
-    # inference run locally
-    if cfg.MODEL.DEVICE == "cpu":
-        cfg.MODEL.WEIGHTS = f"{cfg.OUTPUT_DIR}/{flags.name}_{version}/model_final.pth"
+    cfg.MODEL.DEVICE = flags.device
+    # sometimes Azure downloads the ckpt at different paths, so we search recursively
+    # list should contain a single element, so we retrieve it
+    cfg.MODEL.WEIGHTS = glob.glob(
+        f"azureml-models/{flags.name}" + "/**/*.pth", recursive=True
+    )[0]
 
     return cfg
-
-
-# TODO check why this function has no usages
-def run(
-    predictor: DefaultPredictor, minibatch: Iterable[Union[Path, str]]
-) -> List[Dict[Union[Path, str], Any]]:
-    """
-    Processes
-    Args:
-        :param minibatch: Batch of image paths to be processed during one forward pass of the model
-        :param predictor: detectron predictor used at inference time
-    Returns: List of dictionaries with as key unique image name and as value
-    the obtained predictions
-    """
-
-    input_tensors = [
-        {"image": torch.from_numpy(np.array(Image.open(path)))} for path in minibatch
-    ]
-
-    with torch.no_grad():  # type: ignore
-
-        # called, not instantiated here
-        outputs = [predictor(input_tensor["image"]) for input_tensor in input_tensors]
-
-    return [{path: outputs[idx]} for idx, path in enumerate(minibatch)]
 
 
 def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
@@ -95,6 +65,15 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     constructor from another method i.e. _test_loader_from_config
     """
 
+    ws = Workspace.from_config()
+
+    if flags.version == "latest":
+        _ = Model.get_model_path(model_name=f"{flags.name}", _workspace=ws)
+    elif is_int(flags.version):
+        _ = Model.get_model_path(
+            model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+        )
+
     register_dataset(expCfg)
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)
@@ -102,8 +81,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     logging.info(f"Loaded model weights from {cfg.MODEL.WEIGHTS}.")
 
     run_name = datetime.now().strftime("%b-%d-%H:%M")
-    version = flags.version if flags.version else 1
-    output_dir = f"{cfg.OUTPUT_DIR}/INFER_{flags.name}_{version}_{run_name}"
+    output_dir = f"{cfg.OUTPUT_DIR}/INFER_{flags.name}_{flags.version}_{run_name}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     evaluator = CustomCOCOEvaluator(
@@ -120,10 +98,12 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 if __name__ == "__main__":
 
     flags = arg_parser()
+
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
         data_format=flags.data_format,
         data_folder=flags.data_folder,
     )
+
     evaluate_model(flags, experimentConfig)

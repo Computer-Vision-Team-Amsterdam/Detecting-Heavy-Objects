@@ -1,8 +1,6 @@
 """
 This module contains functionality to run a training script on Azure.
 """
-import json
-from pathlib import Path
 from typing import Any, Dict, List
 
 import azureml._restclient.snapshots_client

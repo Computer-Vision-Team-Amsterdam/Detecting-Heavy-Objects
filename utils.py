@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import shutil
+import time
 import xml.etree.ElementTree
 import xml.etree.ElementTree as Xet
 from datetime import datetime
@@ -16,7 +17,6 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Tuple, Union
 
 import cv2
-import geojson
 import geopy.distance
 import numpy as np
 import numpy.typing as npt
@@ -25,7 +25,7 @@ import yaml
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
-from osgeo import osr  # pylint: disable-all
+from PIL import Image
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from tqdm import tqdm
@@ -379,18 +379,72 @@ def handle_hyperparameters(config: Union[str, Path]) -> int:
     return count
 
 
+def add_images_to_coco(image_dir: str, coco_filename: str) -> None:
+    """
+    COCO Evaluator needs annotations file during inference time.
+    When we perform batch processing, we want to creating an empty annotation file on the fly.
+
+    :param image_dir: path to directory with images for inference
+    :param coco_filename: name of the output annotation file
+
+    """
+    print("Creating empty annotations file")
+    coco = {
+        "images": [],
+        "annotations": [],
+        "categories": [{"id": 1, "name": "container"}],
+    }
+    image_filenames = list(Path(image_dir).glob("*.jpg"))
+    images = []
+    for i, image_filename in enumerate(image_filenames):
+        im = Image.open(image_filename)
+        width, height = im.size
+        image_details = {
+            "id": i + 1,
+            "height": height,
+            "width": width,
+            "file_name": f"test/{image_filename.parts[-1]}",
+        }
+        images.append(image_details)
+
+    coco["images"] = images
+
+    with open(coco_filename, "w") as coco_file:
+        json.dump(coco, coco_file, indent=4)
+
+
 def register_dataset(expCfg: ExperimentConfig) -> None:
     """
     Register dataset.
     """
+
     if expCfg.data_format == "coco":
         ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
-        register_coco_instances(
-            f"{expCfg.dataset_name}_{expCfg.subset}",
-            {},
-            ann_path,
-            image_root=f"{expCfg.data_folder}",
-        )
+        try:
+            with open(ann_path) as f:
+                _ = json.load(f)
+                register_coco_instances(
+                    f"{expCfg.dataset_name}_{expCfg.subset}",
+                    {},
+                    ann_path,
+                    image_root=f"{expCfg.data_folder}",
+                )
+        except FileNotFoundError:
+            if expCfg.subset == "test":
+                add_images_to_coco(
+                    image_dir=f"{expCfg.data_folder}/{expCfg.subset}",
+                    coco_filename=f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json",
+                )
+                ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
+                register_coco_instances(
+                    f"{expCfg.dataset_name}_{expCfg.subset}",
+                    {},
+                    ann_path,
+                    image_root=f"{expCfg.data_folder}",
+                )
+            else:
+                raise FileNotFoundError("No annotation file found")
+
         print(f"INFO:::{expCfg.dataset_name}_{expCfg.subset} has been registered!")
     if expCfg.data_format == "via":
         DatasetCatalog.register(
@@ -669,40 +723,6 @@ def get_permit_locations(
     return permit_locations
 
 
-def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
-    """
-    Return a list of coordinates where to find vulnerable bridges and canal walls
-    """
-
-    def rd_to_wgs(coordinates: List[float]) -> List[float]:
-        """
-        Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
-        """
-        epsg28992 = osr.SpatialReference()
-        epsg28992.ImportFromEPSG(28992)
-
-        epsg4326 = osr.SpatialReference()
-        epsg4326.ImportFromEPSG(4326)
-
-        rd2latlon = osr.CoordinateTransformation(epsg28992, epsg4326)
-        lonlatz = rd2latlon.TransformPoint(coordinates[0], coordinates[1])
-        return [float(value) for value in lonlatz[:2]]
-
-    bridges_coords = []
-    with open(file) as f:
-        gj = geojson.load(f)
-    features = gj["features"]
-    print("Parsing the bridges information")
-    for feature in tqdm(features):
-        bridge_coords = []
-        if feature["geometry"]["coordinates"]:
-            for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
-                bridge_coords.append(rd_to_wgs(coords))
-            # only add to the list when there are coordinates
-            bridges_coords.append(bridge_coords)
-    return bridges_coords
-
-
 def get_container_locations(file: Path) -> List[List[float]]:
     """
     Returns locations of containers from a csv file in lat, lon order
@@ -732,6 +752,14 @@ def write_to_csv(
     """
     dataframe = pd.DataFrame(data)
     dataframe.T.to_csv(filename, header=header)
+
+
+def is_int(element: Any) -> bool:
+    try:
+        int(element)
+        return True
+    except ValueError:
+        return False
 
 
 """

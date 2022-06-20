@@ -2,8 +2,6 @@
 This module contains functionality to train a default detectron2 model.
 """
 import argparse
-import os
-from datetime import datetime
 from pathlib import Path
 
 from detectron2.engine import DefaultTrainer
@@ -22,8 +20,7 @@ def init_train(flags: argparse.Namespace) -> None:
     cfg = setup_cfg(config_file)
     cfg.MODEL.DEVICE = flags.device
 
-    version = flags.version if flags.version else 1
-    cfg.OUTPUT_DIR = f"{cfg.OUTPUT_DIR}/TRAIN_{flags.name}_{version}"
+    cfg.OUTPUT_DIR = f"{cfg.OUTPUT_DIR}/TRAIN_{flags.name}_{flags.version}"
 
     Path(cfg.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
