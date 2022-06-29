@@ -62,13 +62,14 @@ jobs:
         displayName: 'Take ownership of conda installation'
 
       - script: |
+          python -m pip install --upgrade pip
           conda env create -f det2.yml
         displayName: 'Create conda env'
 
       - script: |
           source activate det2
           export MACOSX_DEPLOYMENT_TARGET=10.9
-          CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+          CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git@v0.5'
         displayName: 'Install dependencies'
 
       - script: |

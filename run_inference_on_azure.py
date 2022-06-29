@@ -1,8 +1,7 @@
 """
 This module contains functionality to run an inference script on Azure.
 """
-import json
-from pathlib import Path
+
 from typing import List
 
 import azureml._restclient.snapshots_client

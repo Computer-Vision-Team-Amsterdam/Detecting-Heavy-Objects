@@ -10,6 +10,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, List
 
+import geojson
 import geopy.distance
 import numpy as np
 import numpy.typing as npt

@@ -143,6 +143,9 @@ outputs/
 # test folders with dummy data
 tests/test_download_images/*
 tests/filtering_output/*
+tests/*.jpg
+tests/converter_output_data_extended/*
+tests/data_resized/*
 
 # config files
 config.json
@@ -155,10 +158,13 @@ config.json
 visualizations/*.html
 *.pickle
 
-# input excel files
-*.xlsx
 
 .azure
 images
 results
 weights
+
+# input excel files/json files
+*.xlsx
+*.xml
+*.geojson

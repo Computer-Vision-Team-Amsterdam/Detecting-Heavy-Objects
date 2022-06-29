@@ -46,7 +46,7 @@ def arg_parser() -> argparse.Namespace:
         "--name", required=True, type=str, help="Name of Azure trained model to load"
     )
     parser.add_argument("--subset", type=str, default="val", help="train, val, test")
-    parser.add_argument("--version", default=1, help="Version of trained model.")
+    parser.add_argument("--version", default="latest", help="Version of trained model.")
     parser.add_argument(
         "--mode",
         type=str,
