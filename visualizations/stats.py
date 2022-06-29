@@ -1,10 +1,8 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
-
-import utils
 
 
 class DataStatistics:
@@ -21,10 +19,31 @@ class DataStatistics:
         f.close()
 
         self.output_dir = output_dir
-        self.widths, self.heights = utils.collect_dimensions(self.data)
+        self.widths, self.heights = self.collect_dimensions(self.data)
         self.areas = [
             width * height for width, height in zip(self.widths, self.heights)
         ]
+
+    def collect_dimensions(self, data: Any) -> Tuple[List[int], List[int]]:
+        """
+        Collects widths and heights from json file
+        """
+        # assert if we have a list/results json or a dict/annotations json
+        if isinstance(data, list):  # this is a results json file
+            pass
+        if isinstance(data, dict):  # this is an annotation json file
+            data = data["annotations"]
+
+        widths = []
+        heights = []
+        for ann in data:
+            width = ann["bbox"][2]
+            height = ann["bbox"][3]
+
+            widths.append(int(width))
+            heights.append(int(height))
+
+        return widths, heights
 
     def plot_dimensions_distribution(self, plot_name: str) -> None:
         """
@@ -65,7 +84,7 @@ class DataStatistics:
         :return:
         """
         self.data = data
-        self.widths, self.heights = utils.collect_dimensions(self.data)
+        self.widths, self.heights = self.collect_dimensions(self.data)
         self.areas = [
             width * height for width, height in zip(self.widths, self.heights)
         ]

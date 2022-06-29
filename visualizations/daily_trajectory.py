@@ -3,10 +3,9 @@ This module is responsible for visualizing the trajectory and container found on
 Show the containers that were found on the particular trajectory that was driven for a particular day.
 """
 import csv
-import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import List, Union
 
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
@@ -14,10 +13,9 @@ from triangulation.helpers import (
     get_panos_from_points_of_interest,
 )  # pylint: disable-all
 
-import utils
-
-from .model import PointOfInterest
-from .unique_instance_prediction import generate_map
+from visualizations.model import PointOfInterest
+from visualizations.unique_instance_prediction import generate_map
+from visualizations.utils import get_bridge_information, get_permit_locations
 
 
 def get_daily_panoramas(
@@ -125,11 +123,11 @@ def run(
             )
 
     # ======== CREATE LIST OF VULNERABLE BRIDGES ============
-    vulnerable_bridges = utils.get_bridge_information(vulnerable_bridges_file)
+    vulnerable_bridges = get_bridge_information(vulnerable_bridges_file)
 
     # ======== CREATE LIST OF PERMIT LOCATIONS ============
     date_to_check = datetime(2021, 3, 17)
-    permit_locations = utils.get_permit_locations(permits_file, date_to_check)
+    permit_locations = get_permit_locations(permits_file, date_to_check)
 
     # ========== CREATE MAP =================
     generate_map(

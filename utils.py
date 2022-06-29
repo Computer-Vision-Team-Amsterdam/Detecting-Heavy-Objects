@@ -2,33 +2,20 @@
 This module contains general functionality to handle the annotated data
 """
 import copy
-import csv
 import itertools
 import json
 import logging
 import os
 import shutil
-import xml.etree.ElementTree
-import xml.etree.ElementTree as Xet
-from datetime import datetime
-from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Tuple, Union
 
 import cv2
-import geojson
-import geopy.distance
 import numpy as np
-import numpy.typing as npt
-import pandas as pd
 import yaml
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
-from osgeo import osr  # pylint: disable-all
-from shapely.geometry import LineString, Point
-from shapely.ops import nearest_points
-from tqdm import tqdm
 
 
 class DataFormatConverter:
@@ -551,187 +538,6 @@ def correct_faulty_panoramas() -> None:
         )
 
     _update_dims()
-
-
-def collect_dimensions(data: Any) -> Tuple[List[int], List[int]]:
-    """
-    Collects widths and heights from json file
-    """
-    # assert if we have a list/results json or a dict/annotations json
-    if isinstance(data, list):  # this is a results json file
-        pass
-    if isinstance(data, dict):  # this is an annotation json file
-        data = data["annotations"]
-
-    widths = []
-    heights = []
-    for ann in data:
-        width = ann["bbox"][2]
-        height = ann["bbox"][3]
-
-        widths.append(int(width))
-        heights.append(int(height))
-
-    return widths, heights
-
-
-def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
-    """
-    Write the data to a json file
-    """
-    with open(output_folder / filename, "w") as f:
-        json.dump(data, f)
-
-
-def get_permit_locations(
-    file: Union[Path, str], date_to_check: datetime
-) -> List[List[float]]:
-    """
-    Returns all the containers permits from an decos objects permit file.
-    """
-
-    def is_form_valid(permit: xml.etree.ElementTree.Element) -> bool:
-        """
-        Check if a form has all the requirements
-        """
-        address = permit.find("TEXT6")
-        description = permit.find("TEXT8")
-        start_date = permit.find("DATE6")
-        end_date = permit.find("DATE7")
-        if (
-            address.text  # type:ignore
-            and description.text  # type:ignore
-            and start_date.text  # type:ignore
-            and end_date.text  # type:ignore
-        ):
-            return True
-        return False
-
-    def is_permit_valid_on_day(permit: xml.etree.ElementTree.Element) -> bool:
-        """
-        Check whether container is valid on that day
-        """
-        start_date = permit.find("DATE6")
-        end_date = permit.find("DATE7")
-
-        start_date = datetime.strptime(  # type:ignore
-            start_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
-        )
-        end_date = datetime.strptime(end_date.text, "%Y-%m-%dT%H:%M:%S")  # type:ignore
-
-        # Check if permit is valid
-        if end_date >= date_to_check >= start_date:  # type:ignore
-            return True
-        return False
-
-    def is_container_permit(permit: Any) -> bool:
-        """
-        Check whether permit is for a container
-        """
-        container_words = [
-            "puinbak",
-            "puincontainer",
-            "container",
-            "puincontainer",
-            "afvalcontainer",
-            "zeecontainer",
-            "keet",
-            "schaftkeet",
-            "vuilcontainer",
-        ]
-        description = permit.find("TEXT8")
-        if any(
-            get_close_matches(word, container_words)
-            for word in description.text.split(" ")
-        ):
-            return True
-
-        return False
-
-    xmlparse = Xet.parse(file)
-    root = xmlparse.getroot()
-    locator = geopy.Nominatim(user_agent="myGeocoder")
-    permit_locations = []
-    print("Parsing the permits information")
-    for item in tqdm(root):
-        # The permits seem to have a quite free format. Let's catch some exceptions
-        if (
-            is_form_valid(item)
-            and is_container_permit(item)
-            and is_permit_valid_on_day(item)
-        ):
-            address = item.find(
-                "TEXT6"
-            ).text  # todo: Check some categories: Street + number, coordinates,
-            location = locator.geocode(address + ", Amsterdam, Netherlands")
-            lonlat = [location.latitude, location.longitude]
-            permit_locations.append(lonlat)
-    return permit_locations
-
-
-def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
-    """
-    Return a list of coordinates where to find vulnerable bridges and canal walls
-    """
-
-    def rd_to_wgs(coordinates: List[float]) -> List[float]:
-        """
-        Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
-        """
-        epsg28992 = osr.SpatialReference()
-        epsg28992.ImportFromEPSG(28992)
-
-        epsg4326 = osr.SpatialReference()
-        epsg4326.ImportFromEPSG(4326)
-
-        rd2latlon = osr.CoordinateTransformation(epsg28992, epsg4326)
-        lonlatz = rd2latlon.TransformPoint(coordinates[0], coordinates[1])
-        return [float(value) for value in lonlatz[:2]]
-
-    bridges_coords = []
-    with open(file) as f:
-        gj = geojson.load(f)
-    features = gj["features"]
-    print("Parsing the bridges information")
-    for feature in tqdm(features):
-        bridge_coords = []
-        if feature["geometry"]["coordinates"]:
-            for idx, coords in enumerate(feature["geometry"]["coordinates"][0]):
-                bridge_coords.append(rd_to_wgs(coords))
-            # only add to the list when there are coordinates
-            bridges_coords.append(bridge_coords)
-    return bridges_coords
-
-
-def get_container_locations(file: Path) -> List[List[float]]:
-    """
-    Returns locations of containers from a csv file in lat, lon order
-    """
-    container_locations = []
-    with open(file) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=",")
-        next(csv_reader)  # skip first line
-        for row in csv_reader:
-            container_locations.append([float(row[0]), float(row[1])])
-    return container_locations
-
-
-def calculate_distance_in_meters(line: LineString, point: Point) -> float:
-    """
-    Calculates the shortest distance between a line and point, returns a float in meters
-    """
-    closest_point = nearest_points(line, point)[0]
-    return float(geopy.distance.distance(closest_point.coords, point.coords).meters)
-
-
-def write_to_csv(
-    data: List[npt.NDArray[Any]], header: List[str], filename: Path
-) -> None:
-    """
-    Writes a list of list with data to a csv file.
-    """
-    dataframe = pd.DataFrame(data)
-    dataframe.T.to_csv(filename, header=header)
 
 
 """
