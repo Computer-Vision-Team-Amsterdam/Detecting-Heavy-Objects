@@ -157,3 +157,8 @@ visualizations/*.html
 
 # input excel files
 *.xlsx
+
+.azure
+images
+results
+weights
