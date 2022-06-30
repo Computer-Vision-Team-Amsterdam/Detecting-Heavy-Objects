@@ -195,7 +195,7 @@ class PostProcessing:
                     calculate_distance_in_meters(bridge_location, container_location)
                     for bridge_location in bridge_locations_geom
                 ]
-            )  # type:ignore
+            )
             bridges_distances.append(closest_bridge_distance)
 
             closest_permit_distance = min(

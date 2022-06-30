@@ -109,7 +109,7 @@ jobs:
         displayName: 'black'
 
       - script: |
-          mypy --ignore-missing-imports --config-file=.mypyrc .
+          mypy --install-types --non-interactive --ignore-missing-imports --config-file=.mypyrc .
         displayName: 'mypy'
 
       - script: |
