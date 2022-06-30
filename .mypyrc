@@ -32,3 +32,6 @@ ignore_missing_imports = True
 
 [mypy-panorama]
 ignore_missing_imports = True
+
+[mypy-numpy]
+disallow_untyped_calls = False
