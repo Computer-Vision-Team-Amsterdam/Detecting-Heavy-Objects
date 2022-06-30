@@ -96,7 +96,7 @@ jobs:
           versionSpec: '$(python.version)'
         displayName: 'Use Python $(python.version)'
 
-      - script |
+      - script: |
           pip install -r requirements-style.txt
         displayName: 'Install dependencies for code style checks'
 
