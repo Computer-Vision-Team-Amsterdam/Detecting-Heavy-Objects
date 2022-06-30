@@ -232,10 +232,10 @@ class PostProcessing:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run postprocessing for container detection pipeline")
-    parser.add_argument("input_path", type=Path, help="Full path to input file")
-    parser.add_argument("output_path", type=Path, help="Full path to output dir")
-    parser.add_argument("permits_file", type=Path, help="Full path to permits file")
-    parser.add_argument("bridges_file", type=Path, help="Full path to bridges file")
+    parser.add_argument("--input_path", type=Path, help="Full path to input file")
+    parser.add_argument("--output_path", type=Path, help="Full path to output dir")
+    parser.add_argument("--permits_file", type=Path, help="Full path to permits file")
+    parser.add_argument("--bridges_file", type=Path, help="Full path to bridges file")
     args = parser.parse_args()
 
     postprocess = PostProcessing(
