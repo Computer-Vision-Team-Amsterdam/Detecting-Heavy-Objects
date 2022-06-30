@@ -10,7 +10,6 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, List
 
-import geojson
 import geopy.distance
 import numpy as np
 import numpy.typing as npt
@@ -196,7 +195,7 @@ class PostProcessing:
                     calculate_distance_in_meters(bridge_location, container_location)
                     for bridge_location in bridge_locations_geom
                 ]
-            )
+            )  # type:ignore
             bridges_distances.append(closest_bridge_distance)
 
             closest_permit_distance = min(
