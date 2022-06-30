@@ -35,5 +35,5 @@ WORKDIR /opt
 COPY visualizations/stats.py visualizations/utils.py /opt/visualizations/
 COPY postprocessing.py /opt
 
-RUN useradd --create-home appuser
+RUN useradd appuser
 USER appuser
