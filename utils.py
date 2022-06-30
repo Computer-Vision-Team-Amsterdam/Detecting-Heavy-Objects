@@ -594,6 +594,12 @@ def correct_faulty_panoramas() -> None:
 
     _update_dims()
 
+def is_int(element: Any) -> bool:
+    try:
+        int(element)
+        return True
+    except ValueError:
+        return False
 
 """
 input = "/Users/dianaepureanu/Documents/Projects/versions_of_data/data_extended/annotations-renamed-filenames-4000x2000.json"
