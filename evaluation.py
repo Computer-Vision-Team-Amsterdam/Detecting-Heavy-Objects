@@ -1247,13 +1247,14 @@ def _evaluate_predictions_on_coco(
     coco_dt = coco_gt.loadRes(coco_results)
 
     # =========== PR CURVE START ================== #
-    plot = True  # (cfg_file != None) and (isinstance(cfg_file,CfgNode))
+    plot = True
     print(f"plot: {plot}")
     if plot:
         from confusion_matrix import ConfusionMatrix, xywh2xyxy, process_batch, ap_per_class
         C_M = ConfusionMatrix(nc=1, conf=0.999, iou_thres=0.5)
         stats = []
         for i in coco_gt.imgs.keys():
+            print(coco_gt.imgToAnns(i))
             bbox_gt = np.array([y['bbox'] for y in coco_gt.imgToAnns.get(i)])
             class_gt = np.array([[y['category_id'] - 1] for y in coco_gt.imgToAnns.get(i)])
             labels = np.hstack((class_gt, bbox_gt))
@@ -1288,7 +1289,6 @@ def _evaluate_predictions_on_coco(
     coco_eval = CustomCOCOeval(
         cocoGt=coco_gt, cocoDt=coco_dt, iouType=iou_type, output_dir=output_dir
     )
-    # coco_eval.params.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 176 ** 2], [176 ** 2, 353 ** 2], [353 ** 2, 1e5 ** 2]]
     coco_eval.params.areaRng = [
         [0, 1e5 ** 2],
         [0, 12000],

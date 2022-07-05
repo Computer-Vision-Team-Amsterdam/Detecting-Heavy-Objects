@@ -7,7 +7,7 @@ from typing import List
 import azureml._restclient.snapshots_client
 from azureml.exceptions import WebserviceException
 
-azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 1000000000
+azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 100000000000
 
 from azureml.core import (
     ComputeTarget,
@@ -22,8 +22,7 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "detectron_map2_inference_val"
-
+EXPERIMENT_NAME = "inference_val"
 
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
