@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     compute_target = ComputeTarget(ws, "detectron2")
 
-    nr_experiments = handle_hyperparameters("configs/hyperparameter-search.yaml")
+    nr_experiments = handle_hyperparameters("../configs/hyperparameter-search.yaml")
 
     for exp in trange(nr_experiments):
         CONFIG = f"configs/temp_{exp}.yaml"
