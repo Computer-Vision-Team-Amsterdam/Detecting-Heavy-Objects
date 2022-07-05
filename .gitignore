@@ -158,6 +158,12 @@ config.json
 visualizations/*.html
 *.pickle
 
+
+.azure
+images
+results
+weights
+
 # input excel files/json files
 *.xlsx
 *.xml
