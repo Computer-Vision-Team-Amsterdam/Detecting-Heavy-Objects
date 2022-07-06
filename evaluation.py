@@ -1253,8 +1253,8 @@ def _evaluate_predictions_on_coco(
         from confusion_matrix import ConfusionMatrix, xywh2xyxy, process_batch, ap_per_class
         C_M = ConfusionMatrix(nc=1, conf=0.999, iou_thres=0.5)
         stats = []
-        for i in coco_gt.imgs.keys():
-            print(coco_gt.imgToAnns(i))
+        for i in coco_dt.imgs.keys():
+
             bbox_gt = np.array([y['bbox'] for y in coco_gt.imgToAnns.get(i)])
             class_gt = np.array([[y['category_id'] - 1] for y in coco_gt.imgToAnns.get(i)])
             labels = np.hstack((class_gt, bbox_gt))
