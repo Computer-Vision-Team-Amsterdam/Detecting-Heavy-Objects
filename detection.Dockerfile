@@ -20,10 +20,12 @@ RUN git clone https://github.com/facebookresearch/detectron2.git
 RUN python -m pip install -e detectron2
 
 
-WORKDIR /opt
 
-# Copy contents
-COPY . /opt
+WORKDIR /opt
+COPY configs/config_parser.py configs/container_detection.yaml /opt/configs/
+COPY inference.py /opt
+COPY evaluation.py /opt
+COPY utils.py /opt
 
 RUN useradd appuser
 USER appuser
