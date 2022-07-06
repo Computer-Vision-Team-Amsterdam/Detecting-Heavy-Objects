@@ -4,6 +4,11 @@ FROM python:3.7.13-bullseye
 # Install linux packages
 RUN apt update && apt install --no-install-recommends -y zip htop screen libgl1-mesa-glx
 
+# Elegant method, virtualenv automatically works for both RUN and CMD
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
 # Install pip packages
 COPY requirements.txt .
 RUN python -m pip install --upgrade pip
@@ -16,3 +21,7 @@ WORKDIR /app
 
 # Copy contents
 COPY . /app
+
+# Installation as root, non-root user when executing the container
+RUN useradd appuser
+USER appuser
