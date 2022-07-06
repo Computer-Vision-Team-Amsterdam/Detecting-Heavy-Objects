@@ -12,7 +12,6 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Install pip packages
 COPY requirements.txt .
 RUN python -m pip install --upgrade pip
-RUN pip uninstall -y torch torchvision torchtext Pillow
 RUN pip install --no-cache -r requirements.txt 
 
 # Create working directory
