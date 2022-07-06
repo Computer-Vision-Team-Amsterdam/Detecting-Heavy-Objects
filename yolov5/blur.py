@@ -94,7 +94,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_folder",
         type=Path,
-        default="blurred",
+        default="/blurred",
         help="Location where blurred images are stored",
     )
     parser.add_argument(
