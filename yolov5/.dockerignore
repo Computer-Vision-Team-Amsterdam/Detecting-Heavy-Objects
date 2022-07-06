@@ -13,7 +13,7 @@ data/samples/*
 
 # Neural Network weights -----------------------------------------------------------------------------------------------
 **/*.weights
-#**/*.pt # TODO, ignore this and place in storage
+#**/*.pt
 **/*.pth
 **/*.onnx
 **/*.mlmodel
