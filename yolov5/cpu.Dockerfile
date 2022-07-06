@@ -15,7 +15,6 @@ RUN python -m pip install --upgrade pip
 RUN pip install --no-cache -r requirements.txt 
 
 # Create working directory
-RUN  mkdir app
 WORKDIR /app
 
 # Copy contents
