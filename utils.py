@@ -445,7 +445,7 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
             else:
                 raise FileNotFoundError("No annotation file found")
 
-        print(f"INFO:::{expCfg.dataset_name}_{expCfg.subset} has been registered!")
+            print(f"INFO:::{expCfg.dataset_name}_{expCfg.subset} has been registered!")
     if expCfg.data_format == "via":
         DatasetCatalog.register(
             f"{expCfg.dataset_name}_{expCfg.subset}",
