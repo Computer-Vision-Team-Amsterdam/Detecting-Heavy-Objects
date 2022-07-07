@@ -1251,17 +1251,32 @@ def _evaluate_predictions_on_coco(
     print(f"plot: {plot}")
     if plot:
         from confusion_matrix import ConfusionMatrix, xywh2xyxy, process_batch, ap_per_class
-        C_M = ConfusionMatrix(nc=1, conf=0.999, iou_thres=0.5)
+        C_M = ConfusionMatrix(nc=1, conf=0.25, iou_thres=0.5)
         stats = []
-        for i in coco_dt.imgs.keys():
+        count = 0
+        gt = 0
+        dt = 0
+        for i in coco_gt.imgs.keys():
+            count = count+1
 
-            bbox_gt = np.array([y['bbox'] for y in coco_gt.imgToAnns.get(i)])
-            class_gt = np.array([[y['category_id'] - 1] for y in coco_gt.imgToAnns.get(i)])
-            labels = np.hstack((class_gt, bbox_gt))
+            if coco_gt.imgToAnns.get(i) is None:
+                gt = gt + 1
+                continue
+            else:
+                bbox_gt = np.array([y['bbox'] for y in coco_gt.imgToAnns.get(i)])
+                class_gt = np.array([[y['category_id'] - 1] for y in coco_gt.imgToAnns.get(i)])
+                labels = np.hstack((class_gt, bbox_gt))
 
-            bbox_dt = np.array([y['bbox'] for y in coco_dt.imgToAnns.get(i)])
-            conf_dt = np.array([[y['score']] for y in coco_dt.imgToAnns.get(i)])
-            class_dt = np.array([[y['category_id'] - 1] for y in coco_dt.imgToAnns.get(i)])
+            if coco_dt.imgToAnns.get(i) is None:
+                bbox_dt = np.zeros((1,4), dtype=int)
+                conf_dt = np.zeros((1,1), dtype=int)
+                class_dt = np.zeros((1,1), dtype=int)
+                dt = dt + 1
+            else:
+                bbox_dt = np.array([y['bbox'] for y in coco_dt.imgToAnns.get(i)])
+                conf_dt = np.array([[y['score']] for y in coco_dt.imgToAnns.get(i)])
+                class_dt = np.array([[y['category_id'] - 1] for y in coco_dt.imgToAnns.get(i)])
+
             predictions = np.hstack((np.hstack((bbox_dt, conf_dt)), class_dt))
 
             C_M.process_batch(predictions, labels)
@@ -1274,7 +1289,9 @@ def _evaluate_predictions_on_coco(
             stats.append((correct.cpu(), detects[:, 4].cpu(), detects[:, 5].cpu(), tcls))
 
         C_M.print()
-
+        print(f"none GT: {gt}")
+        print(f"none DT{dt}")
+        print(f"count: {count}")
 
         names = {k: v for k, v in enumerate(["container"])}
         stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
