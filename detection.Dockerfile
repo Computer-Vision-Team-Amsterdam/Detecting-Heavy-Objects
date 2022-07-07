@@ -8,7 +8,7 @@ RUN apt-get update && \
         ffmpeg \
         libsm6 \
         libxext6 \
-        libgeos-dev # used by shapely \
+        libgeos-dev # used by shapely
 
 
 ENV VIRTUAL_ENV=/opt/venv
@@ -20,15 +20,18 @@ RUN git clone https://github.com/facebookresearch/detectron2.git
 RUN python -m pip install -e detectron2
 
 
-
-WORKDIR /opt
-COPY configs/config_parser.py configs/container_detection.yaml /opt/configs/
-COPY inference.py /opt
-COPY evaluation.py /opt
-COPY utils.py /opt
+WORKDIR /app
+COPY configs/* /app/configs/
+COPY inference.py evaluation.py utils.py /app/
+# copy weights
+COPY model_final.pth /app/
+COPY data_sample/ /app/data_sample/
 
 RUN useradd appuser
+RUN chown -R appuser /app
+RUN chmod 755 /app
 USER appuser
+
 
 ENTRYPOINT ["python", "-u", "inference.py"]
 
