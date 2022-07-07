@@ -116,8 +116,8 @@ class DataFormatConverter:
         Updates area based on polygon coordinate
         """
 
-        def PolyArea(x: List[float], y: List[float]) -> np.float64:
-            return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+        def PolyArea(x: List[float], y: List[float]) -> Any:
+            return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))  # type: ignore
 
         """
         The deep copy creates independent copy of original object and all its nested objects.

@@ -62,4 +62,3 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
         MetadataCatalog.get(f"{expCfg.dataset_name}_{expCfg.subset}").set(
             thing_classes=[f"{expCfg.dataset_name}"]
         )
-

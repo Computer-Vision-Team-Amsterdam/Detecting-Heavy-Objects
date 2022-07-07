@@ -18,7 +18,9 @@ from panorama.client import PanoramaClient
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from tqdm import tqdm
-from triangulation.helpers import get_panos_from_points_of_interest  # pylint: disable-all
+from triangulation.helpers import (
+    get_panos_from_points_of_interest,
+)  # pylint: disable-all
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
@@ -46,6 +48,7 @@ def get_container_locations(file: Path) -> List[List[float]]:
             container_locations.append([float(row[0]), float(row[1])])
     return container_locations
 
+
 def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
     """
     Write the data to a json file
@@ -60,7 +63,7 @@ def write_to_csv(
     """
     Writes a list of list with data to a csv file.
     """
-    np.savetxt(filename, data, header=",".join(header), fmt="%d", delimiter=",", comments="")
+    np.savetxt(filename, data, header=",".join(header), fmt="%d", delimiter=",", comments="")  # type: ignore
 
 
 class PostProcessing:
@@ -128,7 +131,9 @@ class PostProcessing:
             )  # TODO: Not query, look at the database!
             heading = response.heading
             height, width = prediction["segmentation"]["size"]
-            mask = get_side_view_of_pano(width, height, heading, self.mask_degrees)[:, :, 0]
+            mask = get_side_view_of_pano(width, height, heading, self.mask_degrees)[
+                :, :, 0
+            ]
             # Inverse mask to have region that we would like to keep
             mask = 1 - mask
             segmentation_mask = mask_util.decode(prediction["segmentation"])  # .float()
@@ -218,20 +223,24 @@ class PostProcessing:
         sorted_scores = np.array(scores)[sorted_indices]
 
         write_to_csv(
-            np.array([
-                prioritized_containers[:, 0],
-                prioritized_containers[:, 1],
-                sorted_scores,
-                permit_distances_sorted,
-                bridges_distances_sorted,
-            ]),
+            np.array(
+                [
+                    prioritized_containers[:, 0],
+                    prioritized_containers[:, 1],
+                    sorted_scores,
+                    permit_distances_sorted,
+                    bridges_distances_sorted,
+                ]
+            ),
             ["lat", "lon", "score", "permit_distance", "bridge_distance"],
             self.output_folder / self.prioritized_file,
         )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run postprocessing for container detection pipeline")
+    parser = argparse.ArgumentParser(
+        description="Run postprocessing for container detection pipeline"
+    )
     parser.add_argument("--input_path", type=Path, help="Full path to input file")
     parser.add_argument("--output_path", type=Path, help="Full path to output dir")
     parser.add_argument("--permits_file", type=Path, help="Full path to permits file")
@@ -248,7 +257,9 @@ if __name__ == "__main__":
     postprocess.filter_by_angle()
     postprocess.find_points_of_interest()
     panoramas = get_panos_from_points_of_interest(
-        args.output_path / "points_of_interest.csv", date(2021, 3, 18), date(2021, 3, 17)
+        args.output_path / "points_of_interest.csv",
+        date(2021, 3, 18),
+        date(2021, 3, 17),
     )
     postprocess.prioritize_notifications()
     for pano in panoramas:
