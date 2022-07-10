@@ -1,15 +1,13 @@
 """This module contains functionality to load a model and run predictions that can be
 incorporated into the Azure batch processing pipeline"""
 
-# import os
-# print(os.system("ls azureml-models/detectron_28feb/2"))
 import argparse
-import glob
 import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Union
 
+from azureml.core import Workspace, Model
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
@@ -20,6 +18,21 @@ from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
 
 logging.basicConfig(level=logging.INFO)
+
+
+def get_Azure_model() -> str:
+    """
+    Return the path to model. Downloads model from remote to cache.
+    """
+    ws = Workspace.from_config()
+    model_path = None
+    if flags.version == "latest":
+        model_path = Model.get_model_path(model_name=f"{flags.name}", _workspace=ws)
+    elif flags.version.isdigit():
+        model_path = Model.get_model_path(
+            model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+        )
+    return model_path
 
 
 def setup_cfg(config_file: Union[Path, str]) -> CfgNode:
@@ -59,21 +72,9 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     constructor from another method i.e. _test_loader_from_config
     """
 
-    # ws = Workspace.from_config()
-
-    model_path = flags.weights
-    """
-    if flags.version == "latest":
-        model_path = Model.get_model_path(model_name=f"{flags.name}", _workspace=ws)
-    elif is_int(flags.version):
-        model_path = Model.get_model_path(
-            model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
-        )
-    """
-
     register_dataset(expCfg)
     cfg = init_inference(flags)
-    cfg.MODEL.WEIGHTS = model_path
+    cfg.MODEL.WEIGHTS = flags.weights  # replace with get_Azure_model() if no local weights
     cfg.OUTPUT_DIR = flags.output_path
 
     predictor = DefaultPredictor(cfg)
@@ -81,7 +82,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     logging.info(f"Loaded model weights from {cfg.MODEL.WEIGHTS}.")
 
     run_name = datetime.now().strftime("%b-%d-%H:%M")
-    output_dir = f"{cfg.OUTPUT_DIR}/INFER_{flags.name}_{flags.version}_{run_name}"
+    output_dir = f"{cfg.OUTPUT_DIR}/{run_name}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     evaluator = CustomCOCOEvaluator(
