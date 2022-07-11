@@ -25,11 +25,11 @@ from pathlib import Path
 
 import detectron2.utils.comm as comm
 import matplotlib.pyplot as plt
-import seaborn as sn
 
 # coco eval imports
 import numpy as np
 import pycocotools.mask as mask_util
+import seaborn as sn
 import torch
 from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
@@ -107,9 +107,6 @@ class ConfusionMatrix:
             for i, dc in enumerate(detection_classes):
                 if not any(m1 == i):
                     self.matrix[dc, self.nc] += 1  # background FN
-
-    def matrix(self):
-        return self.matrix
 
     def plot(
         self, normalize=True, save_dir="", names=(), rec_or_pred=0
