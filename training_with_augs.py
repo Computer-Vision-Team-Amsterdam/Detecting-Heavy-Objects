@@ -107,7 +107,7 @@ def custom_mapper_wrapper(dataset_dict):
 
     # ========== START DET2 AUGMENTATIONS =========== #
 
-    transform_list = [T.RandomCrop(crop_type="relative_range", crop_size=(0.9, 0.9)),
+    transform_list = [T.RandomCrop(crop_type="relative_range", crop_size=(0.5, 0.5)),
                       T.ResizeShortestEdge(short_edge_length=[800, 1200], max_size=4000, sample_style="range"),
                       T.RandomFlip(horizontal=True)]
 

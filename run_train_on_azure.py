@@ -23,7 +23,7 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "bk274"
+EXPERIMENT_NAME = "bk275"
 
 
 ws = Workspace.from_config()
