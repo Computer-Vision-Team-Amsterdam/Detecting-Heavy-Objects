@@ -14,7 +14,7 @@ from azureml.core import (
 )
 from tqdm import trange
 
-from utils import handle_hyperparameters
+from hyperparamsGridSearch.utils import handle_hyperparameters
 
 EXPERIMENT_NAME = "hyperparam_search"
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     compute_target = ComputeTarget(ws, "detectron2")
 
-    nr_experiments = handle_hyperparameters("configs/hyperparameter-search.yaml")
+    nr_experiments = handle_hyperparameters("../configs/hyperparameter-search.yaml")
 
     for exp in trange(nr_experiments):
         CONFIG = f"configs/temp_{exp}.yaml"

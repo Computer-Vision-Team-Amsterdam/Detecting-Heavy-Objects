@@ -25,6 +25,21 @@ from configs.config_parser import arg_parser
 EXPERIMENT_NAME = "detectron_map2_inference_val"
 
 
+def get_Azure_model() -> str:
+    """
+    Return the path to model. Downloads model from remote to cache.
+    """
+    model_path = ""
+    ws = Workspace.from_config()
+    if flags.version == "latest":
+        model_path = Model.get_model_path(model_name=f"{flags.name}", _workspace=ws)
+    elif flags.version.isdigit():
+        model_path = Model.get_model_path(
+            model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+        )
+    return model_path
+
+
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()

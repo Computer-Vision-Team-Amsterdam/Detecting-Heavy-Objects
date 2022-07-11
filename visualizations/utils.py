@@ -4,13 +4,12 @@ that may be used for more generic postprocessing tasks
 """
 import os
 import re
+import xml
+import xml.etree.ElementTree as Xet
 from datetime import datetime
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Union, List, Any
-
-import xml
-import xml.etree.ElementTree as Xet
+from typing import Any, List, Union
 
 import geojson
 import geopy
@@ -19,7 +18,7 @@ from tqdm import tqdm
 
 
 def get_permit_locations(
-        file: Union[Path, str], date_to_check: datetime
+    file: Union[Path, str], date_to_check: datetime
 ) -> List[List[float]]:
     """
     Returns all the containers permits from an decos objects permit file.
@@ -34,10 +33,10 @@ def get_permit_locations(
         start_date = permit.find("DATE6")
         end_date = permit.find("DATE7")
         if (
-                address.text  # type:ignore
-                and description.text  # type:ignore
-                and start_date.text  # type:ignore
-                and end_date.text  # type:ignore
+            address.text  # type:ignore
+            and description.text  # type:ignore
+            and start_date.text  # type:ignore
+            and end_date.text  # type:ignore
         ):
             return True
         return False
@@ -88,8 +87,8 @@ def get_permit_locations(
         ]
         description = permit.find("TEXT8")
         if any(
-                get_close_matches(word, container_words)
-                for word in description.text.split(" ")
+            get_close_matches(word, container_words)
+            for word in description.text.split(" ")
         ):
             return True
 
@@ -104,9 +103,9 @@ def get_permit_locations(
     for item in tqdm(root, disable=running_in_k8s):
         # The permits seem to have a quite free format. Let's catch some exceptions
         if (
-                is_form_valid(item)
-                and is_container_permit(item)
-                and is_permit_valid_on_day(item)
+            is_form_valid(item)
+            and is_container_permit(item)
+            and is_permit_valid_on_day(item)
         ):
             # todo: Check some categories: Street + number, coordinates,
             # can we be sure that there will be no typo's in the street names?

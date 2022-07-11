@@ -32,7 +32,7 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument(
         "--data_folder",
         type=str,
-        default="data",
+        default="data_sample",
         help="name of the folder where data is located",
     )
     parser.add_argument("--device", type=str, default="cuda:0")
@@ -43,9 +43,9 @@ def arg_parser() -> argparse.Namespace:
         help="Path to image on which to run a prediction",
     )
     parser.add_argument(
-        "--name", required=True, type=str, help="Name of Azure trained model to load"
+        "--name", default="best", type=str, help="Name of Azure trained model to load"
     )
-    parser.add_argument("--subset", type=str, default="val", help="train, val, test")
+    parser.add_argument("--subset", type=str, default="test", help="train, val, test")
     parser.add_argument("--version", default="latest", help="Version of trained model.")
     parser.add_argument(
         "--mode",
@@ -60,6 +60,9 @@ def arg_parser() -> argparse.Namespace:
         default=50,
         help="Number of sample images to plot for one model",
     )
+
+    parser.add_argument("--output_path", type=str, help="Full path to output folder")
+    parser.add_argument("--weights", type=str, help="Full path to weight file")
 
     flags, _ = parser.parse_known_args()
 
