@@ -2,33 +2,19 @@
 This module contains general functionality to handle the annotated data
 """
 import copy
-import csv
-import itertools
 import json
 import logging
 import os
 import shutil
-import time
-import xml.etree.ElementTree
-import xml.etree.ElementTree as Xet
-from datetime import datetime
-from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Tuple, Union
 
 import cv2
-import geopy.distance
 import numpy as np
-import numpy.typing as npt
-import pandas as pd
-import yaml
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json, register_coco_instances
 from detectron2.structures import BoxMode
 from PIL import Image
-from shapely.geometry import LineString, Point
-from shapely.ops import nearest_points
-from tqdm import tqdm
 
 
 class DataFormatConverter:
@@ -130,8 +116,8 @@ class DataFormatConverter:
         Updates area based on polygon coordinate
         """
 
-        def PolyArea(x: List[float], y: List[float]) -> np.float64:
-            return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))  # type: ignore
+        def PolyArea(x: List[float], y: List[float]) -> Any:
+            return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
 
         """
         The deep copy creates independent copy of original object and all its nested objects.
@@ -316,67 +302,6 @@ def load_via_json(img_dir: Union[Path, str]) -> List[Dict[str, Any]]:
         record["annotations"] = objs
         dataset_dicts.append(record)
     return dataset_dicts
-
-
-def collect_nested_lists(
-    dictionary: Dict[str, Any],
-    composed_key: str,
-    nested_lists: Dict[str, List[str]],
-) -> Dict[str, List[str]]:
-    """
-    This method parses a nested dictionary recursively and collects the (composed) keys where the value is a list.
-    :param dictionary:
-    :param composed_key:
-    :param nested_lists:
-
-    :return: keys and values of the @dictionary such that values are of type list.
-    """
-
-    for k, v in dictionary.items():
-        if isinstance(v, dict):
-            if composed_key == "":
-                collect_nested_lists(v, k, nested_lists)
-            else:
-                collect_nested_lists(v, composed_key + "." + k, nested_lists)
-        if isinstance(v, list):
-            if composed_key == "":
-                nested_lists[k] = v
-            else:
-                nested_lists[composed_key + "." + k] = v
-
-    return nested_lists
-
-
-def generate_config_file(file: Any, configuration: Dict[Any, Any], name: int) -> None:
-    for composed_name, value in configuration.items():
-        names = composed_name.split(".")
-        if len(names) == 1:
-            file[names[0]] = value
-        if len(names) == 2:
-            file[names[0]][names[1]] = value
-        if len(names) == 3:
-            file[names[0]][names[1]][names[2]] = value
-
-    with open(f"configs/temp_{name}.yaml", "w") as outfile:
-        yaml.dump(file, outfile, sort_keys=False)
-    outfile.close()
-
-
-def handle_hyperparameters(config: Union[str, Path]) -> int:
-    # open yaml file as dict
-    with open(config) as f:
-        file = yaml.safe_load(f)
-    f.close()
-    # get rows for which we do hyperparameter search
-    grid_space = collect_nested_lists(file, "", {})
-
-    count = 0
-    for combination in itertools.product(*grid_space.values()):
-        configuration = dict(zip(grid_space.keys(), combination))
-        generate_config_file(file, configuration, count)
-        count = count + 1
-
-    return count
 
 
 def add_images_to_coco(image_dir: str, coco_filename: str) -> None:
@@ -605,161 +530,6 @@ def correct_faulty_panoramas() -> None:
         )
 
     _update_dims()
-
-
-def collect_dimensions(data: Any) -> Tuple[List[int], List[int]]:
-    """
-    Collects widths and heights from json file
-    """
-    # assert if we have a list/results json or a dict/annotations json
-    if isinstance(data, list):  # this is a results json file
-        pass
-    if isinstance(data, dict):  # this is an annotation json file
-        data = data["annotations"]
-
-    widths = []
-    heights = []
-    for ann in data:
-        width = ann["bbox"][2]
-        height = ann["bbox"][3]
-
-        widths.append(int(width))
-        heights.append(int(height))
-
-    return widths, heights
-
-
-def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
-    """
-    Write the data to a json file
-    """
-    with open(output_folder / filename, "w") as f:
-        json.dump(data, f)
-
-
-def get_permit_locations(
-    file: Union[Path, str], date_to_check: datetime
-) -> List[List[float]]:
-    """
-    Returns all the containers permits from an decos objects permit file.
-    """
-
-    def is_form_valid(permit: xml.etree.ElementTree.Element) -> bool:
-        """
-        Check if a form has all the requirements
-        """
-        address = permit.find("TEXT6")
-        description = permit.find("TEXT8")
-        start_date = permit.find("DATE6")
-        end_date = permit.find("DATE7")
-        if (
-            address.text  # type:ignore
-            and description.text  # type:ignore
-            and start_date.text  # type:ignore
-            and end_date.text  # type:ignore
-        ):
-            return True
-        return False
-
-    def is_permit_valid_on_day(permit: xml.etree.ElementTree.Element) -> bool:
-        """
-        Check whether container is valid on that day
-        """
-        start_date = permit.find("DATE6")
-        end_date = permit.find("DATE7")
-
-        start_date = datetime.strptime(  # type:ignore
-            start_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
-        )
-        end_date = datetime.strptime(end_date.text, "%Y-%m-%dT%H:%M:%S")  # type:ignore
-
-        # Check if permit is valid
-        if end_date >= date_to_check >= start_date:  # type:ignore
-            return True
-        return False
-
-    def is_container_permit(permit: Any) -> bool:
-        """
-        Check whether permit is for a container
-        """
-        container_words = [
-            "puinbak",
-            "puincontainer",
-            "container",
-            "puincontainer",
-            "afvalcontainer",
-            "zeecontainer",
-            "keet",
-            "schaftkeet",
-            "vuilcontainer",
-        ]
-        description = permit.find("TEXT8")
-        if any(
-            get_close_matches(word, container_words)
-            for word in description.text.split(" ")
-        ):
-            return True
-
-        return False
-
-    xmlparse = Xet.parse(file)
-    root = xmlparse.getroot()
-    locator = geopy.Nominatim(user_agent="myGeocoder")
-    permit_locations = []
-    print("Parsing the permits information")
-    for item in tqdm(root):
-        # The permits seem to have a quite free format. Let's catch some exceptions
-        if (
-            is_form_valid(item)
-            and is_container_permit(item)
-            and is_permit_valid_on_day(item)
-        ):
-            address = item.find(
-                "TEXT6"
-            ).text  # todo: Check some categories: Street + number, coordinates,
-            location = locator.geocode(address + ", Amsterdam, Netherlands")
-            lonlat = [location.latitude, location.longitude]
-            permit_locations.append(lonlat)
-    return permit_locations
-
-
-def get_container_locations(file: Path) -> List[List[float]]:
-    """
-    Returns locations of containers from a csv file in lat, lon order
-    """
-    container_locations = []
-    with open(file) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=",")
-        next(csv_reader)  # skip first line
-        for row in csv_reader:
-            container_locations.append([float(row[0]), float(row[1])])
-    return container_locations
-
-
-def calculate_distance_in_meters(line: LineString, point: Point) -> float:
-    """
-    Calculates the shortest distance between a line and point, returns a float in meters
-    """
-    closest_point = nearest_points(line, point)[0]
-    return float(geopy.distance.distance(closest_point.coords, point.coords).meters)
-
-
-def write_to_csv(
-    data: List[npt.NDArray[Any]], header: List[str], filename: Path
-) -> None:
-    """
-    Writes a list of list with data to a csv file.
-    """
-    dataframe = pd.DataFrame(data)
-    dataframe.T.to_csv(filename, header=header)
-
-
-def is_int(element: Any) -> bool:
-    try:
-        int(element)
-        return True
-    except ValueError:
-        return False
 
 
 """
