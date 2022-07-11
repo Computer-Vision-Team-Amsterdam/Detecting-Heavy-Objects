@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Union
 
-from azureml.core import Workspace, Model
+from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
@@ -24,8 +24,8 @@ def get_Azure_model() -> str:
     """
     Return the path to model. Downloads model from remote to cache.
     """
+    model_path = ""
     ws = Workspace.from_config()
-    model_path = None
     if flags.version == "latest":
         model_path = Model.get_model_path(model_name=f"{flags.name}", _workspace=ws)
     elif flags.version.isdigit():
@@ -74,7 +74,9 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 
     register_dataset(expCfg)
     cfg = init_inference(flags)
-    cfg.MODEL.WEIGHTS = flags.weights  # replace with get_Azure_model() if no local weights
+    cfg.MODEL.WEIGHTS = (
+        flags.weights
+    )  # replace with get_Azure_model() if no local weights
     cfg.OUTPUT_DIR = flags.output_path
 
     predictor = DefaultPredictor(cfg)

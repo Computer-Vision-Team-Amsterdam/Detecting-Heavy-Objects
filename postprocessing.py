@@ -63,7 +63,9 @@ def write_to_csv(
     """
     Writes a list of list with data to a csv file.
     """
-    np.savetxt(filename, data, header=",".join(header), fmt="%d", delimiter=",", comments="")
+    np.savetxt(
+        filename, data, header=",".join(header), fmt="%d", delimiter=",", comments=""
+    )
 
 
 class PostProcessing:
