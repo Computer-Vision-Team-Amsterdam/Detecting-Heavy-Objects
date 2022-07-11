@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Union
 
-from azureml.core import Model, Workspace
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
@@ -18,21 +17,6 @@ from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
 
 logging.basicConfig(level=logging.INFO)
-
-
-def get_Azure_model() -> str:
-    """
-    Return the path to model. Downloads model from remote to cache.
-    """
-    model_path = ""
-    ws = Workspace.from_config()
-    if flags.version == "latest":
-        model_path = Model.get_model_path(model_name=f"{flags.name}", _workspace=ws)
-    elif flags.version.isdigit():
-        model_path = Model.get_model_path(
-            model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
-        )
-    return model_path
 
 
 def setup_cfg(config_file: Union[Path, str]) -> CfgNode:

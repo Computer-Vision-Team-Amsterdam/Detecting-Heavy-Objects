@@ -14,7 +14,7 @@ from azureml.core import (
 )
 from tqdm import trange
 
-from .utils import handle_hyperparameters
+from hyperparamsGridSearch.utils import handle_hyperparameters
 
 EXPERIMENT_NAME = "hyperparam_search"
 
