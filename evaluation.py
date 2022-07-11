@@ -42,6 +42,7 @@ from pycocotools import mask as maskUtils
 from pycocotools.coco import COCO
 from tabulate import tabulate
 
+PLOT_PR_CURVE = False
 
 class ConfusionMatrix:
     """
@@ -1624,9 +1625,8 @@ def _evaluate_predictions_on_coco(
     coco_dt = coco_gt.loadRes(coco_results)
 
     # =========== PR CURVE START ================== #
-    plot = True
-    print(f"plot: {plot}")
-    if plot:
+
+    if PLOT_PR_CURVE:
 
         C_M = ConfusionMatrix(nc=1, conf=0.25, iou_thres=0.5)
         stats = []
