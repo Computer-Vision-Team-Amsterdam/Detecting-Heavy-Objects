@@ -1,17 +1,15 @@
 # docker build . -f detection.Dockerfile -t epureanudiana/diana-container:bullseye0.1 --platform linux/arm64
 # docker run -it epureanudiana/diana-container:bullseye0.1
-
+# change entrypoint to prevent container from exiting, when debugging:
+# docker run -it --entrypoint=/bin/bash epureanudiana/diana-container:bullseye0.1
 FROM python:3.7.13-bullseye
 
-
 # Install project dependencies
-
 RUN apt-get update && \
     apt-get -y install \
         ffmpeg \
         libsm6 \
-        libxext6 \
-        libgeos-dev # used by shapely
+        libxext6
 
 
 ENV VIRTUAL_ENV=/opt/venv
