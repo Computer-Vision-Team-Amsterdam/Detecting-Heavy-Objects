@@ -11,7 +11,6 @@ RUN apt-get update && \
         libsm6 \
         libxext6
 
-
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
@@ -32,7 +31,6 @@ RUN useradd appuser
 RUN chown -R appuser /app
 RUN chmod 755 /app
 USER appuser
-
 
 ENTRYPOINT ["python", "-u", "inference.py"]
 

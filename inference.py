@@ -61,6 +61,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     cfg.MODEL.WEIGHTS = (
         flags.weights
     )  # replace with get_Azure_model() if no local weights
+
     cfg.OUTPUT_DIR = flags.output_path
 
     predictor = DefaultPredictor(cfg)

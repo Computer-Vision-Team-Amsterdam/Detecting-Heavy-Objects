@@ -2,8 +2,8 @@
   "images": [
     {
       "id": 1,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0004_000334.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0004_000334.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0004_000334.jpg",
@@ -11,8 +11,8 @@
     },
     {
       "id": 11,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0000_005575.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0000_005575.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0000_005575.jpg",
@@ -20,8 +20,8 @@
     },
     {
       "id": 13,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0000_003821.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0000_003821.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0000_003821.jpg",
@@ -29,8 +29,8 @@
     },
     {
       "id": 14,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/TMX7316010203-001551_pano_0000_001090.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/3/TMX7316010203-001551_pano_0000_001090.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/3/TMX7316010203-001551_pano_0000_001090.jpg",
@@ -38,8 +38,8 @@
     },
     {
       "id": 17,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0000_005875.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0000_005875.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0000_005875.jpg",
@@ -47,8 +47,8 @@
     },
     {
       "id": 21,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0000_001967.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0000_001967.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0000_001967.jpg",
@@ -56,8 +56,8 @@
     },
     {
       "id": 31,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0004_000337.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0004_000337.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0004_000337.jpg",
@@ -65,8 +65,8 @@
     },
     {
       "id": 33,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0000_001242.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0000_001242.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0000_001242.jpg",
@@ -74,8 +74,8 @@
     },
     {
       "id": 36,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0000_001241.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0000_001241.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0000_001241.jpg",
@@ -83,14 +83,13 @@
     },
     {
       "id": 39,
-      "width": 4000.0,
-      "height": 2000.0,
+      "width": 4000,
+      "height": 2000,
       "file_name": "val/pano_0000_005822.jpg",
       "coco_url": "AmlDatastore://workspaceblobstore/manually_selected_containers/pano_0000_005822.jpg",
       "absolute_url": "https://containerdetec4138214035.blob.core.windows.net/azureml-blobstore-abe93ccd-9aa7-450a-a5e8-019d63a5b0c0/manually_selected_containers/pano_0000_005822.jpg",
       "date_captured": "2022-02-15T14:10:26.9728309Z"
-    },
-
+    }
   ],
   "annotations": [
     {
@@ -121,59 +120,6 @@
         909.2627599243857,
         277.88279773156876,
         415.8790170132325
-      ],
-      "iscrowd": 0
-    },
-    {
-      "segmentation": [
-        [
-          2915.464917118685,
-          951.0881967495143,
-          2925.090762123543,
-          952.5404539750648,
-          2922.2326723405117,
-          1156.068855246114,
-          3079.880535540803,
-          1190.4066016636982,
-          3068.451465349741,
-          1226.6783086747087,
-          3079.2851107108163,
-          1237.7848728950778,
-          3093.4602569421954,
-          1248.257556974579,
-          3109.4006790398316,
-          1249.4423347433615,
-          3125.116883905441,
-          1248.8500723567033,
-          3128.390392244171,
-          1234.01618917989,
-          3124.5747778699806,
-          1205.8348976886334,
-          3333.1965471178755,
-          1231.8010241256477,
-          3370.359557156736,
-          1192.1160287807643,
-          3373.6920134391194,
-          959.0037291531736,
-          3385.4480802704015,
-          957.1351678877915,
-          3386.2154155197536,
-          945.2913116296955,
-          3338.6193784407383,
-          915.9079754290804,
-          2917.721446931671,
-          937.4289715228304
-        ]
-      ],
-      "id": 14,
-      "category_id": 1,
-      "image_id": 11,
-      "area": 125645.1249104105,
-      "bbox": [
-        2915.464917118685,
-        915.9079754290804,
-        470.7504984010686,
-        333.5343593142811
       ],
       "iscrowd": 0
     },
