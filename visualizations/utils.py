@@ -110,21 +110,52 @@ def get_permit_locations(
             # todo: Check some categories: Street + number, coordinates,
             # can we be sure that there will be no typo's in the street names?
             address = remove_postal_code(item.find("TEXT6").text)
+
             location = locator.geocode(address + ", Amsterdam, Netherlands")
+            if location is None:
+                new_address = clean(address)
+                location = locator.geocode(new_address + ", Amsterdam, Netherlands")
+
+            if location is None:
+                print(item.find("TEXT6").text)
+                print("--")
+                continue
             lonlat = [location.latitude, location.longitude]
             permit_locations.append(lonlat)
     return permit_locations
 
 
+def clean(address):
+
+    street_name = address.split(" ")[0]
+
+    if street_name == "tegenover":
+        new_address = address.split(" ")[1] + " " + address.split(" ")[2]
+        return new_address
+
+    if not address.split(" ")[1].isdigit():
+        new_address = street_name
+        return new_address
+
+    range = address.split(" ")[1]
+    try:
+        first = range.split("- /")[0]
+    except:
+        print("different delimiter")
+
+    new_address = f"{street_name} {first}"
+    return new_address
+
+
 def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
-    """
-    Return a list of coordinates where to find vulnerable bridges and canal walls
-    """
+    
+    # Return a list of coordinates where to find vulnerable bridges and canal walls
+
 
     def rd_to_wgs(coordinates: List[float]) -> List[float]:
-        """
-        Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
-        """
+        
+        # Convert rijksdriehoekcoordinates into WGS84 cooridnates. Input parameters: x (float), y (float).
+        
         epsg28992 = osr.SpatialReference()
         epsg28992.ImportFromEPSG(28992)
 

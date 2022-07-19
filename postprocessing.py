@@ -12,17 +12,17 @@ from typing import Any, List
 
 import geopy.distance
 import numpy as np
-import numpy.typing as npt
+# import numpy.typing as npt
 import pycocotools.mask as mask_util
-from panorama.client import PanoramaClient
+# from panorama.client import PanoramaClient
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from tqdm import tqdm
-from triangulation.helpers import (
-    get_panos_from_points_of_interest,
-)  # pylint: disable-all
-from triangulation.masking import get_side_view_of_pano
-from triangulation.triangulate import triangulate
+#from triangulation.helpers import (
+#    get_panos_from_points_of_interest,
+#)  # pylint: disable-all
+#from triangulation.masking import get_side_view_of_pano
+#from triangulation.triangulate import triangulate
 
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
@@ -45,6 +45,7 @@ def get_container_locations(file: Path) -> List[List[float]]:
         csv_reader = csv.reader(csv_file, delimiter=",")
         next(csv_reader)  # skip first line
         for row in csv_reader:
+            print(f"Append {row}")
             container_locations.append([float(row[0]), float(row[1])])
     return container_locations
 
@@ -58,7 +59,7 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
 
 
 def write_to_csv(
-    data: npt.NDArray[npt.NDArray[Any]], header: List[str], filename: Path
+    data, header: List[str], filename: Path
 ) -> None:
     """
     Writes a list of list with data to a csv file.
@@ -91,7 +92,7 @@ class PostProcessing:
             :param output_folder: where the filtered json with predictions is stored
             :
         """
-        self.stats = DataStatistics(json_file=json_predictions)
+        self.stats = None
         self.non_filtered_stats = deepcopy(self.stats)
         self.threshold = threshold
         self.mask_degrees = mask_degrees
@@ -100,9 +101,9 @@ class PostProcessing:
         self.bridges_file = bridges_file
         self.date_to_check = date_to_check
         self.output_folder.mkdir(exist_ok=True, parents=True)
-        self.objects_file = Path("points_of_interest.csv")
+        self.objects_file = Path("points_of_interest_12_july.csv")
         self.data_file = Path("processed_predictions.json")
-        self.prioritized_file = Path("prioritized_objects.csv")
+        self.prioritized_file = Path("prioritized_objects_2.csv")
 
     def find_points_of_interest(self) -> None:
         """
@@ -113,10 +114,12 @@ class PostProcessing:
         if not (self.output_folder / self.data_file).exists():
             save_json_data(self.stats.data, self.data_file, self.output_folder)
 
+        """
         triangulate(
             self.output_folder / self.data_file,
             self.output_folder / self.objects_file,
         )
+        """
 
     def filter_by_angle(self) -> None:
         """
@@ -128,14 +131,16 @@ class PostProcessing:
         print("Filtering based on angle")
         running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
         for prediction in tqdm(self.stats.data, disable=running_in_k8s):
-            response = PanoramaClient.get_panorama(
-                prediction["pano_id"].rsplit(".", 1)[0]
-            )  # TODO: Not query, look at the database!
+            #response = PanoramaClient.get_panorama(
+            #    prediction["pano_id"].rsplit(".", 1)[0]
+            #)  # TODO: Not query, look at the database!
+            response = None
             heading = response.heading
             height, width = prediction["segmentation"]["size"]
-            mask = get_side_view_of_pano(width, height, heading, self.mask_degrees)[
-                :, :, 0
-            ]
+            #mask = get_side_view_of_pano(width, height, heading, self.mask_degrees)[
+            #    :, :, 0
+            #]
+            mask = None
             # Inverse mask to have region that we would like to keep
             mask = 1 - mask
             segmentation_mask = mask_util.decode(prediction["segmentation"])  # .float()
@@ -224,6 +229,12 @@ class PostProcessing:
         bridges_distances_sorted = np.array(bridges_distances)[sorted_indices]
         sorted_scores = np.array(scores)[sorted_indices]
 
+        print(np.shape(sorted_indices))
+        print(np.shape(prioritized_containers))
+        print(np.shape(permit_distances_sorted))
+        print(np.shape(bridges_distances_sorted))
+        print(np.shape(sorted_scores))
+
         write_to_csv(
             np.array(
                 [
@@ -249,20 +260,34 @@ if __name__ == "__main__":
     parser.add_argument("--bridges_file", type=Path, help="Full path to bridges file")
     args = parser.parse_args()
 
+    args.input_path = Path("")
+    args.output_path = Path("results_12_july")
+    args.permits_file = Path("decos-12-july-extended.xml")
+    args.bridges_file = Path("bridges.geojson")
+
     postprocess = PostProcessing(
         args.input_path,
         output_folder=args.output_path,
         permits_file=args.permits_file,
         bridges_file=args.bridges_file,
     )
-    postprocess.filter_by_size()
-    postprocess.filter_by_angle()
-    postprocess.find_points_of_interest()
+    #postprocess.filter_by_size()
+    #postprocess.filter_by_angle()
+    #postprocess.find_points_of_interest()
+
+
+    # create points_of_interest.csv from the excel file
+
+    """
     panoramas = get_panos_from_points_of_interest(
-        args.output_path / "points_of_interest.csv",
-        date(2021, 3, 18),
-        date(2021, 3, 17),
+        args.output_path / "points_of_interest_12_july.csv",
+        date(2022, 7, 13),
+        date(2022, 7, 12),
     )
+    """
+
     postprocess.prioritize_notifications()
+    """
     for pano in panoramas:
         PanoramaClient.download_image(pano, output_location=args.output_path)
+    """

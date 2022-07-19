@@ -13,7 +13,7 @@ import pandas as pd
 from folium.plugins import MarkerCluster
 from panorama.client import PanoramaClient
 
-from .model import PointOfInterest
+from visualizations.model import PointOfInterest
 
 
 def read_coordinates(decos_file: Union[Path, str]) -> List[PointOfInterest]:
@@ -78,7 +78,7 @@ def color_generator(nr_colors: int) -> List[str]:
     return colors
 
 
-def color(cluster_id: int, colors: List[str]) -> str:
+def color(cluster_id: int) -> str:
     """
     Helper method to assign colors to clusters so we can visually distinguish them.
 
@@ -87,7 +87,13 @@ def color(cluster_id: int, colors: List[str]) -> str:
 
     :returns: hex code for specific cluster
     """
-    return colors[cluster_id]
+
+    if cluster_id == 0:
+        return "lightgreen"
+    if cluster_id == 1:
+        return "red"
+    if cluster_id == 2:
+        return "orange"
 
 
 def generate_map(
@@ -96,7 +102,7 @@ def generate_map(
     trajectory: Optional[List[List[float]]] = None,
     detections: Optional[List[PointOfInterest]] = None,
     name: Optional[str] = None,
-    colors: Optional[List[str]] = None,
+    colors: bool = False,
 ) -> None:
     """
     This method generates an HTML page with a map containing a path line and randomly chosen points on the line
@@ -122,29 +128,11 @@ def generate_map(
         for i in range(0, len(detections)):
 
             # get link to panorama to display
-
-            pano_id = detections[i].pano_id
-            image = PanoramaClient.get_panorama(pano_id)
-            image_link = image.links.equirectangular_small.href
-
-            # create HTML with more info
-            html = (
-                f"""
-                   <!DOCTYPE html>
-                   <html>
-                   <center><img src=\""""
-                + image_link
-                + """\" width=400 height=200 ></center>
-                   </html>
-                   """
-            )
-            popup = folium.Popup(folium.Html(html, script=True), max_width=500)
             folium.Marker(
                 location=[detections[i].coords[0], detections[i].coords[1]],
-                popup=popup,
                 icon=folium.Icon(
-                    color="lightgreen",
-                    icon_color=color(detections[i].cluster, colors)
+                    color= "white",
+                    icon_color=color(detections[i].cluster)
                     if colors
                     else "darkgreen",
                     icon="square",
@@ -163,13 +151,14 @@ def generate_map(
     )
 
     # add data of vulnerable bridges and canal walls to the map
+    """
     for linestring in vulnerable_bridges:
         vulnerable_bridges_group.add_child(
             folium.PolyLine(linestring, color="yellow", weight=5, opacity=0.8).add_to(
                 Map
             )
         )
-
+    """
     # add permit locations on the map
     for point in permit_locations:
         folium.CircleMarker(

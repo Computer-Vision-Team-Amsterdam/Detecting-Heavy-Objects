@@ -10,6 +10,9 @@ from panorama.client import PanoramaClient
 # Get the first page of panoramas
 response: models.PagedPanoramasResponse = PanoramaClient.list_panoramas()
 """
+import sys
+sys.path.append(".")
+
 import csv
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -23,7 +26,7 @@ from triangulation.helpers import (
 
 from visualizations.model import PointOfInterest
 from visualizations.unique_instance_prediction import generate_map
-from visualizations.utils import get_bridge_information, get_permit_locations
+from visualizations.utils import get_permit_locations
 
 
 def get_daily_panoramas(
@@ -107,56 +110,68 @@ def run(
 
     # ========= CREATE CAR TRAJECTORY =================
 
-    daily_query_result = get_daily_panoramas(day_to_plot, location_query)
+    #daily_query_result = get_daily_panoramas(day_to_plot, location_query)
 
-    trajectory = get_panorama_coords(daily_query_result)  # only keep their coordinates
+    #trajectory = get_panorama_coords(daily_query_result)  # only keep their coordinates
+
+    trajectory = None
 
     # ======== CREATE LIST OF DETECTIONS ============
 
     detections = []
+    """
     panoramas = get_panos_from_points_of_interest(
         points_of_interest,
         timestamp_after=day_to_plot,
         timestamp_before=day_to_plot + timedelta(days=1),
     )
+    """
 
     with open(points_of_interest, "r") as file:
         reader = csv.reader(file)
         next(reader)  # skip first line
         for i, row in enumerate(reader):
+            cluster = None
+            if row[2] == "ja":
+                cluster=0
+            if row[2] == "nee":
+                cluster = 1
+            if row[2] == "ja?":
+                cluster = 2
             detections.append(
                 PointOfInterest(
-                    pano_id=panoramas[i].id, coords=(float(row[0]), float(row[1]))
+                    pano_id="0", coords=(float(row[0]), float(row[1])), cluster= cluster
                 )
             )
 
     # ======== CREATE LIST OF VULNERABLE BRIDGES ============
-    vulnerable_bridges = get_bridge_information(vulnerable_bridges_file)
+    # vulnerable_bridges = get_bridge_information(vulnerable_bridges_file)
 
     # ======== CREATE LIST OF PERMIT LOCATIONS ============
-    date_to_check = datetime(2021, 3, 17)
+    date_to_check = datetime(2022, 7, 12)
     permit_locations = get_permit_locations(permits_file, date_to_check)
 
     # ========== CREATE MAP =================
     generate_map(
-        vulnerable_bridges,
+        None,
         permit_locations,
-        trajectory=trajectory,
+        trajectory=None,
         detections=detections,
+        colors=True
     )
 
 
 if __name__ == "__main__":
 
-    target_day = date(2021, 3, 17)
+    target_day = date(2022, 7, 12)
 
     # Kloveniersburgwal 45
     lat = 52.370670
     long = 4.898990
-    radius = 2000
+    radius = 3000
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
 
-    coordinates = "points_of_interest.csv"
+    coordinates = "results_12_july/points_of_interest_12_july.csv"
     vulnerable_bridges_file = "bridges.geojson"
-    permits_file = "decos.xml"
+    permits_file = "decos-12-july-extended.xml"
     run(target_day, location_query, coordinates, vulnerable_bridges_file, permits_file)
