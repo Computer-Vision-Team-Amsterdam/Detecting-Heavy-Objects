@@ -1,6 +1,6 @@
 Location,Lat,Long,Radius,Date
-Dam Square,52.368519, 4.902040, 500,-
-Leidseplein, 52.363630, 4.881880,500,-
-Rembrandtplein,52.365990, 4.896470,500,-
-Museumplein,52.357430, 4.881610,500,-
-Waterlooplein,52.367760,4.902752,500,-
+Dam Square,52.368519, 4.902040, 50,-
+Leidseplein, 52.363630, 4.881880,50,-
+Rembrandtplein,52.365990, 4.896470,50,-
+Museumplein,52.357430, 4.881610,50,-
+Waterlooplein,52.367760,4.902752,50,-
