@@ -7,13 +7,6 @@
 
 FROM python:3.7.13-bullseye
 
-# Install project dependencies
-RUN apt-get update && \
-    apt-get -y install \
-        ffmpeg \
-        libsm6 \
-        libxext6
-
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
