@@ -57,9 +57,7 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
         json.dump(data, f)
 
 
-def write_to_csv(
-    data: npt.NDArray[npt.NDArray[Any]], header: List[str], filename: Path
-) -> None:
+def write_to_csv(data: npt.NDArray[Any], header: List[str], filename: Path) -> None:
     """
     Writes a list of list with data to a csv file.
     """
