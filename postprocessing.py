@@ -61,7 +61,7 @@ def write_to_csv(data: npt.NDArray[Any], header: List[str], filename: Path) -> N
     """
     Writes a list of list with data to a csv file.
     """
-    np.savetxt(  # type: ignore
+    np.savetxt(
         filename, data, header=",".join(header), fmt="%d", delimiter=",", comments=""
     )
 
