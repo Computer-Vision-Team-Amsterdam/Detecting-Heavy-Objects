@@ -168,3 +168,7 @@ weights
 *.xlsx
 *.xml
 *.geojson
+
+.DS_Store
+blurring/*jpg
+containers/blurred_panos_from_cloudvps/*.jpg

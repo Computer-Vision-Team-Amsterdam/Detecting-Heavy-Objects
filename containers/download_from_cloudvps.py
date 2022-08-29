@@ -1,3 +1,4 @@
+# download blurred images from cloudvps
 import csv
 import os
 from urllib.error import HTTPError
@@ -14,25 +15,28 @@ import pickle
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 
-print(os.environ)
 
 keyVaultName = os.environ["KEY_VAULT_NAME"]
 KVUri = f"https://{keyVaultName}.vault.azure.net"
 
+print("a")
 credential = DefaultAzureCredential()
 client = SecretClient(vault_url=KVUri, credential=credential)
 
+print("aa")
+
 username_secret = client.get_secret("CloudVpsRawUsername")
 password_secret = client.get_secret("CloudVpsRawPassword")
+print("aaa")
 
 socket.setdefaulttimeout(100)
 
-BASE_URL = f"https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
+BASE_URL = f"https://3206eec333a04cc980799f75a593505a.objectstore.eu/processed/"
 USERNAME = username_secret.value
 PASSWORD = password_secret.value
 
 
-YEAR = 2016
+YEAR = 2018
 
 
 if Path(f"id_to_date.p").exists():
@@ -40,6 +44,7 @@ if Path(f"id_to_date.p").exists():
     print("Dates in dict: ", list(ID_TO_DATE.values()))
 else:
     ID_TO_DATE = {}
+print("aaaa")
 
 
 def split_pano_id(pano_id):
@@ -54,10 +59,10 @@ def find_date(pano_id):
     id_name, img_name = split_pano_id(pano_id)
 
     while True:
-        url = BASE_URL + f"{current_date.year}/{str(current_date.month).zfill(2)}/{str(current_date.day).zfill(2)}/{id_name}/{img_name}.jpg"
+        url = BASE_URL + f"{current_date.year}/{str(current_date.month).zfill(2)}/{str(current_date.day).zfill(2)}/{id_name}/{img_name}/equirectangular/panorama_4000.jpg"
         response = requests.get(url, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD))
-        #print("authenticated")
-        if current_date.year == 2022:
+        print(url)
+        if current_date.year == 2020:
             break
         elif response.status_code == 404:
             current_date += timedelta(days=1)
@@ -67,8 +72,8 @@ def find_date(pano_id):
     return None, None, None
 
 
-def download_image(pano_id, output_dir="."):
-    output_dir = Path("./panoramas")
+def download_image(pano_id):
+    output_dir = Path("./blurred_panos_from_cloudvps")
     try:
         if Path(f'./{output_dir}/{pano_id}.jpg').exists():
             return
@@ -81,7 +86,7 @@ def download_image(pano_id, output_dir="."):
             year, day, month = ID_TO_DATE[id_name]
         if day == None:
             raise Exception
-        url = BASE_URL + f"{year}/{str(month).zfill(2)}/{str(day).zfill(2)}/{id_name}/{img_name}.jpg"
+        url = BASE_URL + f"{year}/{str(month).zfill(2)}/{str(day).zfill(2)}/{id_name}/{img_name}/equirectangular/panorama_4000.jpg"
         print(url)
         response = requests.get(url, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD))
         filename = f'./{output_dir}/{pano_id}.jpg'
@@ -96,13 +101,16 @@ def download_image(pano_id, output_dir="."):
 
 if __name__ == "__main__":
 
-    pano_ids = []
-    with open("crowded_pano_ids.csv", 'r') as file:
-        reader = csv.reader(file)
+    BATCH_START = 100
+    BATCH_END = 101
 
-    for pano_id in reader:
-        pano_ids.append(*pano_id)
+    for i in range(BATCH_START, BATCH_END):
+        with open(f'../../data_azure/pano_ids/{i}.txt') as f:
+            pano_ids = f.read().splitlines()
+        f.close()
+
 
     p = Pool(8)
     p.map(download_image, pano_ids)
+
 
