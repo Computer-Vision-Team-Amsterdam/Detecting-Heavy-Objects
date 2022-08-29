@@ -3,11 +3,13 @@ This module stores the output file from postprocessing.py, i.e. prioritized_obje
 our development SA. It also copies the output file to the 'containers' table in Postgres.
 """
 
-import os
+import os, shutil
+from pathlib import Path
 
 import psycopg2
 from azure.storage.blob import BlobServiceClient
 from psycopg2 import Error
+from datetime import datetime
 
 # ========== CONNECTION TO POSTGRES DATABASE =============
 
@@ -46,21 +48,20 @@ finally:
 
 try:
 
-    # Quick start code goes here
     connect_str = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
     blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
         connect_str
     )
 
-    local_file_name = "prioritized_objects.csv"
-    upload_file_path = os.path.join(".", local_file_name)
+    today = datetime.today().strftime('%Y-%m-%d')
+    local_file_path = "prioritized_objects.csv"
 
     blob_client = blob_service_client.get_blob_client(
-        container="postprocessing-output", blob=local_file_name
+        container="postprocessing-output", blob=f"{today}/{local_file_path}"
     )
 
     # Upload the created file
-    with open(upload_file_path, "rb") as data:
+    with open(local_file_path, "rb") as data:
         blob_client.upload_blob(data)
 
 

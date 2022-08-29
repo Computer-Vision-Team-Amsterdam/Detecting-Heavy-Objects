@@ -1,4 +1,4 @@
-# docker build . -f connection.Dockerfile -t epureanudiana/store-postprocessing-results --platform linux/arm64
+# docker build . -f store_postprocessing_results.Dockerfile -t epureanudiana/store-postprocessing-results --platform linux/arm64
 
 # change entrypoint to prevent container from exiting, when debugging:
 # docker run -it --entrypoint=/bin/bash epureanudiana/store-postprocessing-results
@@ -17,7 +17,7 @@ RUN pip install \
     azure-storage-blob==12.13.1
 
 WORKDIR /opt
-COPY connect.py /opt
+COPY store_postprocessing_results.py /opt
 COPY prioritized_objects.csv /opt
 
 RUN useradd appuser
