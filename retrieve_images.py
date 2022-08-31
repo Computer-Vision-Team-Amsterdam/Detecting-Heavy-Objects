@@ -5,6 +5,8 @@ The images are downloaded in the `retrieved_images` folder.
 
 import os
 from multiprocessing import Pool
+import socket
+
 import requests
 from requests.auth import HTTPBasicAuth
 import shutil
@@ -14,9 +16,25 @@ import pickle
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 
-
-# this is not working yet, it needs authentication to azure first.
 """
+When you run the corresponding container locally, i.e. retrieve-images, authentication to Azure is required first.
+For example, with az login.
+Then you can run the script within the container.
+
+Alternatively to skip authentication, you can comment out the keyvault part and 
+uncomment the USERNAME and PASSWORD retrieval from env variables, lines 45-47. 
+Then you rebuild the image and run the container locally with 
+docker run --env KV_USERNAME=${KV_USERNAME} --env KV_PASSWORD=${KV_PASSWORD}
+-it --entrypoint=/bin/bash epureanudiana/retrieve-images
+
+Eventually, the container will run in DaVe's subscription.
+There they should have a managed identity assigned to the cluster running the script.
+That managed identity has an aad objectid that you can assign a key vault role to
+Then, the DefaultAzureCredential() method should pick up the managed identity assigned to the cluster 
+to authenticate against the key vault.
+"""
+
+
 keyVaultName = os.environ["KEY_VAULT_NAME"]
 KVUri = f"https://{keyVaultName}.vault.azure.net"
 
@@ -31,11 +49,12 @@ socket.setdefaulttimeout(100)
 BASE_URL = f"https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
 USERNAME = username_secret.value
 PASSWORD = password_secret.value
-"""
 
+"""
 BASE_URL = f"https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
 USERNAME = os.environ["KV_USERNAME"]
 PASSWORD = os.environ["KV_PASSWORD"]
+"""
 
 YEAR = 2016
 

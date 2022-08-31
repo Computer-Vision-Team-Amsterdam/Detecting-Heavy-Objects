@@ -1,8 +1,7 @@
 # docker build . -f retrieve_images.Dockerfile -t epureanudiana/retrieve-images --platform linux/arm64
 
 # change entrypoint to prevent container from exiting, when debugging:
-# docker run --env KEY_VAULT_NAME=${KEY_VAULT_NAME} --env KV_USERNAME=${KV_USERNAME} --env KV_PASSWORD=${KV_PASSWORD}
-# -it --entrypoint=/bin/bash epureanudiana/retrieve-images
+# docker run --env KEY_VAULT_NAME=${KEY_VAULT_NAME} -it --entrypoint=/bin/bash epureanudiana/retrieve-images
 
 FROM python:3.7.13-bullseye
 
@@ -12,6 +11,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN pip install \
     requests==2.26.0 \
+    azure-cli==2.39.0 \
     azure-identity==1.10.0 \
     azure-keyvault-secrets==4.5.1
 
