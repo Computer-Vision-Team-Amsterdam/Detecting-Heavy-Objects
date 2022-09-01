@@ -35,7 +35,6 @@ Then, the DefaultAzureCredential() method should pick up the managed identity as
 to authenticate against the key vault.
 """
 
-
 keyVaultName = os.environ["KEY_VAULT_NAME"]
 KVUri = f"https://{keyVaultName}.vault.azure.net"
 
@@ -57,84 +56,58 @@ USERNAME = os.environ["KV_USERNAME"]
 PASSWORD = os.environ["KV_PASSWORD"]
 """
 
-YEAR = 2016
-
-
-if Path(f"id_to_date.p").exists():
-    ID_TO_DATE = pickle.load(open(f"id_to_date.p", "rb"))
-    print("Dates in dict: ", list(ID_TO_DATE.values()))
-else:
-    ID_TO_DATE = {}
 
 
 def split_pano_id(pano_id: str) -> Tuple[str, str]:
+    """
+    Splits name of the panorama in TMX* and pano*
+    """
     id_name = pano_id.split("_")[0]
     index = pano_id.index("_")
     img_name = pano_id[index + 1 :]
     return id_name, img_name
 
 
-def find_date(pano_id: str) -> Union[Tuple[None, None, None], Tuple[int, int, int]]:
-    current_date = datetime(YEAR, 1, 1)
-    id_name, img_name = split_pano_id(pano_id)
+def download_panorama_from_cloudvps(
+    date: datetime, panorama_id: str, output_dir: Path = Path("./retrieved_images")
+) -> None:
+    """
+    Downloads panorama from cloudvps to local folder.
+    """
 
-    while True:
-        url = (
-            BASE_URL
-            + f"{current_date.year}/{str(current_date.month).zfill(2)}/{str(current_date.day).zfill(2)}/{id_name}/{img_name}.jpg"
-        )
-        response = requests.get(
-            url, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD)
-        )
-        if current_date.year == 2022:
-            break
-        elif response.status_code == 404:
-            current_date += timedelta(days=1)
-        else:
-            return current_date.year, current_date.day, current_date.month
-    print(f"COULD NOT FIND CORRESPONDING DATE FOR PANO ID: {pano_id}")
-    return None, None, None
+    if Path(f"./{output_dir}/{panorama_id}.jpg").exists():
+        print(f"Panorama {panorama_id} is already downloaded.")
+        return
+    id_name, img_name = split_pano_id(panorama_id)
 
-
-def download_image(pano_id: str) -> None:
-    output_dir = Path("./retrieved_images")
     try:
-        if Path(f"./{output_dir}/{pano_id}.jpg").exists():
-            return
-        id_name, img_name = split_pano_id(pano_id)
-        if not id_name in list(ID_TO_DATE.keys()):
-            year, day, month = find_date(pano_id)
-            ID_TO_DATE[id_name] = [year, day, month]
-            pickle.dump(ID_TO_DATE, open(f"id_to_date.p", "wb"))
-        else:
-            year, day, month = ID_TO_DATE[id_name]
-        if day == None:
-            raise Exception
         url = (
             BASE_URL
-            + f"{year}/{str(month).zfill(2)}/{str(day).zfill(2)}/{id_name}/{img_name}.jpg"
+            + f"{date.year}/{str(date.month).zfill(2)}/{str(date.day).zfill(2)}/{id_name}/{img_name}.jpg"
         )
-        print(url)
+
         response = requests.get(
             url, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD)
         )
-        filename = f"./{output_dir}/{pano_id}.jpg"
+        if response.status_code == 404:
+            raise FileNotFoundError(f"No resource found at {url}")
+        filename = f"./{output_dir}/{panorama_id}.jpg"
         with open(filename, "wb") as out_file:
             shutil.copyfileobj(response.raw, out_file)
         del response
 
-        print(f"{pano_id} completed")
+        print(f"{panorama_id} completed.")
     except Exception as e:
-        print(f"Failed for panorama {pano_id}, {e}")
+        print(f"Failed for panorama {panorama_id}:\n{e}")
 
 
 if __name__ == "__main__":
-
+    pano_dates = [datetime(2016, 3, 17), datetime(2016, 3, 17), datetime(2016, 3, 17)]
     pano_ids = [
         "TMX7315120208-000020_pano_0000_000000",
         "TMX7315120208-000020_pano_0000_000001",
         "TMX7315120208-000020_pano_0000_000002",
     ]
 
-    p = Pool(8)
-    p.map(download_image, pano_ids)
+    for pano_date, pano_id in zip(pano_dates, pano_ids):
+        download_panorama_from_cloudvps(pano_date, pano_id)
