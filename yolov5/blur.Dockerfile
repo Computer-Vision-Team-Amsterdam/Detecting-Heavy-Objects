@@ -18,8 +18,10 @@ RUN pip install --no-cache -r requirements.txt
 WORKDIR /app
 
 # Copy contents (NOTE: dont copy weights file in docker image in the future)
-COPY . weights/best.pt /app
+COPY .  /app
 
 # Installation as root, non-root user when executing the container
+
 RUN useradd appuser
+RUN chown -R appuser /app
 USER appuser
