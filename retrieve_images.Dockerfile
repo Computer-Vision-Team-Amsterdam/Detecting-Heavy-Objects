@@ -1,8 +1,3 @@
-# docker build . -f retrieve_images.Dockerfile -t epureanudiana/retrieve-images --platform linux/arm64
-
-# change entrypoint to prevent container from exiting, when debugging:
-# docker run --env KEY_VAULT_NAME=${KEY_VAULT_NAME} -it --entrypoint=/bin/bash epureanudiana/retrieve-images
-
 FROM python:3.7.13-bullseye
 
 ENV VIRTUAL_ENV=/opt/venv

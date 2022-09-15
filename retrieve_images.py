@@ -2,7 +2,7 @@
 This module retrieves images from CloudVPS and downloads them locally.
 The images are downloaded in the `retrieved_images` folder.
 """
-
+import json
 import os
 import pickle
 import shutil
@@ -13,49 +13,25 @@ from pathlib import Path
 from typing import Tuple, Union
 
 import requests
-from azure.identity import DefaultAzureCredential
+from azure.identity import ManagedIdentityCredential
 from azure.keyvault.secrets import SecretClient
 from requests.auth import HTTPBasicAuth
 
-"""
-When you run the corresponding container locally, i.e. retrieve-images, authentication to Azure is required first.
-For example, with az login.
-Then you can run the script within the container.
 
-Alternatively to skip authentication, you can comment out the keyvault part and 
-uncomment the USERNAME and PASSWORD retrieval from env variables, lines 45-47. 
-Then you rebuild the image and run the container locally with 
-docker run --env KV_USERNAME=${KV_USERNAME} --env KV_PASSWORD=${KV_PASSWORD}
--it --entrypoint=/bin/bash epureanudiana/retrieve-images
+client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
+credential = ManagedIdentityCredential(client_id=client_id)
 
-Eventually, the container will run in DaVe's subscription.
-There they should have a managed identity assigned to the cluster running the script.
-That managed identity has an aad objectid that you can assign a key vault role to
-Then, the DefaultAzureCredential() method should pick up the managed identity assigned to the cluster 
-to authenticate against the key vault.
-"""
+airflow_secrets = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
+KVUri = airflow_secrets["vault_url"]
 
-keyVaultName = os.environ["KEY_VAULT_NAME"]
-KVUri = f"https://{keyVaultName}.vault.azure.net"
-
-credential = DefaultAzureCredential()
 client = SecretClient(vault_url=KVUri, credential=credential)
-
-username_secret = client.get_secret("CloudVpsRawUsername")
-password_secret = client.get_secret("CloudVpsRawPassword")
-
+username_secret = client.get_secret(name="CloudVpsRawPassword")
+password_secret = client.get_secret(name="CloudVpsRawPassword")
 socket.setdefaulttimeout(100)
 
 BASE_URL = f"https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
 USERNAME = username_secret.value
 PASSWORD = password_secret.value
-
-"""
-BASE_URL = f"https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
-USERNAME = os.environ["KV_USERNAME"]
-PASSWORD = os.environ["KV_PASSWORD"]
-"""
-
 
 
 def split_pano_id(pano_id: str) -> Tuple[str, str]:
