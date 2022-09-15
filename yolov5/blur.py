@@ -83,14 +83,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--weights",
         type=str,
-        default="weights/best.pt",
+        default=f"{os.getcwd()}/weights/best.pt",
         help="model.pt path(s)",
     )
     parser.add_argument(
-        "--data", type=str, default="data/pano.yaml", help="*.data path"
+        "--data", type=str, default=f"{os.getcwd()}/data/pano.yaml", help="*.data path"
     )
     parser.add_argument(
-        "--folder", type=Path, default="unblurred", help="folder with images to blur"
+        "--folder", type=Path, default=f"{os.getcwd()}/unblurred", help="folder with images to blur"
     )
     parser.add_argument(
         "--output_folder",
