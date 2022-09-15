@@ -169,3 +169,11 @@ weights
 *.xml
 *.geojson
 notes.MD
+
+# Neural Network weights
+**/*.weights
+**/*.pt
+**/*.pth
+**/*.onnx
+**/*.mlmodel
+**/*.torchscript
