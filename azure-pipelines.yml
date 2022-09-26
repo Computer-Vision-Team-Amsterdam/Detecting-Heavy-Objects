@@ -124,7 +124,7 @@ jobs:
           pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
         displayName: 'pylint'
 
-- job: ACRBuildAndPush
+  - job: ACRBuildAndPush
     displayName: "Build and push to ACR"
     dependsOn:
     - Linux
