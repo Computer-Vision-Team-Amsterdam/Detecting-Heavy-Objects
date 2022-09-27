@@ -4,10 +4,36 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- main
+  branches:
+    include:
+    - main
+  paths:
+    exclude:
+    - azure-pipelines.yml
+
+parameters:
+- name: SkipTests
+  displayName: "Skip pre-deployment tests"
+  type: boolean
+  default: false
+- name: BuildAndPush
+  displayName: "Build and push to ACR"
+  type: boolean
+  default: false
+
+variables:
+  armServiceConnection: 'ARM-CCC-CVT-ont-01'
+  imageRepository: 'cvt/detection'
+  containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
+  dockerFilePath: '$(Build.SourcesDirectory)'
+  dockerFileName: 'retrieve_images.Dockerfile'
+  tag: 'latest'
+  skipTests: ${{ parameters.SkipTests }}
+  buildAndPush: ${{ parameters.BuildAndPush }}
 
 jobs:
   - job: Linux
+    condition: eq(variables['skipTests'], false)
     pool:
       vmImage: ubuntu-latest
     strategy:
@@ -41,6 +67,7 @@ jobs:
 
 
   - job: OSX
+    condition: eq(variables['skipTests'], false)
     pool:
       vmImage: macOS-latest
     strategy:
@@ -84,6 +111,7 @@ jobs:
 
 
   - job: Style
+    condition: eq(variables['skipTests'], false)
     pool:
       vmImage: ubuntu-latest
     strategy:
@@ -116,3 +144,22 @@ jobs:
           pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
         displayName: 'pylint'
 
+  - job: ACRBuildAndPush
+    displayName: "Build and push to ACR"
+    condition: eq(variables['buildAndPush'], true)
+    dependsOn:
+    - Linux
+    - OSX
+    - Style
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - task: AzureCLI@2
+        displayName: Azure CLI
+        inputs:
+          azureSubscription: $(armServiceConnection)
+          scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: |
+            az acr login --name $(containerRegistryName)
+            az acr build --registry $(containerRegistryName) --file $(dockerFileName) --image $(imageRepository):$(tag) $(dockerFilePath)
