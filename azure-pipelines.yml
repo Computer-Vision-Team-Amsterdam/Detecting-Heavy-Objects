@@ -30,6 +30,11 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'cvt/retrieve-images'
       tag: 'latest'
+    - displayName: 'Blur'
+      dockerFileName: 'blur.Dockerfile'
+      dockerFileRelativePath: '/yolov5/'
+      imageRepository: 'cvt/blur'
+      tag: 'latest'
 
 
 variables:
