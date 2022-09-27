@@ -6,6 +6,12 @@
 trigger:
 - main
 
+parameters:
+- name: SkipTests
+  displayName: "Skip pre-deployment tests"
+  type: boolean
+  default: false
+
 variables:
   armServiceConnection: 'ARM-CCC-CVT-ont-01'
   imageRepository: 'cvt/detection'
@@ -13,9 +19,11 @@ variables:
   dockerFilePath: '$(Build.SourcesDirectory)'
   dockerFileName: 'detection.Dockerfile'
   tag: 'latest'
+  skipTests: ${{ parameters.SkipTests }}
 
 jobs:
   - job: Linux
+    condition: eq(variables['skipTests'], false)
     pool:
       vmImage: ubuntu-latest
     strategy:
@@ -49,6 +57,7 @@ jobs:
 
 
   - job: OSX
+    condition: eq(variables['skipTests'], false)
     pool:
       vmImage: macOS-latest
     strategy:
@@ -92,6 +101,7 @@ jobs:
 
 
   - job: Style
+    condition: eq(variables['skipTests'], false)
     pool:
       vmImage: ubuntu-latest
     strategy:
