@@ -22,14 +22,23 @@ parameters:
   displayName: "Build and push to ACR"
   type: boolean
   default: false
+- name: DockerFiles
+  type: object
+  default:
+    - displayName: 'Retrieve Images'
+      dockerFileName: 'retrieve_images.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'cvt/retrieve-images'
+      tag: 'latest'
+    - displayName: 'Blur'
+      dockerFileName: 'blur.Dockerfile'
+      dockerFileRelativePath: '/yolov5'
+      imageRepository: 'cvt/blur'
+      tag: 'latest'
 
 variables:
   armServiceConnection: 'ARM-CCC-CVT-ont-01'
-  imageRepository: 'cvt/retrieve-images'
   containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
-  dockerFilePath: '$(Build.SourcesDirectory)'
-  dockerFileName: 'retrieve_images.Dockerfile'
-  tag: 'latest'
   skipTests: ${{ parameters.SkipTests }}
   buildAndPush: ${{ parameters.BuildAndPush }}
 
@@ -155,17 +164,19 @@ stages :
     - Tests
     condition: eq(variables['buildAndPush'], true)
     jobs:
-      - job: RI_BuildAndPush
-        displayName: "Retrieve Images - Build and push to ACR"
-        pool:
-          vmImage: ubuntu-latest
-        steps:
-          - task: AzureCLI@2
-            displayName: Azure CLI
-            inputs:
-              azureSubscription: $(armServiceConnection)
-              scriptType: pscore
-              scriptLocation: inlineScript
-              inlineScript: |
-                az acr login --name $(containerRegistryName)
-                az acr build --registry $(containerRegistryName) --file $(dockerFileName) --image $(imageRepository):$(tag) $(dockerFilePath)
+      - ${{ each dockerFile in parameters.DockerFiles }}:
+        - job:
+          displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
+          pool:
+            vmImage: ubuntu-latest
+          steps:
+            - task: AzureCLI@2
+              displayName: Azure CLI ACR Build
+              inputs:
+                azureSubscription: $(armServiceConnection)
+                scriptType: pscore
+                scriptLocation: inlineScript
+                inlineScript: |
+                  az acr login --name $(containerRegistryName)
+                  cd .${{ dockerFile.dockerFileRelativePath }}
+                  az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
