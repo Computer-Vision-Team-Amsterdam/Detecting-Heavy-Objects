@@ -32,7 +32,7 @@ parameters:
       tag: 'latest'
     - displayName: 'Blur'
       dockerFileName: 'blur.Dockerfile'
-      dockerFileRelativePath: 'yolov5/'
+      dockerFileRelativePath: '/yolov5'
       imageRepository: 'cvt/blur'
       tag: 'latest'
 
@@ -182,5 +182,5 @@ stages :
                   az acr login --name $(containerRegistryName)
                   echo $(dockerFilePath)
                   echo $(dockerFilePath)${{ dockerFile.dockerFileRelativePath }}
-                  ls -l $(dockerFilePath)
+                  ls -l $(dockerFilePath)${{ dockerFile.dockerFileRelativePath }}
                   az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} $(dockerFilePath)${{ dockerFile.dockerFileRelativePath }}
