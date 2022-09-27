@@ -4,11 +4,20 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- main
+  branches:
+    include:
+    - main
+  paths:
+    exclude:
+    - azure-pipelines.yml
 
 parameters:
 - name: SkipTests
   displayName: "Skip pre-deployment tests"
+  type: boolean
+  default: false
+- name: BuildAndPush
+  displayName: "Build and push to ACR"
   type: boolean
   default: false
 
@@ -17,9 +26,10 @@ variables:
   imageRepository: 'cvt/detection'
   containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
   dockerFilePath: '$(Build.SourcesDirectory)'
-  dockerFileName: 'detection.Dockerfile'
+  dockerFileName: 'retrieve_images.Dockerfile'
   tag: 'latest'
   skipTests: ${{ parameters.SkipTests }}
+  buildAndPush: ${{ parameters.BuildAndPush }}
 
 jobs:
   - job: Linux
@@ -136,6 +146,7 @@ jobs:
 
   - job: ACRBuildAndPush
     displayName: "Build and push to ACR"
+    condition: eq(variables['buildAndPush'], true)
     dependsOn:
     - Linux
     - OSX
