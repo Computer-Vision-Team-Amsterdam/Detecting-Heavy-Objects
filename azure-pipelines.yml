@@ -151,7 +151,7 @@ stages :
     displayName: 'Build and Push'
     dependsOn:
     - Tests
-    condition: eq(variables['buildAndPush'], false)
+    condition: eq(variables['buildAndPush'], true)
     jobs:
       - job: RI_BuildAndPush
         displayName: "Retrieve Images - Build and push to ACR"
