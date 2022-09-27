@@ -11,6 +11,8 @@ trigger:
     exclude:
     - azure-pipelines.yml
 
+pr: none
+
 parameters:
 - name: SkipTests
   displayName: "Skip pre-deployment tests"
