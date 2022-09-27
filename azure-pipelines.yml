@@ -150,9 +150,7 @@ stages :
   - stage: BuildAndPush
     displayName: 'Build and Push'
     dependsOn:
-    - Linux
-    - OSX
-    - Style
+    - Tests
     condition: eq(variables['buildAndPush'], false)
     jobs:
       - job: RI-BuildAndPush
