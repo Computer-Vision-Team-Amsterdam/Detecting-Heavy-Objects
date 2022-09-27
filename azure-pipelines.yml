@@ -32,7 +32,7 @@ parameters:
       tag: 'latest'
     - displayName: 'Blur'
       dockerFileName: 'blur.Dockerfile'
-      dockerFileRelativePath: '/yolov5/'
+      dockerFileRelativePath: 'yolov5/'
       imageRepository: 'cvt/blur'
       tag: 'latest'
 
