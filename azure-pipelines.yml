@@ -180,6 +180,5 @@ stages :
                 scriptLocation: inlineScript
                 inlineScript: |
                   az acr login --name $(containerRegistryName)
-                  echo .${{ dockerFile.dockerFileRelativePath }}
-                  ls -l .${{ dockerFile.dockerFileRelativePath }}
+                  cd .${{ dockerFile.dockerFileRelativePath }}
                   az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .${{ dockerFile.dockerFileRelativePath }}
