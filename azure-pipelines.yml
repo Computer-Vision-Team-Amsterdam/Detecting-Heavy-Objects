@@ -182,4 +182,5 @@ stages :
                   az acr login --name $(containerRegistryName)
                   echo $(dockerFilePath)
                   echo $(dockerFilePath)${{ dockerFile.dockerFileRelativePath }}
+                  ls -l $(dockerFilePath)
                   az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} $(dockerFilePath)${{ dockerFile.dockerFileRelativePath }}
