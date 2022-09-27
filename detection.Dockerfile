@@ -15,7 +15,7 @@ ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-RUN pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 opencv-python
+RUN pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 opencv-python seaborn
 RUN git clone https://github.com/facebookresearch/detectron2.git
 RUN python -m pip install -e detectron2
 
@@ -32,5 +32,5 @@ RUN chown -R appuser /app
 RUN chmod 755 /app
 USER appuser
 
-ENTRYPOINT ["python", "-u", "inference.py"]
+#ENTRYPOINT ["python", "-u", "inference.py"]
 

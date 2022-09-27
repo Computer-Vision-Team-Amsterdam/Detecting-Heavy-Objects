@@ -16,6 +16,13 @@ from utils.general import (
     set_logging,
 )
 from utils.torch_utils import select_device
+from azure.storage.blob import BlobServiceClient
+from azure.identity import ManagedIdentityCredential
+
+
+client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
+credential = ManagedIdentityCredential(client_id=client_id)
+blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net", credential=credential)
 
 
 def blur_imagery(
@@ -42,6 +49,8 @@ def blur_imagery(
     # Configure
     model.eval()
 
+    print(f"reading from the following folder: {opt.folder}")
+    print(f"contents of this folder: {os.listdir(Path(os.getcwd(), opt.folder))}")
     dataloader = create_dataloader(
         opt.folder, imgsz, batch_size, model.stride.max(), opt, pad=0.5, rect=True
     )[0]
@@ -110,9 +119,43 @@ if __name__ == "__main__":
     parser.add_argument(
         "--iou-thres", type=float, default=0.6, help="IOU threshold for NMS"
     )
+    parser.add_argument("--date", type=str, help="date for images to be blurred")
+
     opt = parser.parse_args()
     opt.data = check_file(opt.data)  # check file
     print(opt)
+
+    # update input folder
+    opt.folder = Path(opt.folder, opt.date)
+    if not opt.folder.exists():
+        opt.folder.mkdir(exist_ok=True, parents=True)
+
+    # update output folder
+    opt.output_folder = Path(opt.output_folder, opt.date)
+    if not opt.output_folder.exists():
+        opt.output_folder.mkdir(exist_ok=True, parents=True)
+
+
+    print("opts are:")
+    print(opt)
+    # download images from storage account
+    container_client = blob_service_client.get_container_client(container="unblurred")
+    blob_list = container_client.list_blobs()
+    for blob in blob_list:
+        print(f"blob is {blob}")
+        path = blob.name
+        print(f"path is {path}")
+        if path.split("/")[0] == opt.date:  # only download images from one date
+            print("trying to open ..")
+
+            with open(f"unblurred/{blob.name}", "wb") as download_file:
+                #download_file.write(container_client.download_blob(f"{blob.name}").readall())
+                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
+
+    print("downloaded files are")
+    print(f"cwd is {os.getcwd()}")
+    print(f"ls of files {os.listdir(os.getcwd())}")
+    print(os.listdir(Path(os.getcwd(), "unblurred", f"{opt.date}")))
 
     blur_imagery(
         opt.weights,
@@ -121,3 +164,13 @@ if __name__ == "__main__":
         opt.conf_thres,
         opt.iou_thres,
     )
+
+    # upload blurred images to storage account
+
+    for file in os.listdir(f"{opt.output_folder}"):
+        blob_client = blob_service_client.get_blob_client(
+            container="blurred", blob=f"{opt.date}/{file}")
+
+        # Upload the created file
+        with open(Path(opt.output_folder, file), "rb") as data:
+            blob_client.upload_blob(data)

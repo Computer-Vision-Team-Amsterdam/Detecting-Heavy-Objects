@@ -35,7 +35,7 @@ def arg_parser() -> argparse.Namespace:
         default="data_sample",
         help="name of the folder where data is located",
     )
-    parser.add_argument("--device", type=str, default="cuda:0")
+    parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument(
         "--image",
         type=str,
