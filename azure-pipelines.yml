@@ -34,6 +34,8 @@ variables:
 jobs:
   - job: Linux
     condition: eq(variables['skipTests'], false)
+    dependsOn:
+    - Style
     pool:
       vmImage: ubuntu-latest
     strategy:
@@ -68,6 +70,8 @@ jobs:
 
   - job: OSX
     condition: eq(variables['skipTests'], false)
+    dependsOn:
+    - Style
     pool:
       vmImage: macOS-latest
     strategy:
