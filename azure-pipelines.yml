@@ -36,11 +36,9 @@ parameters:
       imageRepository: 'cvt/blur'
       tag: 'latest'
 
-
 variables:
   armServiceConnection: 'ARM-CCC-CVT-ont-01'
   containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
-  dockerFilePath: '$(Build.SourcesDirectory)'
   skipTests: ${{ parameters.SkipTests }}
   buildAndPush: ${{ parameters.BuildAndPush }}
 
