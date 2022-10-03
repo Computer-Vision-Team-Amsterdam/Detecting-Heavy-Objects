@@ -2,9 +2,9 @@
 This module retrieves images from CloudVPS, downloads them locally and uploads them to the storage account
 The images are downloaded in the `retrieved_images` folder.
 """
+import argparse
 import json
 import os
-import argparse
 import shutil
 import socket
 from datetime import datetime
@@ -15,14 +15,16 @@ import requests
 from azure.identity import ManagedIdentityCredential
 from azure.keyvault.secrets import SecretClient
 from azure.storage.blob import BlobServiceClient
-
 from requests.auth import HTTPBasicAuth
-
 
 client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
 credential = ManagedIdentityCredential(client_id=client_id)
-blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
-                                        credential=credential)
+
+blob_service_client = BlobServiceClient(
+    account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
+    credential=credential,
+)
+
 
 airflow_secrets = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
 KVUri = airflow_secrets["vault_url"]
@@ -41,14 +43,15 @@ def split_pano_id(pano_id: str) -> Tuple[str, str]:
     """
     Splits name of the panorama in TMX* and pano*
     """
-    id_name = pano_id.split("_")[0]
-    index = pano_id.index("_")
-    img_name = pano_id[index + 1:]
+    id_name = panorama_id.split("_")[0]
+    index = panorama_id.index("_")
+    img_name = panorama_id[index + 1 :]
+
     return id_name, img_name
 
 
 def download_panorama_from_cloudvps(
-        date: datetime, panorama_id: str, output_dir: Path = Path("retrieved_images")
+    date: datetime, panorama_id: str, output_dir: Path = Path("retrieved_images")
 ) -> None:
     """
     Downloads panorama from cloudvps to local folder.
@@ -61,8 +64,10 @@ def download_panorama_from_cloudvps(
 
     try:
         url = (
-                BASE_URL
-                + f"{date.year}/{str(date.month).zfill(2)}/{str(date.day).zfill(2)}/{id_name}/{img_name}.jpg"
+            BASE_URL + f"{date.year}/"
+            f"{str(date.month).zfill(2)}/"
+            f"{str(date.day).zfill(2)}/"
+            f"{id_name}/{img_name}.jpg"
         )
 
         response = requests.get(
@@ -93,7 +98,8 @@ def upload_to_storage_account(date: str) -> None:
     retrieved_images_folder_path = "retrieved_images"
     for file in os.listdir(retrieved_images_folder_path):
         blob_client = blob_service_client.get_blob_client(
-            container="unblurred", blob=f"{date}/{file}")
+            container="unblurred", blob=f"{date}/{file}"
+        )
 
         # Upload the created file
         with open(os.path.join(retrieved_images_folder_path, file), "rb") as data:

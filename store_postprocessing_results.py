@@ -3,13 +3,14 @@ This module stores the output file from postprocessing.py, i.e. prioritized_obje
 our development SA. It also copies the output file to the 'containers' table in Postgres.
 """
 
-import os, shutil
+import os
+import shutil
+from datetime import datetime
 from pathlib import Path
 
 import psycopg2
 from azure.storage.blob import BlobServiceClient
 from psycopg2 import Error
-from datetime import datetime
 
 # ========== CONNECTION TO POSTGRES DATABASE =============
 
@@ -53,7 +54,7 @@ try:
         connect_str
     )
 
-    today = datetime.today().strftime('%Y-%m-%d')
+    today = datetime.today().strftime("%Y-%m-%d")
     local_file_path = "prioritized_objects.csv"
 
     blob_client = blob_service_client.get_blob_client(

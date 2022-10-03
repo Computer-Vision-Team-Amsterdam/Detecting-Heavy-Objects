@@ -328,7 +328,7 @@ def add_images_to_coco(image_dir: str, coco_filename: str) -> None:
             "id": i + 1,
             "height": height,
             "width": width,
-            "file_name": f"test/{image_filename.parts[-1]}",
+            "file_name": f"{image_filename.parts[-2]}/{image_filename.parts[-1]}",
         }
         images.append(image_details)
 
@@ -355,7 +355,7 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
                     image_root=f"{expCfg.data_folder}",
                 )
         except FileNotFoundError:
-            if expCfg.subset == "test":
+            if expCfg.subset == "test" or expCfg.data_folder == "blurred":  # blurred for when we retrieve imgs from SA.
                 add_images_to_coco(
                     image_dir=f"{expCfg.data_folder}/{expCfg.subset}",
                     coco_filename=f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json",

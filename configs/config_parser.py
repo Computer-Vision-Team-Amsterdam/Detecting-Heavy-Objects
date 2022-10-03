@@ -39,7 +39,7 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument(
         "--image",
         type=str,
-        default="blurred.jpg",
+        # default="blurred.jpg",
         help="Path to image on which to run a prediction",
     )
     parser.add_argument(

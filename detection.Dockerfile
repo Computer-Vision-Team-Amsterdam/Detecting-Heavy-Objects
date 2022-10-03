@@ -15,7 +15,15 @@ ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-RUN pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 opencv-python seaborn
+RUN pip install \
+    torch==1.10.1 \
+    torchvision==0.11.2 \
+    torchaudio==0.10.1  \
+    opencv-python \
+    seaborn \
+    azure-identity==1.10.0 \
+    azure-keyvault-secrets==4.5.1 \
+    azure-storage-blob==12.13.1
 RUN git clone https://github.com/facebookresearch/detectron2.git
 RUN python -m pip install -e detectron2
 
@@ -25,7 +33,7 @@ COPY configs/* /app/configs/
 COPY inference.py evaluation.py utils.py /app/
 # copy weights
 COPY model_final.pth /app/
-COPY data_sample/ /app/data_sample/
+# COPY data_sample/ /app/data_sample/
 
 RUN useradd appuser
 RUN chown -R appuser /app

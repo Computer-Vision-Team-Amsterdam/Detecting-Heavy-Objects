@@ -1,5 +1,5 @@
-import os
 import argparse
+import os
 from pathlib import Path
 
 import torch
@@ -99,7 +99,10 @@ if __name__ == "__main__":
         "--data", type=str, default=f"{os.getcwd()}/data/pano.yaml", help="*.data path"
     )
     parser.add_argument(
-        "--folder", type=Path, default=f"{os.getcwd()}/unblurred", help="folder with images to blur"
+        "--folder",
+        type=Path,
+        default=f"{os.getcwd()}/unblurred",
+        help="folder with images to blur",
     )
     parser.add_argument(
         "--output_folder",
@@ -166,6 +169,7 @@ if __name__ == "__main__":
     )
 
     # upload blurred images to storage account
+
 
     for file in os.listdir(f"{opt.output_folder}"):
         blob_client = blob_service_client.get_blob_client(

@@ -46,6 +46,9 @@ def plot_instance_segm(
 
     temp_output_dir = "temp"
     os.mkdir(temp_output_dir)
+
+    print(f"leen {len(dataset_dicts)}")
+    print(dataset_dicts)
     for i, dataset_dict in tqdm(
         enumerate(random.sample(dataset_dicts, n_sample)), total=n_sample
     ):
@@ -99,12 +102,14 @@ def single_instance_prediction(
     register_dataset(expCfg)
     im = cv2.imread(image_path)
 
+    """
     ws = Workspace.from_config()
 
     _ = Model.get_model_path(
         model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
     )
 
+    """
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)
     outputs = predictor(im)
