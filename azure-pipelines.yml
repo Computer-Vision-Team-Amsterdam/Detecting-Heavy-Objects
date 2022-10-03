@@ -21,7 +21,7 @@ parameters:
 - name: BuildAndPush
   displayName: "Build and push to ACR"
   type: boolean
-  default: false
+  default: true
 - name: DockerFiles
   type: object
   default:
