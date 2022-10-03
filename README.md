@@ -213,3 +213,18 @@ The converter on the output of the correct_faulty_panoramas()
 
 
 These output files we can rename and upload to Azure.
+
+## Azure DevOps Pipeline
+Triggered automatically by commit/push to main branch.
+
+### Parameters:
+Automatically triggered pipeline runs can use these parameters only in its default values. Intended only for manual runs for pipeline or build test reasons.
+
+- *SkipTests* -- skips pre-deployment tests, default: false
+- *BuildAndPush* -- builds and pushes the containers to Azure Container Registry
+- *DockerFiles* -- object specifying DockerFiles to be built with the following paramters
+    - *displayName* display name of the docker file - visible only in pipeline logs
+    - *dockerFileName* -- name of the docker file to be built and pushed
+    - *dockerFileRelativePath* '' -- relative path of the docker file (e.g. '' or '/folder')
+    - *imageRepository* -- repository name in ACR
+    - *tag* -- container tag for docker build command

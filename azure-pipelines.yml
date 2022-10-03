@@ -10,6 +10,7 @@ trigger:
   paths:
     exclude:
     - azure-pipelines.yml
+    - README.md
 
 pr: none
 
