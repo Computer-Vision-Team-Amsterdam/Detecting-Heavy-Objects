@@ -164,19 +164,25 @@ stages :
     - Tests
     condition: eq(variables['buildAndPush'], true)
     jobs:
-      - ${{ each dockerFile in parameters.DockerFiles }}:
-        - job:
+      - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+        - deployment: publishinternal
           displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
           pool:
             vmImage: ubuntu-latest
-          steps:
-            - task: AzureCLI@2
-              displayName: Azure CLI ACR Build
-              inputs:
-                azureSubscription: $(armServiceConnection)
-                scriptType: pscore
-                scriptLocation: inlineScript
-                inlineScript: |
-                  az acr login --name $(containerRegistryName)
-                  cd .${{ dockerFile.dockerFileRelativePath }}
-                  az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
+          environment: development-environment
+          strategy:
+            runOnce:
+              deploy:
+                steps:
+                - checkout: self
+            
+                - task: AzureCLI@2
+                  displayName: Azure CLI ACR Build
+                  inputs:
+                    azureSubscription: $(armServiceConnection)
+                    scriptType: pscore
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az acr login --name $(containerRegistryName)
+                      cd .${{ dockerFile.dockerFileRelativePath }}
+                      az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
