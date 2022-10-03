@@ -169,7 +169,7 @@ stages :
           displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
           pool:
             vmImage: ubuntu-latest
-          environment: development-environment
+          environment: development
           strategy:
             runOnce:
               deploy:
