@@ -165,7 +165,7 @@ stages :
     condition: eq(variables['buildAndPush'], true)
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-        - deployment: publishinternal
+        - deployment:
           displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
           pool:
             vmImage: ubuntu-latest
