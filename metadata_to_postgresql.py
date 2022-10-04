@@ -1,19 +1,13 @@
 # This module retrieves the metadata of the raw images, queries the panorama API and stores the metadata in the
 # metadata table
 
-# TODO put postgres secrets into DaVe KV - done
-# TODO update global variables below - done
-# TODO open postgresql to see what kind of structure you need + name of the table - done
-# TODO write simple test to see which metadata there is, an example id: TMX7315120208-000020_pano_0000_000000 - done
-# TODO find function to upload dicts/lists to postgres and replace current cvs
-# general
 import os
 import json
 import socket
 import argparse
 
 from datetime import datetime
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Union
 
 import psycopg2
 from psycopg2 import Error
@@ -52,7 +46,7 @@ TABLE = "images"
 
 # ============================ CONNECTIONS =========================== #
 
-KEY_LIST = ["id", "file_name", "camera_location_lat", "camera_location_lon", "heading", "taken_at"]
+KEY_LIST = ["file_name", "camera_location_lat", "camera_location_lon", "heading", "taken_at"]
 
 
 def get_metadata_from_id(panorama_id: str) -> Dict[str, Union[str, float, datetime]]:
@@ -64,8 +58,7 @@ def get_metadata_from_id(panorama_id: str) -> Dict[str, Union[str, float, dateti
     pano_object = PanoramaClient.get_panorama(panorama_id)
     pano_metadata = {key: None for key in KEY_LIST}
 
-    pano_metadata["id"] = pano_object.id
-    pano_metadata["filename"] = pano_object.id
+    pano_metadata["file_name"] = pano_object.id
     pano_metadata["camera_location_lat"] = pano_object.geometry.coordinates[1]
     pano_metadata["camera_location_long"] = pano_object.geometry.coordinates[0]
     pano_metadata["heading"] = pano_object.heading
@@ -134,7 +127,9 @@ def metadata_processing():
     parser.add_argument("--date", type=str, help="date to retrieve images")
     opt = parser.parse_args()
 
-    panorama_ids = ["TMX7315120208-000020_pano_0000_000000"]
+    panorama_ids = ["TMX7315120208-000020_pano_0000_000000",
+                    "TMX7315120208-000020_pano_0000_000001",
+                    "TMX7315120208-000020_pano_0000_000002"]
     metadata = save_metadata(panorama_ids)
     upload_metadata(metadata, date=opt.date)
 
