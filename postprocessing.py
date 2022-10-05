@@ -27,6 +27,12 @@ from triangulation.triangulate import triangulate
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
 
+from azure.storage.blob import BlobServiceClient
+from azure.identity import ManagedIdentityCredential
+
+client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
+credential = ManagedIdentityCredential(client_id=client_id)
+blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net", credential=credential)
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
     """
@@ -73,12 +79,12 @@ class PostProcessing:
 
     def __init__(
         self,
-        json_predictions: Path,
+        json_predictions: str,
         threshold: float = 20000,
         mask_degrees: float = 90,
         date_to_check: datetime = datetime(2021, 3, 17),
-        permits_file: Path = Path("decos.xml"),
-        bridges_file: Path = Path("bridges.geojson"),
+        permits_file: str = "decos.xml", # TODO remove
+        bridges_file: str = "bridges.geojson", # TODO remove
         output_folder: Path = Path.cwd(),
     ) -> None:
         """
@@ -102,7 +108,24 @@ class PostProcessing:
         self.data_file = Path("processed_predictions.json")
         self.prioritized_file = Path("prioritized_objects.csv")
 
-    def find_points_of_interest(self) -> None:
+
+    def write_output(self, output_file_name, cluster_intersections) -> None:
+        """
+        Write clustered intersections (a 2D list of floats) to an output file.
+        """
+        num_clusters = cluster_intersections.shape[0]
+
+        print("Number of output ICM clusters: {0:d}".format(num_clusters))
+
+        with open(output_file_name, "w") as inter:
+            inter.write("lat,lon\n")
+            for i in range(num_clusters):
+                inter.write("{0:f},{1:f}\n".format(cluster_intersections[i, 0], cluster_intersections[i, 1]))
+
+        print(f"Done writing cluster intersections to the file: {output_file_name}.")
+
+
+    def find_points_of_interest(self):
         """
         Finds the points of interest given by COCO format json file, outputs a csv file
         with lon lat coordinates
@@ -111,10 +134,12 @@ class PostProcessing:
         if not (self.output_folder / self.data_file).exists():
             save_json_data(self.stats.data, self.data_file, self.output_folder)
 
-        triangulate(
-            self.output_folder / self.data_file,
-            self.output_folder / self.objects_file,
+        cluster_intersections = triangulate(
+            self.output_folder / self.data_file
         )
+
+        return cluster_intersections
+
 
     def filter_by_angle(self) -> None:
         """
@@ -236,31 +261,76 @@ class PostProcessing:
             self.output_folder / self.prioritized_file,
         )
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run postprocessing for container detection pipeline"
     )
-    parser.add_argument("--input_path", type=Path, help="Full path to input file")
-    parser.add_argument("--output_path", type=Path, help="Full path to output dir")
-    parser.add_argument("--permits_file", type=Path, help="Full path to permits file")
-    parser.add_argument("--bridges_file", type=Path, help="Full path to bridges file")
+    # TODO remove default
+    parser.add_argument("--container_ref_files", type=str, help="TODO", default="postprocessing-input")
+    parser.add_argument("--container_detections", type=str, help="TODO", default="detections")
+    parser.add_argument("--current_date", type=str, help="Full path to output dir, current date", default="2022-10-03")
+    parser.add_argument("--permits_file", type=str, help="Full path to permits file", default="930651BCFAD14D26A3CC96C751CD208E_small.xml")
+    parser.add_argument("--bridges_file", type=str, help="Full path to bridges file", default="vuln_bridges.geojson")
     args = parser.parse_args()
 
+    # update output folder inside the docker container
+    output_folder = Path(args.current_date)
+    if not output_folder.exists():
+        output_folder.mkdir(exist_ok=True, parents=True)
+
+    permits_file = f"{args.current_date}/{args.permits_file}"
+    predictions_file = f"{args.current_date}/coco_instances_results.json"
+
+    # TODO optimize for loop searching
+    # download images from storage account
+    container_client = blob_service_client.get_container_client(container=args.container_ref_files)
+    blob_list = container_client.list_blobs()
+    for blob in blob_list:
+        print(f"blob is {blob}")
+        path = blob.name
+        print(f"path is {path}")
+
+        if path == permits_file or path == args.bridges_file:
+            print("trying to open ..")
+
+            with open(f"{blob.name}", "wb") as download_file:
+                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
+
+    container_client = blob_service_client.get_container_client(container=args.container_detections)
+    blob_list = container_client.list_blobs()
+    for blob in blob_list:
+        print(f"blob is {blob}")
+        path = blob.name
+        print(f"path is {path}")
+
+        if path == predictions_file:
+            print("trying to open ..")
+
+            with open(f"{blob.name}", "wb") as download_file:
+                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
+            break
+
     postprocess = PostProcessing(
-        args.input_path,
-        output_folder=args.output_path,
+        predictions_file,
+        output_folder=output_folder,
         permits_file=args.permits_file,
         bridges_file=args.bridges_file,
     )
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
-    postprocess.find_points_of_interest()
-    panoramas = get_panos_from_points_of_interest(
-        args.output_path / "points_of_interest.csv",
-        date(2021, 3, 18),
-        date(2021, 3, 17),
-    )
-    postprocess.prioritize_notifications()
-    for pano in panoramas:
-        PanoramaClient.download_image(pano, output_location=args.output_path)
+    clustered_intersections = postprocess.find_points_of_interest()
+    print(clustered_intersections)
+    # postprocess.write_output(os.path.join(args.current_date, "points_of_interest.csv"), clustered_intersections)
+    # panoramas = get_panos_from_points_of_interest(
+    #     os.path.join(args.current_date, "points_of_interest.csv"),
+    #     date(2021, 3, 18),
+    #     date(2021, 3, 17),
+    # )
+    # postprocess.prioritize_notifications()
+    # for pano in panoramas:
+    #     PanoramaClient.download_image(pano, output_location=args.current_date)
+
+    # TODO remove
+    print("downloaded files are")
+    print(f"cwd is {os.getcwd()}")
+    print(f"ls of files {os.listdir(os.getcwd())}")
