@@ -366,4 +366,4 @@ if __name__ == "__main__":
     # Upload the file with found containers to the Azure Blob Storage.
     #upload_to_blob("postprocessing-output", "prioritized_objects.csv") # TODO uncomment when API works
 
-    # TODO postgresql
+    # TODO postgresql code from store_postprocessing_results.py 
