@@ -30,9 +30,39 @@ from visualizations.utils import get_bridge_information, get_permit_locations
 from azure.storage.blob import BlobServiceClient
 from azure.identity import ManagedIdentityCredential
 
-client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
-credential = ManagedIdentityCredential(client_id=client_id)
-blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net", credential=credential)
+def download_from_blob(bucket_name, files):
+    """
+    Download images from Blob Storage.
+    """
+    container_client = blob_service_client.get_container_client(
+        container=bucket_name
+    )
+    blob_list = container_client.list_blobs()
+
+    found_ctr = 0
+    for blob in blob_list:
+        if blob.name in files:
+            found_ctr += 1
+            print(f"Trying to open {blob.name}")
+            with open(blob.name, "wb") as download_file:
+                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
+
+            # Exit the for loop when all files are found.
+            if found_ctr == len(files):
+                break
+
+def upload_to_blob(bucket_name, filename):
+    """
+    Upload images to Blob Storage.
+    """
+    blob_client = blob_service_client.get_blob_client(
+        container=bucket_name, blob=filename
+    )
+
+    # Upload the created file
+    with open(filename, "rb") as data:
+        blob_client.upload_blob(data)
+
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
     """
@@ -212,6 +242,8 @@ class PostProcessing:
             for bridge_location in bridge_locations
             if bridge_location
         ]
+
+        print('JM!')
         container_locations = get_container_locations(
             self.output_folder / self.objects_file
         )
@@ -227,6 +259,8 @@ class PostProcessing:
                 ]
             )
             bridges_distances.append(closest_bridge_distance)
+
+            print(container_location.coords)
 
             closest_permit_distance = min(
                 [
@@ -261,19 +295,20 @@ class PostProcessing:
             self.output_folder / self.prioritized_file,
         )
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run postprocessing for container detection pipeline"
     )
     # TODO remove default
-    parser.add_argument("--container_ref_files", type=str, help="TODO", default="postprocessing-input")
-    parser.add_argument("--container_detections", type=str, help="TODO", default="detections")
-    parser.add_argument("--current_date", type=str, help="Full path to output dir, current date", default="2022-10-03")
+    parser.add_argument("--bucket_ref_files", type=str, help="Azure Blob Storage with reference files.", default="postprocessing-input")
+    parser.add_argument("--bucket_detections", type=str, help="Azure Blob Storage with predictions file.", default="detections")
+    parser.add_argument("--current_date", type=str, help="Processing date in the format YYYY-MM-DD", default="2022-10-03")
     parser.add_argument("--permits_file", type=str, help="Full path to permits file", default="930651BCFAD14D26A3CC96C751CD208E_small.xml")
     parser.add_argument("--bridges_file", type=str, help="Full path to bridges file", default="vuln_bridges.geojson")
     args = parser.parse_args()
 
-    # update output folder inside the docker container
+    # Update output folder inside the WORKDIR of the docker container
     output_folder = Path(args.current_date)
     if not output_folder.exists():
         output_folder.mkdir(exist_ok=True, parents=True)
@@ -281,56 +316,42 @@ if __name__ == "__main__":
     permits_file = f"{args.current_date}/{args.permits_file}"
     predictions_file = f"{args.current_date}/coco_instances_results.json"
 
-    # TODO optimize for loop searching
-    # download images from storage account
-    container_client = blob_service_client.get_container_client(container=args.container_ref_files)
-    blob_list = container_client.list_blobs()
-    for blob in blob_list:
-        print(f"blob is {blob}")
-        path = blob.name
-        print(f"path is {path}")
+    try:
+        client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
+        credential = ManagedIdentityCredential(client_id=client_id)
+        blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
+                                                credential=credential)
+    except Exception as ex:
+        print("Exception:")
+        print(ex)
 
-        if path == permits_file or path == args.bridges_file:
-            print("trying to open ..")
-
-            with open(f"{blob.name}", "wb") as download_file:
-                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
-
-    container_client = blob_service_client.get_container_client(container=args.container_detections)
-    blob_list = container_client.list_blobs()
-    for blob in blob_list:
-        print(f"blob is {blob}")
-        path = blob.name
-        print(f"path is {path}")
-
-        if path == predictions_file:
-            print("trying to open ..")
-
-            with open(f"{blob.name}", "wb") as download_file:
-                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
-            break
+    # Download files to the WORKDIR of the Docker container
+    download_from_blob(blob_service_client, args.bucket_ref_files, [permits_file, args.bridges_file])
+    download_from_blob(blob_service_client, args.bucket_detections, [predictions_file])
 
     postprocess = PostProcessing(
         predictions_file,
         output_folder=output_folder,
-        permits_file=args.permits_file,
+        permits_file=permits_file,
         bridges_file=args.bridges_file,
     )
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
     print(clustered_intersections)
-    # postprocess.write_output(os.path.join(args.current_date, "points_of_interest.csv"), clustered_intersections)
-    # panoramas = get_panos_from_points_of_interest(
-    #     os.path.join(args.current_date, "points_of_interest.csv"),
-    #     date(2021, 3, 18),
-    #     date(2021, 3, 17),
-    # )
-    # postprocess.prioritize_notifications()
-    # for pano in panoramas:
-    #     PanoramaClient.download_image(pano, output_location=args.current_date)
+    postprocess.write_output(os.path.join(args.current_date, "points_of_interest.csv"), clustered_intersections)
+    panoramas = get_panos_from_points_of_interest(
+        os.path.join(args.current_date, "points_of_interest.csv"),
+        date(2021, 3, 18), # TODO, send date of processed in azure current date and one day later?
+        date(2020, 3, 17),
+    )
+    # postprocess.prioritize_notifications() # TODO
 
     # TODO remove
     print("downloaded files are")
     print(f"cwd is {os.getcwd()}")
     print(f"ls of files {os.listdir(os.getcwd())}")
+
+    # prioritized_objects.csv
+    prioritized_file = os.path.join(args.current_date, "points_of_interest.csv")
+    upload_to_blob("postprocessing-output", prioritized_file)
