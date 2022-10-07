@@ -159,8 +159,8 @@ class PostProcessing:
 
     def find_points_of_interest(self):
         """
-        Finds the points of interest given by COCO format json file, outputs a csv file
-        with lon lat coordinates
+        Finds the points of interest given by COCO format json file, outputs a nested list with lon lat coordinates
+        and a score. For example: [[52.32856949, 4.85737839, 2.0]]
         """
 
         if not (self.output_folder / self.data_file).exists():
@@ -177,7 +177,6 @@ class PostProcessing:
         """
         Filters the predictions or annotation based on the view angle from the car. If an objects lies within the
         desired angle, then it will be kept
-        :return:
         """
         predictions_to_keep = []
         print("Filtering based on angle")
@@ -209,7 +208,7 @@ class PostProcessing:
 
     def filter_by_size(self) -> None:
         """
-        Removes predictions of small objects and writes results to json file
+        Removes predictions of small objects and updates variable stats
         """
         indices_to_keep = [
             idx for idx, area in enumerate(self.stats.areas) if area > self.threshold
@@ -245,7 +244,6 @@ class PostProcessing:
             if bridge_location
         ]
 
-        print('JM!')
         container_locations = get_container_locations(
             self.output_folder / self.objects_file
         )
@@ -283,6 +281,7 @@ class PostProcessing:
         bridges_distances_sorted = np.array(bridges_distances)[sorted_indices]
         sorted_scores = np.array(scores)[sorted_indices]
 
+        # TODO add columns defined in Miro
         write_to_csv(
             np.array(
                 [
@@ -328,7 +327,7 @@ if __name__ == "__main__":
         print("Exception:")
         print(ex)
 
-    # Download files to the WORKDIR of the Docker container
+    # Download files to the WORKDIR of the Docker container.
     download_from_blob(blob_service_client, args.bucket_ref_files, [permits_file, args.bridges_file])
     download_from_blob(blob_service_client, args.bucket_detections, [predictions_file])
 
@@ -338,23 +337,23 @@ if __name__ == "__main__":
         permits_file=permits_file,
         bridges_file=args.bridges_file,
     )
+
+    # Find possible object intersections from detections in panoramic images.
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
-    print(clustered_intersections)
     postprocess.write_output(os.path.join(args.current_date, "points_of_interest.csv"), clustered_intersections)
+
+    # Find a panoramic image for each found object intersection. # TODO only search for panos with a detection
     panoramas = get_panos_from_points_of_interest(
         os.path.join(args.current_date, "points_of_interest.csv"),
-        date(2021, 3, 18), # TODO, send date of processed in azure current date and one day later?
+        date(2021, 3, 18), # TODO, send date of processed in azure Today's date and one day later?
         date(2020, 3, 17),
     )
     # postprocess.prioritize_notifications() # TODO
 
-    # TODO remove
-    print("downloaded files are")
-    print(f"cwd is {os.getcwd()}")
-    print(f"ls of files {os.listdir(os.getcwd())}")
+    print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
 
-    # Upload a file to the Azure Blob Storage
+    # Upload the file with found containers to the Azure Blob Storage.
     prioritized_file = os.path.join(args.current_date, "points_of_interest.csv") # TODO prioritized_objects.csv
     upload_to_blob("postprocessing-output", prioritized_file)
