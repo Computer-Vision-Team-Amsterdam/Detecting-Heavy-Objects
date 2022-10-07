@@ -30,7 +30,8 @@ from visualizations.utils import get_bridge_information, get_permit_locations
 from azure.storage.blob import BlobServiceClient
 from azure.identity import ManagedIdentityCredential
 
-def download_from_blob(bucket_name, files):
+
+def download_from_blob(bucket_name: str, files: List) -> None:
     """
     Download images from Blob Storage.
     """
@@ -51,7 +52,8 @@ def download_from_blob(bucket_name, files):
             if found_ctr == len(files):
                 break
 
-def upload_to_blob(bucket_name, filename):
+
+def upload_to_blob(bucket_name: str, filename: str) -> None:
     """
     Upload images to Blob Storage.
     """
@@ -316,6 +318,7 @@ if __name__ == "__main__":
     permits_file = f"{args.current_date}/{args.permits_file}"
     predictions_file = f"{args.current_date}/coco_instances_results.json"
 
+    # Get access to the Azure Storage account.
     try:
         client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
         credential = ManagedIdentityCredential(client_id=client_id)
@@ -352,6 +355,6 @@ if __name__ == "__main__":
     print(f"cwd is {os.getcwd()}")
     print(f"ls of files {os.listdir(os.getcwd())}")
 
-    # prioritized_objects.csv
-    prioritized_file = os.path.join(args.current_date, "points_of_interest.csv")
+    # Upload a file to the Azure Blob Storage
+    prioritized_file = os.path.join(args.current_date, "points_of_interest.csv") # TODO prioritized_objects.csv
     upload_to_blob("postprocessing-output", prioritized_file)
