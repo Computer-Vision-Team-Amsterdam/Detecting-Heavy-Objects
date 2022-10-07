@@ -219,7 +219,7 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self) -> None:
+    def prioritize_notifications(self, panoramas: List) -> None:
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
         """
@@ -280,19 +280,22 @@ class PostProcessing:
         permit_distances_sorted = np.array(permit_distances)[sorted_indices]
         bridges_distances_sorted = np.array(bridges_distances)[sorted_indices]
         sorted_scores = np.array(scores)[sorted_indices]
+        sorted_panoramas = np.array(panoramas)[sorted_indices]
 
         # TODO add columns defined in Miro
+        # TODO do we want start_date provided by args here? or do we want also the time next to it?
         write_to_csv(
             np.array(
                 [
                     prioritized_containers[:, 0],
                     prioritized_containers[:, 1],
-                    sorted_scores,
+                    sorted_scores, # TODO keep?
                     permit_distances_sorted,
                     bridges_distances_sorted,
+                    sorted_panoramas
                 ]
             ),
-            ["lat", "lon", "score", "permit_distance", "bridge_distance"],
+            ["lat", "lon", "score", "permit_distance", "bridge_distance", "img_id"],
             self.output_folder / self.prioritized_file,
         )
 
@@ -301,21 +304,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run postprocessing for container detection pipeline"
     )
-    # TODO remove default
+    # TODO remove default args
     parser.add_argument("--bucket_ref_files", type=str, help="Azure Blob Storage with reference files.", default="postprocessing-input")
     parser.add_argument("--bucket_detections", type=str, help="Azure Blob Storage with predictions file.", default="detections")
-    parser.add_argument("--current_date", type=str, help="Processing date in the format YYYY-MM-DD", default="2022-10-03")
+    parser.add_argument("--start_date", type=str, help="Processing date in the format YYYY-MM-DD", default="2022-10-03")
     parser.add_argument("--permits_file", type=str, help="Full path to permits file", default="930651BCFAD14D26A3CC96C751CD208E_small.xml")
     parser.add_argument("--bridges_file", type=str, help="Full path to bridges file", default="vuln_bridges.geojson")
     args = parser.parse_args()
 
     # Update output folder inside the WORKDIR of the docker container
-    output_folder = Path(args.current_date)
+    output_folder = Path(args.start_date)
     if not output_folder.exists():
         output_folder.mkdir(exist_ok=True, parents=True)
 
-    permits_file = f"{args.current_date}/{args.permits_file}"
-    predictions_file = f"{args.current_date}/coco_instances_results.json"
+    permits_file = f"{args.start_date}/{args.permits_file}"
+    predictions_file = f"{args.start_date}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
     try:
@@ -342,21 +345,25 @@ if __name__ == "__main__":
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
-    postprocess.write_output(os.path.join(args.current_date, "points_of_interest.csv"), clustered_intersections)
+    postprocess.write_output(os.path.join(args.start_date, "points_of_interest.csv"), clustered_intersections)
 
     # Convert string to datetime object
-    current_date = datetime.strptime(args.current_date, '%Y-%m-%d').date()
+    start_date = datetime.strptime(args.start_date, '%Y-%m-%d').date()
 
     # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
     panoramas = get_panos_from_points_of_interest(
-        os.path.join(args.current_date, "points_of_interest.csv"),
-        current_date + timedelta(days=1),
-        current_date,
+        os.path.join(args.start_date, "points_of_interest.csv"),
+        start_date + timedelta(days=1),
+        start_date,
     )
-    # postprocess.prioritize_notifications() # TODO
+    # TODO var panoramas is a list in a certain order defined by points_of_interest.csv, but without an identification nr...
+    #  This is sensitive to errors, especially in the next step of sorting.
+    #  And what if there are no panoramas found? list index out of range
+    # postprocess.prioritize_notifications(panoramas) # TODO uncomment when API works
 
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
 
     # Upload the file with found containers to the Azure Blob Storage.
-    prioritized_file = os.path.join(args.current_date, "points_of_interest.csv") # TODO prioritized_objects.csv
-    upload_to_blob("postprocessing-output", prioritized_file)
+    #upload_to_blob("postprocessing-output", "prioritized_objects.csv") # TODO uncomment when API works
+
+    # TODO postgresql
