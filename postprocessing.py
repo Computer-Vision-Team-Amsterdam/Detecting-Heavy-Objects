@@ -6,7 +6,7 @@ import csv
 import json
 import os
 from copy import deepcopy
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, List
 
@@ -344,11 +344,14 @@ if __name__ == "__main__":
     clustered_intersections = postprocess.find_points_of_interest()
     postprocess.write_output(os.path.join(args.current_date, "points_of_interest.csv"), clustered_intersections)
 
-    # Find a panoramic image for each found object intersection. # TODO only search for panos with a detection
+    # Convert string to datetime object
+    current_date = datetime.strptime(args.current_date, '%Y-%m-%d').date()
+
+    # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
     panoramas = get_panos_from_points_of_interest(
         os.path.join(args.current_date, "points_of_interest.csv"),
-        date(2021, 3, 18), # TODO, send date of processed in azure Today's date and one day later?
-        date(2020, 3, 17),
+        current_date + timedelta(days=1),
+        current_date,
     )
     # postprocess.prioritize_notifications() # TODO
 
