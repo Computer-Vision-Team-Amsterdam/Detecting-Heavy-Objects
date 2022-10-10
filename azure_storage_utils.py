@@ -10,18 +10,28 @@ class AzureStorageUtils(object):
 
     def __init__(self):
         self.credential = ManagedIdentityCredential(client_id=os.getenv("USER_ASSIGNED_MANAGED_IDENTITY"))
-        self.key_vault_name = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"]) # TODO json
+        self.key_vault_name = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"]) # TODO use os.getenv
         self.key_vault_url = self.key_vault_name["vault_url"]
         self.blob_service_client = BlobServiceClient(account_url=self.get_secret_client,
                                                      credential=self.credential)
 
     def list_containers(self):
+        """List the containers in a Storage Account.
+        Returns:
+            TODO
+        """
+
         try:
             return self.blob_service_client.list_containers()
         except ResourceExistsError:
             return list()
 
-    def list_container_content(self, cname):
+    def list_container_content(self, cname): # TODO
+        """List the content of a container.
+        Returns:
+            TODO
+        """
+
         try:
             container_client = self.blob_service_client.get_container_client(
                 container=cname
@@ -30,7 +40,12 @@ class AzureStorageUtils(object):
         except ResourceExistsError:
             return list()
 
-    def upload_blob(self, local_file_path, cname, blob_name):
+    def upload_blob(self, local_file_path, cname, blob_name) -> None:
+        """Upload a file to a container in the cloud.
+        Raises:
+            Exception: Exception that will be raised if the operation fails.
+        """
+
         try:
             blob_client = self.blob_service_client.get_blob_client(
                 container=cname, blob=blob_name
@@ -38,10 +53,16 @@ class AzureStorageUtils(object):
             with open(local_file_path, "rb") as data:
                 blob_client.upload_blob(data)
             print("upload_blob: {} -> {} {}".format(local_file_path, cname, blob_name))
-        except ResourceNotFoundError:
-            pass
+        except ResourceNotFoundError as ex:
+            print("Failed to upload blob.")
+            raise ex
 
-    def download_blob(self, cname, blob_name, local_file_path):
+    def download_blob(self, cname, blob_name, local_file_path) -> None:
+        """Download a blob from a container.
+        Raises:
+            Exception: Exception that will be raised if the operation fails.
+        """
+
         try:
             blob_client = self.blob_service_client.get_blob_client(
                 container=cname, blob=blob_name
@@ -49,11 +70,17 @@ class AzureStorageUtils(object):
             with open(local_file_path, "wb") as download_file:
                 download_file.write(blob_client.download_blob().readall())
             print("download_blob: {} {} -> {}".format(cname, blob_name, local_file_path))
-        except ResourceNotFoundError:
-            pass
+        except ResourceNotFoundError as ex:
+            print("Failed to download blob.")
+            raise ex
 
-    def download_blobs(self, cname, cloud_files):
-        # TODO optimize this function
+    def download_blobs(self, cname, cloud_files) -> None:
+        # TODO optimize this function?
+        """Download certain blobs from a container.
+        Raises:
+            Exception: Exception that will be raised if the operation fails.
+        """
+
         try:
             container_client = self.blob_service_client.get_container_client(
                 container=cname
@@ -65,8 +92,9 @@ class AzureStorageUtils(object):
                     with open(blob.name, "wb") as download_file:
                         download_file.write(container_client.get_blob_client(blob).download_blob().readall())
                     print("download_blob: {} {}".format(cname, blob.name))
-        except ResourceNotFoundError:
-            pass
+        except ResourceNotFoundError as ex:
+            print("Failed to download blob.")
+            raise ex
 
     def get_secret_client(self) -> SecretClient:
         """Get Azure Secret client.
