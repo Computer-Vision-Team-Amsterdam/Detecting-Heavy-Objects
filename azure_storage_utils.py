@@ -11,7 +11,7 @@ class AzureStorageUtils(object):
     def __init__(self):
         self.credential = ManagedIdentityCredential(client_id=os.getenv("USER_ASSIGNED_MANAGED_IDENTITY"))
         self.key_vault_name = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"]) # TODO json
-        self.key_vault_url = self.vault_name["vault_url"]
+        self.key_vault_url = self.key_vault_name["vault_url"]
         self.blob_service_client = BlobServiceClient(account_url=self.get_secret_client,
                                                      credential=self.credential)
 
@@ -78,7 +78,7 @@ class AzureStorageUtils(object):
 
         try:
             return SecretClient(
-                vault_url=self.vault_url,
+                vault_url=self.key_vault_url,
                 credential=self.credential
             )
         except Exception as ex:
