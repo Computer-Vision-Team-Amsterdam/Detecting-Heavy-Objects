@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 
 import torch
+from azure.identity import ManagedIdentityCredential
+from azure.storage.blob import BlobServiceClient
 from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
@@ -16,13 +18,13 @@ from utils.general import (
     set_logging,
 )
 from utils.torch_utils import select_device
-from azure.storage.blob import BlobServiceClient
-from azure.identity import ManagedIdentityCredential
-
 
 client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
 credential = ManagedIdentityCredential(client_id=client_id)
-blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net", credential=credential)
+blob_service_client = BlobServiceClient(
+    account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
+    credential=credential,
+)
 
 
 def blur_imagery(
@@ -138,7 +140,6 @@ if __name__ == "__main__":
     if not opt.output_folder.exists():
         opt.output_folder.mkdir(exist_ok=True, parents=True)
 
-
     print("opts are:")
     print(opt)
     # download images from storage account
@@ -152,8 +153,10 @@ if __name__ == "__main__":
             print("trying to open ..")
 
             with open(f"unblurred/{blob.name}", "wb") as download_file:
-                #download_file.write(container_client.download_blob(f"{blob.name}").readall())
-                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
+                # download_file.write(container_client.download_blob(f"{blob.name}").readall())
+                download_file.write(
+                    container_client.get_blob_client(blob).download_blob().readall()
+                )
 
     print("downloaded files are")
     print(f"cwd is {os.getcwd()}")
@@ -170,10 +173,10 @@ if __name__ == "__main__":
 
     # upload blurred images to storage account
 
-
     for file in os.listdir(f"{opt.output_folder}"):
         blob_client = blob_service_client.get_blob_client(
-            container="blurred", blob=f"{opt.date}/{file}")
+            container="blurred", blob=f"{opt.date}/{file}"
+        )
 
         # Upload the created file
         with open(Path(opt.output_folder, file), "rb") as data:

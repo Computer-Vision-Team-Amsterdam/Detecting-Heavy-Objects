@@ -1,10 +1,18 @@
 """
 Visualize predictions or annotations on a data subset.
+
+TODO: fix the problem below so that the code runs well from the first time.
+first run python predictions.py --name best --version 1 --device cpu --image data_sample/train/pano_0000_002120.jpg
+to download the model locally
+then run
+python predictions.py --name best --version 1 --device cpu --image data_sample/train/pano_0000_002120.jpg
+again
 """
 import argparse
 import os
 import random
 import shutil
+import time
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -102,14 +110,16 @@ def single_instance_prediction(
     register_dataset(expCfg)
     im = cv2.imread(image_path)
 
-    """
     ws = Workspace.from_config()
 
-    _ = Model.get_model_path(
+    azure_path_prefix = Model.get_model_path(
         model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
     )
 
-    """
+    weights_path = os.path.join(azure_path_prefix, "outputs", "model_final.pth")
+    flags.weights = weights_path
+    print(f"weights {flags.weights}")
+
     cfg = init_inference(flags)
     predictor = DefaultPredictor(cfg)
     outputs = predictor(im)

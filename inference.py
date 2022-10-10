@@ -1,12 +1,14 @@
 """This module contains functionality to load a model and run predictions that can be
 incorporated into the Azure batch processing pipeline"""
-import os
 import argparse
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Union
 
+from azure.identity import ManagedIdentityCredential
+from azure.storage.blob import BlobServiceClient
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
@@ -16,14 +18,12 @@ from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
 
-from azure.storage.blob import BlobServiceClient
-from azure.identity import ManagedIdentityCredential
-
-
 client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
 credential = ManagedIdentityCredential(client_id=client_id)
-blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
-                                       credential=credential)
+blob_service_client = BlobServiceClient(
+    account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
+    credential=credential,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +49,8 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
 
     cfg = setup_cfg(config_file)
 
+    cfg.MODEL.WEIGHTS = flags.weights
+    print(f"using weights: {cfg.MODEL.WEIGHTS}")
     cfg.MODEL.DEVICE = flags.device
 
     return cfg
@@ -78,8 +80,8 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 
     logging.info(f"Loaded model weights from {cfg.MODEL.WEIGHTS}.")
 
-    #run_name = datetime.now().strftime("%b-%d-%H:%M")
-    #output_dir = f"{cfg.OUTPUT_DIR}/{run_name}"
+    # run_name = datetime.now().strftime("%b-%d-%H:%M")
+    # output_dir = f"{cfg.OUTPUT_DIR}/{run_name}"
     output_dir = f"{cfg.OUTPUT_DIR}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
@@ -110,11 +112,15 @@ if __name__ == "__main__":
     blob_list = container_client.list_blobs()
     for blob in blob_list:
         path = blob.name
-        if path.split("/")[0] == flags.subset:  # only download images from one date // subset is the sub-folder=date
+        if (
+            path.split("/")[0] == flags.subset
+        ):  # only download images from one date // subset is the sub-folder=date
             print("trying to open ..")
 
             with open(f"blurred/{blob.name}", "wb") as download_file:
-                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
+                download_file.write(
+                    container_client.get_blob_client(blob).download_blob().readall()
+                )
 
     print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
 
@@ -130,7 +136,8 @@ if __name__ == "__main__":
     # upload detection files to postgres
     for file in os.listdir(f"{flags.output_path}"):
         blob_client = blob_service_client.get_blob_client(
-            container="detections", blob=f"{flags.subset}/{file}")
+            container="detections", blob=f"{flags.subset}/{file}"
+        )
 
         # Upload the created file
         with open(Path(flags.output_path, file), "rb") as data:
