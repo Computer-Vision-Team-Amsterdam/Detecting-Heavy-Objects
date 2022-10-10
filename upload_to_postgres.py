@@ -86,9 +86,9 @@ def get_column_names(table_name: str, cur: cursor) -> List[str]:
 
 
 def row_to_upload(
-    data_element: Dict[str, Union[str, float]],
-    object_fields: List[str],
-    table_columns: List[str],
+        data_element: Dict[str, Union[str, float]],
+        object_fields: List[str],
+        table_columns: List[str],
 ) -> Dict[str, Union[str, float]]:
     """
     Creates row with data to upload to table such that
@@ -113,7 +113,7 @@ def row_to_upload(
 
 
 def row_to_upload_from_panorama(
-    panorama_id: str, table_columns: List[str]
+        panorama_id: str, table_columns: List[str]
 ) -> Dict[str, Union[str, float, datetime]]:
     """
     Creates row with data to upload to table such that the object keys match
@@ -142,9 +142,9 @@ def row_to_upload_from_panorama(
 
 
 def combine_rows_to_upload(
-    data: Union[List[str], Union[List[Dict[str, Union[str, float, datetime]]]]],
-    object_fields: List[Optional[str]],
-    table_columns: List[str],
+        data: Union[List[str], Union[List[Dict[str, Union[str, float, datetime]]]]],
+        object_fields: List[Optional[str]],
+        table_columns: List[str],
 ) -> List[Dict[str, Union[str, float, datetime]]]:
     """
     Creates list of rows with data to upload to table.
@@ -156,26 +156,25 @@ def combine_rows_to_upload(
     :return: rows to upload to table
     """
     is_object_fields = (
-        object_fields is not None
+            len(object_fields) != 0
     )  # if there are no object fields passed, we query panorama for element
 
-    if is_object_fields:
-        rows: List[Dict[str, Union[str, float, datetime]]] = [
-            row_to_upload(element, object_fields, table_columns)  # type: ignore
-            if is_object_fields
-            else row_to_upload_from_panorama(element, table_columns)  # type: ignore
-            for element in data
-        ]
+    rows: List[Dict[str, Union[str, float, datetime]]] = [
+        row_to_upload(element, object_fields, table_columns)  # type: ignore
+        if is_object_fields
+        else row_to_upload_from_panorama(element, table_columns)  # type: ignore
+        for element in data
+    ]
 
     return rows
 
 
 def upload_input(
-    conn: connection,
-    cur: cursor,
-    table_name: str,
-    data: Union[List, List[Dict[str, Union[str, float, datetime]]]],
-    object_fields: List[Union[None, str]],
+        conn: connection,
+        cur: cursor,
+        table_name: str,
+        data: Union[List, List[Dict[str, Union[str, float, datetime]]]],
+        object_fields: List[Union[None, str]],
 ) -> None:
     """
     Uploads rows to table in postgres.
@@ -195,7 +194,7 @@ def upload_input(
     ] = combine_rows_to_upload(data, object_fields, table_columns=keys)
 
     query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
-    values = [item.values() for item in to_upload_data]
+    values = [list(item.values()) for item in to_upload_data]
 
     execute_values(cur, query, values)
     conn.commit()
