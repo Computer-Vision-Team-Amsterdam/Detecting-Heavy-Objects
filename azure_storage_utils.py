@@ -1,24 +1,28 @@
-import os
 import json
+import os
+from typing import List
 
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from azure.identity import ManagedIdentityCredential
 from azure.keyvault.secrets import SecretClient
+from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 
-class AzureStorageUtils(object):
 
-    def __init__(self):
-        self.credential = ManagedIdentityCredential(client_id=os.getenv("USER_ASSIGNED_MANAGED_IDENTITY"))
-        self.key_vault_name = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"]) # TODO use os.getenv
+class AzureStorageUtils:
+    def __init__(self) -> None:
+        self.credential = ManagedIdentityCredential(
+            client_id=os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
+        )
+        self.key_vault_name = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
         self.key_vault_url = self.key_vault_name["vault_url"]
-        self.blob_service_client = BlobServiceClient(account_url=self.get_secret_client,
-                                                     credential=self.credential)
+        self.blob_service_client = BlobServiceClient(
+            account_url=self.get_secret_client, credential=self.credential
+        )
 
-    def list_containers(self):
+    def list_containers(self) -> List[str]:
         """List the containers in a Storage Account.
         Returns:
-            TODO
+            list: A list of all containers in a Storage Account.
         """
 
         try:
@@ -26,10 +30,10 @@ class AzureStorageUtils(object):
         except ResourceExistsError:
             return list()
 
-    def list_container_content(self, cname): # TODO
+    def list_container_content(self, cname) -> List[str]:
         """List the content of a container.
         Returns:
-            TODO
+            list: A list of all blobs in a container.
         """
 
         try:
@@ -40,7 +44,7 @@ class AzureStorageUtils(object):
         except ResourceExistsError:
             return list()
 
-    def upload_blob(self, local_file_path, cname, blob_name) -> None:
+    def upload_blob(self, cname: str, blob_name: str, local_file_path: str) -> None:
         """Upload a file to a container in the cloud.
         Raises:
             Exception: Exception that will be raised if the operation fails.
@@ -57,7 +61,7 @@ class AzureStorageUtils(object):
             print("Failed to upload blob.")
             raise ex
 
-    def download_blob(self, cname, blob_name, local_file_path) -> None:
+    def download_blob(self, cname: str, blob_name: str, local_file_path: str) -> None:
         """Download a blob from a container.
         Raises:
             Exception: Exception that will be raised if the operation fails.
@@ -69,13 +73,14 @@ class AzureStorageUtils(object):
             )
             with open(local_file_path, "wb") as download_file:
                 download_file.write(blob_client.download_blob().readall())
-            print("download_blob: {} {} -> {}".format(cname, blob_name, local_file_path))
+            print(
+                "download_blob: {} {} -> {}".format(cname, blob_name, local_file_path)
+            )
         except ResourceNotFoundError as ex:
             print("Failed to download blob.")
             raise ex
 
-    def download_blobs(self, cname, cloud_files) -> None:
-        # TODO optimize this function?
+    def download_blobs(self, cname: str, cloud_files: List[str]) -> None:
         """Download certain blobs from a container.
         Raises:
             Exception: Exception that will be raised if the operation fails.
@@ -90,7 +95,11 @@ class AzureStorageUtils(object):
             for blob in blob_list:
                 if blob.name in cloud_files:
                     with open(blob.name, "wb") as download_file:
-                        download_file.write(container_client.get_blob_client(blob).download_blob().readall())
+                        download_file.write(
+                            container_client.get_blob_client(blob)
+                            .download_blob()
+                            .readall()
+                        )
                     print("download_blob: {} {}".format(cname, blob.name))
         except ResourceNotFoundError as ex:
             print("Failed to download blob.")
@@ -106,8 +115,7 @@ class AzureStorageUtils(object):
 
         try:
             return SecretClient(
-                vault_url=self.key_vault_url,
-                credential=self.credential
+                vault_url=self.key_vault_url, credential=self.credential
             )
         except Exception as ex:
             print("Failed to initialise Azure secret client.")
@@ -126,7 +134,5 @@ class AzureStorageUtils(object):
         try:
             return self.get_secret_client().get_secret(secret_name).value
         except Exception as ex:
-            print(
-                "Failed to get {} from Azure key vault.".format(secret_name)
-            )
+            print("Failed to get {} from Azure key vault.".format(secret_name))
             raise ex
