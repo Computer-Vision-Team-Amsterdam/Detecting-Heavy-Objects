@@ -29,6 +29,7 @@ from visualizations.utils import get_bridge_information, get_permit_locations
 
 from azure.storage.blob import BlobServiceClient
 from azure.identity import ManagedIdentityCredential
+from azure.keyvault.secrets import SecretClient
 
 
 def download_from_blob(bucket_name: str, files: List) -> None:
@@ -289,7 +290,7 @@ class PostProcessing:
                 [
                     prioritized_containers[:, 0],
                     prioritized_containers[:, 1],
-                    sorted_scores, # TODO keep?
+                    sorted_scores,
                     permit_distances_sorted,
                     bridges_distances_sorted,
                     sorted_panoramas
@@ -307,32 +308,38 @@ if __name__ == "__main__":
     # TODO remove default args
     parser.add_argument("--bucket_ref_files", type=str, help="Azure Blob Storage with reference files.", default="postprocessing-input")
     parser.add_argument("--bucket_detections", type=str, help="Azure Blob Storage with predictions file.", default="detections")
-    parser.add_argument("--start_date", type=str, help="Processing date in the format YYYY-MM-DD", default="2022-10-03")
+    parser.add_argument("--date", type=str, help="Processing date in the format YYYY-MM-DD", default="2022-10-03")
     parser.add_argument("--permits_file", type=str, help="Full path to permits file", default="930651BCFAD14D26A3CC96C751CD208E_small.xml")
     parser.add_argument("--bridges_file", type=str, help="Full path to bridges file", default="vuln_bridges.geojson")
     args = parser.parse_args()
 
     # Update output folder inside the WORKDIR of the docker container
-    output_folder = Path(args.start_date)
+    output_folder = Path(args.date)
     if not output_folder.exists():
         output_folder.mkdir(exist_ok=True, parents=True)
 
-    permits_file = f"{args.start_date}/{args.permits_file}"
-    predictions_file = f"{args.start_date}/coco_instances_results.json"
+    permits_file = f"{args.date}/{args.permits_file}"
+    predictions_file = f"{args.date}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
     try:
         client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
         credential = ManagedIdentityCredential(client_id=client_id)
-        blob_service_client = BlobServiceClient(account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
+
+        airflow_secrets = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
+        KVUri = airflow_secrets["vault_url"]
+        client = SecretClient(vault_url=KVUri, credential=credential)
+        storage_account_url = client.get_secret(name="data-storage-account-url")
+
+        blob_service_client = BlobServiceClient(account_url=storage_account_url.value,
                                                 credential=credential)
     except Exception as ex:
         print("Exception:")
         print(ex)
 
     # Download files to the WORKDIR of the Docker container.
-    download_from_blob(blob_service_client, args.bucket_ref_files, [permits_file, args.bridges_file])
-    download_from_blob(blob_service_client, args.bucket_detections, [predictions_file])
+    download_from_blob(args.bucket_ref_files, [permits_file, args.bridges_file])
+    download_from_blob(args.bucket_detections, [predictions_file])
 
     postprocess = PostProcessing(
         predictions_file,
@@ -345,10 +352,10 @@ if __name__ == "__main__":
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
-    postprocess.write_output(os.path.join(args.start_date, "points_of_interest.csv"), clustered_intersections)
+    postprocess.write_output(os.path.join(args.date, "points_of_interest.csv"), clustered_intersections)
 
     # Convert string to datetime object
-    start_date = datetime.strptime(args.start_date, '%Y-%m-%d').date()
+    start_date = datetime.strptime(args.date, '%Y-%m-%d').date()
 
     # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
     panoramas = get_panos_from_points_of_interest(
@@ -366,4 +373,6 @@ if __name__ == "__main__":
     # Upload the file with found containers to the Azure Blob Storage.
     #upload_to_blob("postprocessing-output", "prioritized_objects.csv") # TODO uncomment when API works
 
-    # TODO postgresql code from store_postprocessing_results.py 
+    # TODO postgresql code from store_postprocessing_results.py
+
+    # TODO test with dummy data
