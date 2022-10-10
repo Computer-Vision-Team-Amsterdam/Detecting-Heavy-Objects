@@ -223,16 +223,6 @@ if __name__ == "__main__":
     )
     opt = parser.parse_args()
 
-    if not opt.date.exists():
-        opt.date.mkdir(exist_ok=True, parents=True)
-    input_file_path = os.path.join(opt.date, "coco_instances_results.json")
-
-    with open(input_file_path, "wb") as download_file:
-        download_file.write(
-            blob_service_client.get_blob_client(container="detections",
-                                                blob=input_file_path).download_blob().readall()
-        )
-
     input_data: List[Union[str, Dict[str, Union[str, float, datetime]]]] = []
     object_fields_to_select: List[Optional[str]] = []
     if opt.table == "images":
@@ -244,6 +234,17 @@ if __name__ == "__main__":
         object_fields_to_select = []
 
     if opt.table == "detections":
+
+        # download detections file from the storage account
+        if not opt.date.exists():
+            opt.date.mkdir(exist_ok=True, parents=True)
+        input_file_path = os.path.join(opt.date, "coco_instances_results.json")
+
+        with open(input_file_path, "wb") as download_file:
+            download_file.write(
+                blob_service_client.get_blob_client(container="detections",
+                                                    blob=input_file_path).download_blob().readall()
+            )
         f = open(input_file_path)
         input_data = json.load(f)
         object_fields_to_select = ["pano_id", "score", "bbox"]
