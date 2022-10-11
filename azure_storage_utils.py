@@ -2,7 +2,7 @@ import json
 import os
 from typing import List
 
-from azure.core.exceptions import AzureError, ResourceNotFoundError
+from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import ManagedIdentityCredential
 from azure.keyvault.secrets import SecretClient
 from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
@@ -27,7 +27,7 @@ class AzureStorageUtils:
 
         try:
             return self.blob_service_client.list_containers()
-        except AzureError as ex:
+        except Exception as ex:
             print("List containers operation failed")
             raise ex
 
@@ -44,7 +44,7 @@ class AzureStorageUtils:
                 container=cname
             )
             return container_client.list_blobs()
-        except AzureError as ex:
+        except Exception as ex:
             print("List blobs operation failed")
             raise ex
 
@@ -112,6 +112,9 @@ class AzureStorageUtils:
 
         try:
             return self.get_secret_client().get_secret(secret_name).value
+        except ResourceNotFoundError as ex:
+            print("No value found in Azure key vault for key {}".format(secret_name))
+            raise ex
         except Exception as ex:
             print("Failed to get {} from Azure key vault.".format(secret_name))
             raise ex
