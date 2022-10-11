@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List
+from typing import List, Optional
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import ManagedIdentityCredential
@@ -9,7 +9,7 @@ from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 
 
 class AzureStorageUtils:
-    def __init__(self, secret_account_url) -> None:
+    def __init__(self, secret_account_url: str) -> None:
         self.secret_account_url = secret_account_url
         self.credential = ManagedIdentityCredential(
             client_id=os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
@@ -28,15 +28,19 @@ class AzureStorageUtils:
         """
 
         try:
-            return self.blob_service_client.list_containers()
+            containers = self.blob_service_client.list_containers()
+            return [container.name for container in containers]
         except Exception as ex:
             print("List containers operation failed")
             raise ex
 
-    def list_container_content(self, cname: str) -> List[str]:
+    def list_container_content(
+        self, cname: str, blob_prefix: Optional[str] = None
+    ) -> List[str]:
         """List the content of a container.
         Args:
             cname: Name of the Azure Storage Container.
+            blob_prefix: Filters only blobs whose names begin with the specified prefix.
         Returns:
             list: A list of all blobs in a container.
         """
@@ -45,7 +49,8 @@ class AzureStorageUtils:
             container_client = self.blob_service_client.get_container_client(
                 container=cname
             )
-            return container_client.list_blobs()
+            blobs = container_client.list_blobs(name_starts_with=blob_prefix)
+            return [blob.name for blob in blobs]
         except Exception as ex:
             print("List blobs operation failed")
             raise ex
@@ -113,7 +118,8 @@ class AzureStorageUtils:
         """
 
         try:
-            return self.get_secret_client().get_secret(secret_name).value
+            secret: str = self.get_secret_client().get_secret(secret_name).value
+            return secret
         except ResourceNotFoundError as ex:
             print("No value found in Azure key vault for key {}".format(secret_name))
             raise ex
