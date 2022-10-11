@@ -6,7 +6,7 @@ import csv
 import json
 import os
 from copy import deepcopy
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, List
 
@@ -14,6 +14,7 @@ import geopy.distance
 import numpy as np
 import numpy.typing as npt
 import pycocotools.mask as mask_util
+import requests
 from panorama.client import PanoramaClient
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
@@ -27,44 +28,7 @@ from triangulation.triangulate import triangulate
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
 
-from azure.storage.blob import BlobServiceClient
-from azure.identity import ManagedIdentityCredential
-from azure.keyvault.secrets import SecretClient
-
-
-def download_from_blob(bucket_name: str, files: List) -> None:
-    """
-    Download images from Blob Storage.
-    """
-    container_client = blob_service_client.get_container_client(
-        container=bucket_name
-    )
-    blob_list = container_client.list_blobs()
-
-    found_ctr = 0
-    for blob in blob_list:
-        if blob.name in files:
-            found_ctr += 1
-            print(f"Trying to open {blob.name}")
-            with open(blob.name, "wb") as download_file:
-                download_file.write(container_client.get_blob_client(blob).download_blob().readall())
-
-            # Exit the for loop when all files are found.
-            if found_ctr == len(files):
-                break
-
-
-def upload_to_blob(bucket_name: str, filename: str) -> None:
-    """
-    Upload images to Blob Storage.
-    """
-    blob_client = blob_service_client.get_blob_client(
-        container=bucket_name, blob=filename
-    )
-
-    # Upload the created file
-    with open(filename, "rb") as data:
-        blob_client.upload_blob(data)
+from azure_storage_utils import AzureStorageUtils
 
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
@@ -116,8 +80,8 @@ class PostProcessing:
         threshold: float = 20000,
         mask_degrees: float = 90,
         date_to_check: datetime = datetime(2021, 3, 17),
-        permits_file: str = "decos.xml", # TODO remove
-        bridges_file: str = "bridges.geojson", # TODO remove
+        permits_file: str = "decos.xml",  # TODO remove
+        bridges_file: str = "bridges.geojson",  # TODO remove
         output_folder: Path = Path.cwd(),
     ) -> None:
         """
@@ -141,7 +105,6 @@ class PostProcessing:
         self.data_file = Path("processed_predictions.json")
         self.prioritized_file = Path("prioritized_objects.csv")
 
-
     def write_output(self, output_file_name, cluster_intersections) -> None:
         """
         Write clustered intersections (a 2D list of floats) to an output file.
@@ -153,10 +116,13 @@ class PostProcessing:
         with open(output_file_name, "w") as inter:
             inter.write("lat,lon\n")
             for i in range(num_clusters):
-                inter.write("{0:f},{1:f}\n".format(cluster_intersections[i, 0], cluster_intersections[i, 1]))
+                inter.write(
+                    "{0:f},{1:f}\n".format(
+                        cluster_intersections[i, 0], cluster_intersections[i, 1]
+                    )
+                )
 
         print(f"Done writing cluster intersections to the file: {output_file_name}.")
-
 
     def find_points_of_interest(self):
         """
@@ -167,12 +133,9 @@ class PostProcessing:
         if not (self.output_folder / self.data_file).exists():
             save_json_data(self.stats.data, self.data_file, self.output_folder)
 
-        cluster_intersections = triangulate(
-            self.output_folder / self.data_file
-        )
+        cluster_intersections = triangulate(self.output_folder / self.data_file)
 
         return cluster_intersections
-
 
     def filter_by_angle(self) -> None:
         """
@@ -293,7 +256,7 @@ class PostProcessing:
                     sorted_scores,
                     permit_distances_sorted,
                     bridges_distances_sorted,
-                    sorted_panoramas
+                    sorted_panoramas,
                 ]
             ),
             ["lat", "lon", "score", "permit_distance", "bridge_distance", "img_id"],
@@ -306,11 +269,36 @@ if __name__ == "__main__":
         description="Run postprocessing for container detection pipeline"
     )
     # TODO remove default args
-    parser.add_argument("--bucket_ref_files", type=str, help="Azure Blob Storage with reference files.", default="postprocessing-input")
-    parser.add_argument("--bucket_detections", type=str, help="Azure Blob Storage with predictions file.", default="detections")
-    parser.add_argument("--date", type=str, help="Processing date in the format YYYY-MM-DD", default="2022-10-03")
-    parser.add_argument("--permits_file", type=str, help="Full path to permits file", default="930651BCFAD14D26A3CC96C751CD208E_small.xml")
-    parser.add_argument("--bridges_file", type=str, help="Full path to bridges file", default="vuln_bridges.geojson")
+    parser.add_argument(
+        "--bucket_ref_files",
+        type=str,
+        help="Azure Blob Storage with reference files.",
+        default="postprocessing-input",
+    )
+    parser.add_argument(
+        "--bucket_detections",
+        type=str,
+        help="Azure Blob Storage with predictions file.",
+        default="detections",
+    )
+    parser.add_argument(
+        "--date",
+        type=str,
+        help="Processing date in the format YYYY-MM-DD",
+        default="2022-10-03",
+    )
+    parser.add_argument(
+        "--permits_file",
+        type=str,
+        help="Full path to permits file",
+        default="930651BCFAD14D26A3CC96C751CD208E_small.xml",
+    )
+    parser.add_argument(
+        "--bridges_file",
+        type=str,
+        help="Full path to bridges file",
+        default="vuln_bridges.geojson",
+    )
     args = parser.parse_args()
 
     # Update output folder inside the WORKDIR of the docker container
@@ -322,24 +310,12 @@ if __name__ == "__main__":
     predictions_file = f"{args.date}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
-    try:
-        client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
-        credential = ManagedIdentityCredential(client_id=client_id)
-
-        airflow_secrets = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
-        KVUri = airflow_secrets["vault_url"]
-        client = SecretClient(vault_url=KVUri, credential=credential)
-        storage_account_url = client.get_secret(name="data-storage-account-url")
-
-        blob_service_client = BlobServiceClient(account_url=storage_account_url.value,
-                                                credential=credential)
-    except Exception as ex:
-        print("Exception:")
-        print(ex)
+    azure_connection = AzureStorageUtils(secret_account_url="data-storage-account-url")
 
     # Download files to the WORKDIR of the Docker container.
-    download_from_blob(args.bucket_ref_files, [permits_file, args.bridges_file])
-    download_from_blob(args.bucket_detections, [predictions_file])
+    azure_connection.download_blob(args.bucket_ref_files, permits_file, permits_file)
+    azure_connection.download_blob(args.bucket_ref_files, args.bridges_file, args.bridges_file)
+    azure_connection.download_blob(args.bucket_detections, predictions_file, predictions_file)
 
     postprocess = PostProcessing(
         predictions_file,
@@ -352,14 +328,16 @@ if __name__ == "__main__":
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
-    postprocess.write_output(os.path.join(args.date, "points_of_interest.csv"), clustered_intersections)
+    postprocess.write_output(
+        os.path.join(args.date, "points_of_interest.csv"), clustered_intersections
+    )
 
     # Convert string to datetime object
-    start_date = datetime.strptime(args.date, '%Y-%m-%d').date()
+    start_date = datetime.strptime(args.date, "%Y-%m-%d").date()
 
     # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
     panoramas = get_panos_from_points_of_interest(
-        os.path.join(args.start_date, "points_of_interest.csv"),
+        os.path.join(args.date, "points_of_interest.csv"),
         start_date + timedelta(days=1),
         start_date,
     )
@@ -371,7 +349,7 @@ if __name__ == "__main__":
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
 
     # Upload the file with found containers to the Azure Blob Storage.
-    #upload_to_blob("postprocessing-output", "prioritized_objects.csv") # TODO uncomment when API works
+    # upload_to_blob("postprocessing-output", "prioritized_objects.csv") # TODO uncomment when API works
 
     # TODO postgresql code from store_postprocessing_results.py
 
