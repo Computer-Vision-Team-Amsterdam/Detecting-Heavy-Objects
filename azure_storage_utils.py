@@ -9,14 +9,16 @@ from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 
 
 class AzureStorageUtils:
-    def __init__(self) -> None:
+    def __init__(self, secret_account_url) -> None:
+        self.secret_account_url = secret_account_url
         self.credential = ManagedIdentityCredential(
             client_id=os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
         )
         self.key_vault_name = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
         self.key_vault_url = self.key_vault_name["vault_url"]
+        self.storage_account_url = self.get_secret(self.secret_account_url)
         self.blob_service_client = BlobServiceClient(
-            account_url=self.get_secret_client, credential=self.credential
+            account_url=self.storage_account_url, credential=self.credential
         )
 
     def list_containers(self) -> List[str]:
@@ -33,10 +35,10 @@ class AzureStorageUtils:
 
     def list_container_content(self, cname: str) -> List[str]:
         """List the content of a container.
-        Returns:
-            list: A list of all blobs in a container.
         Args:
             cname: Name of the Azure Storage Container.
+        Returns:
+            list: A list of all blobs in a container.
         """
 
         try:
