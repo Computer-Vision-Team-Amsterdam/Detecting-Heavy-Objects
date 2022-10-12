@@ -18,9 +18,9 @@ class BaseAzureClient(ABC):
         self.key_vault_url = self.key_vault_name["vault_url"]
 
         self.secret_account_url = secret_account_url
-        self.secret_value = self.get_secret(self.secret_account_url) # TODO rename
+        self.secret_value = self._get_secret(self.secret_account_url)
 
-    def get_secret_client(self) -> SecretClient:
+    def _get_secret_client(self) -> SecretClient:
         """Get Azure Secret client.
         Returns:
             SecretClient: Azure secret client.
@@ -34,7 +34,7 @@ class BaseAzureClient(ABC):
             print("Failed to initialise Azure secret client.")
             raise ex
 
-    def get_secret(self, secret_name: str) -> str:
+    def _get_secret(self, secret_name: str) -> str:
         """Retrieve secret from cloud.
         Args:
             secret_name: Name of the secret.
@@ -43,7 +43,7 @@ class BaseAzureClient(ABC):
         """
 
         try:
-            secret: str = self.get_secret_client().get_secret(secret_name).value
+            secret: str = self._get_secret_client().get_secret(secret_name).value
             return secret
         except ResourceNotFoundError as ex:
             print("No value found in Azure key vault for key {}".format(secret_name))
@@ -51,9 +51,6 @@ class BaseAzureClient(ABC):
         except Exception as ex:
             print("Failed to get {} from Azure key vault.".format(secret_name))
             raise ex
-
-    def get_secret_value(self):
-        return self.secret_value
 
 class StorageAzureClient(BaseAzureClient):
     def __init__(self, secret_account_url: str) -> None:
@@ -136,3 +133,11 @@ class StorageAzureClient(BaseAzureClient):
         except ResourceNotFoundError as ex:
             print("Failed to download blob.")
             raise ex
+
+class KeyVaultAzureClient(BaseAzureClient):
+    def __init__(self, secret_account_url: str) -> None:
+        super(StorageAzureClient, self).__init__(secret_account_url)
+
+    def get_secret_value(self):
+        return self.secret_value
+
