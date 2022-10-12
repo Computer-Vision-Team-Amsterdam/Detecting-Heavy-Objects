@@ -1,7 +1,7 @@
 import json
 import os
 from typing import List, Optional
-from abc import abstractmethod, ABC # TODO
+from abc import ABC
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import ManagedIdentityCredential
@@ -138,6 +138,11 @@ class KeyVaultAzureClient(BaseAzureClient):
     def __init__(self, secret_account_url: str) -> None:
         super(StorageAzureClient, self).__init__(secret_account_url)
 
-    def get_secret_value(self):
+    def get_secret_value(self) -> str:
+        """Retrieve secret.
+        Returns:
+            str: The value of the secret.
+        """
+
         return self.secret_value
 
