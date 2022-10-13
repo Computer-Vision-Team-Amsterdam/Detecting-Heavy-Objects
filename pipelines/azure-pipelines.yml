@@ -166,7 +166,7 @@ stages :
     condition: eq(variables['buildAndPush'], true)
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-        - deployment:
+        - deployment: Build_${{dockerFile}}
           displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
           pool:
             vmImage: ubuntu-latest
@@ -187,3 +187,36 @@ stages :
                       az acr login --name $(containerRegistryName)
                       cd .${{ dockerFile.dockerFileRelativePath }}
                       az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
+
+        - job: WaitForScanResults
+          displayName: Wait for Scan result
+          pool: Server
+          dependsOn: 
+          - Build_${{dockerFile}}
+          condition: succeeded()
+          steps:
+          - task: Delay@1
+            inputs:
+              delayForMinutes: 5
+          
+          # Run Image scan gate - which extracts image scan results and assess whether 
+          # to fail the pipeline based on severity threshold configuration.
+          # Using the ImageScanSummaryAssessmentGate.ps1 script in same repo folder
+        - job: ImageScanGate
+          displayName: Image Scan security gate
+          pool:
+            vmImage: ubuntu-latest
+          dependsOn: 
+          - WaitForScanResults
+          steps:
+          # Read more here: https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/deploy/azure-cli?view=azure-devops)
+          - task: AzureCLI@2
+            displayName: Check for vulnerabilities in ${{dockerFile}}
+            inputs:
+              azureSubscription: $(armServiceConnection)
+              scriptType: 'pscore'
+              scriptLocation: 'scriptPath'
+              # Security Gate powershell script in same folder
+              scriptPath: '$(Build.SourcesDirectory)/pipelines/scripts/ImageScanSummaryAssessmentGate.ps1'
+              arguments: '-registryName $(containerRegistryName) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
+                      
