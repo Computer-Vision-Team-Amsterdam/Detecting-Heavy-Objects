@@ -9,7 +9,7 @@ trigger:
     - main
   paths:
     exclude:
-    - azure-pipelines.yml
+    - pipelines/*
     - README.md
 
 pr: none
