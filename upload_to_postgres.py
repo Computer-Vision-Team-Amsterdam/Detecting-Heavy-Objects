@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import socket
+from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -236,9 +237,9 @@ if __name__ == "__main__":
     if opt.table == "detections":
 
         # download detections file from the storage account
-        if not opt.date.exists():
-            opt.date.mkdir(exist_ok=True, parents=True)
-        input_file_path = os.path.join(opt.date, "coco_instances_results.json")
+        if not Path(opt.date).exists():
+            Path(opt.date).mkdir(exist_ok=True, parents=True)
+        input_file_path = f"{opt.date}/coco_instances_results.json"
 
         with open(input_file_path, "wb") as download_file:
             download_file.write(
