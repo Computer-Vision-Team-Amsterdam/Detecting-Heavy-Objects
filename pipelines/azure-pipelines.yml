@@ -191,7 +191,7 @@ stages :
                       az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
 
   - stage: VulnerabilityScan
-    displayName: 'VulnerabilityScan'
+    displayName: 'Vulnerability Scan'
     dependsOn:
     - BuildAndPush
     condition: eq(variables['buildAndPush'], true)
