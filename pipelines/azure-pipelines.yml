@@ -189,6 +189,7 @@ stages :
                       az acr login --name $(containerRegistryName)
                       cd .${{ dockerFile.dockerFileRelativePath }}
                       az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
+
         - job: WaitForScanResults_${{dockerFile.name}}
           displayName: Wait for Scan result
           pool: Server
@@ -199,6 +200,7 @@ stages :
           - task: Delay@1
             inputs:
               delayForMinutes: 5
+
           # Run Image scan gate - which extracts image scan results and assess whether 
           # to fail the pipeline based on severity threshold configuration.
           # Using the ImageScanSummaryAssessmentGate.ps1 script in same repo folder
