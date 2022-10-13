@@ -166,7 +166,7 @@ stages :
     condition: eq(variables['buildAndPush'], true)
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-        - deployment: Build_${{dockerFile}}
+        - deployment: Build_${{dockerFile.dockerFileName}}
           displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
           pool:
             vmImage: ubuntu-latest
@@ -192,7 +192,7 @@ stages :
           displayName: Wait for Scan result
           pool: Server
           dependsOn: 
-          - Build_${{dockerFile}}
+          - Build_${{dockerFile.dockerFileName}}
           condition: succeeded()
           steps:
           - task: Delay@1
@@ -211,7 +211,7 @@ stages :
           steps:
           # Read more here: https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/deploy/azure-cli?view=azure-devops)
           - task: AzureCLI@2
-            displayName: Check for vulnerabilities in ${{dockerFile}}
+            displayName: Check for vulnerabilities in ${{dockerFile.displayName}}
             inputs:
               azureSubscription: $(armServiceConnection)
               scriptType: 'pscore'
