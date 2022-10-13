@@ -190,30 +190,33 @@ stages :
                       cd .${{ dockerFile.dockerFileRelativePath }}
                       az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
 
-        - job: WaitForScanResults_${{dockerFile.name}}
-          displayName: Wait for Scan result
-          pool: Server
-          dependsOn: 
-          - Build_${{dockerFile.name}}
-          condition: succeeded()
-          steps:
-          - task: Delay@1
-            inputs:
-              delayForMinutes: 5
-
+  - stage: VulnerabilityScan
+    displayName: 'VulnerabilityScan'
+    dependsOn:
+    - BuildAndPush
+    condition: eq(variables['buildAndPush'], true)
+    jobs:
+      - job: WaitForScanResults
+        displayName: Wait for Scan results
+        pool: Server
+        steps:
+        - task: Delay@1
+          inputs:
+            delayForMinutes: 5
+      - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
           # Run Image scan gate - which extracts image scan results and assess whether 
           # to fail the pipeline based on severity threshold configuration.
           # Using the ImageScanSummaryAssessmentGate.ps1 script in same repo folder
         - job: ImageScanGate_${{dockerFile.name}}
-          displayName: Image Scan security gate
+          displayName: Image Scan security gate ${{dockerFile.displayName}}
           pool:
             vmImage: ubuntu-latest
           dependsOn: 
-          - WaitForScanResults_${{dockerFile.name}}
+          - WaitForScanResults
           steps:
           # Read more here: https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/deploy/azure-cli?view=azure-devops)
           - task: AzureCLI@2
-            displayName: Check for vulnerabilities in ${{dockerFile.displayName}}
+            displayName: Check for vulnerabilities
             inputs:
               azureSubscription: $(armServiceConnection)
               scriptType: 'pscore'
