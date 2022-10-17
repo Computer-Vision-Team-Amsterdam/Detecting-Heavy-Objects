@@ -85,7 +85,6 @@ Param(
 
 az extension add --name resource-graph -y
 
-
 $imageDigest = az acr repository show -n $registryName --image "$($repository):$($tag)" -o tsv --query digest
 if(!$imageDigest)
 {
@@ -143,6 +142,10 @@ if(!$result -or $result.count -gt 1)
 $scanReportRow = $result.data[0]
 Write-Host "Scan report row: $($scanReportRow | out-string)"
 
+# Get subscription ID and ACR resource group name
+$subscriptionId = ($scanReportRow.registryResourceId).Split("/")[2]
+$resourceGroupName = ($scanReportRow.registryResourceId).Split("/")[4]
+
 if($scanReportRow.IsScanned -ne 1){
 	Write-Error "Image not scanned, image: $imageDigest"
 	exit 1
@@ -166,7 +169,8 @@ if($scanReport.scanstatus -eq "unhealthy")
 	-or $scansummary.medium -gt $mediumFindingsCountFailThreshold `
 	-or $scansummary.low -gt $lowFindingsCountFailThreshold)
 	{
-		Write-Error "Unhealthy scan result, major vulnerabilities  found in image summary"
+		Write-Error "Unhealthy scan result, major vulnerabilities found in image summary"
+		Write-Error "https://portal.azure.com/#view/Microsoft_Azure_Security_CloudNativeCompute/ImageScanReportBlade/digest/$imageDigest/registryHost/$registryname.azurecr.io/repository/$repository/registry/$registryname/subscriptionId/$subscriptionId/resourceGroup/$resourceGroupName/securityStateSeverity~/4/openedFromExternalLink~/false/os/Linux"
 		exit 1
 	}
 	else
