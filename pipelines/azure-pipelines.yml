@@ -9,7 +9,7 @@ trigger:
     - main
   paths:
     exclude:
-    - azure-pipelines.yml
+    - pipelines/*
     - README.md
 
 pr: none
@@ -26,12 +26,14 @@ parameters:
 - name: DockerFiles
   type: object
   default:
-    - displayName: 'Retrieve Images'
+    - name: 'Retrieve'
+      displayName: 'Retrieve Images'
       dockerFileName: 'retrieve_images.Dockerfile'
       dockerFileRelativePath: ''
       imageRepository: 'retrieve'
       tag: 'latest'
-    - displayName: 'Blur'
+    - name: 'Blur'
+      displayName: 'Blur'
       dockerFileName: 'blur.Dockerfile'
       dockerFileRelativePath: '/yolov5'
       imageRepository: 'blur'
@@ -166,7 +168,7 @@ stages :
     condition: eq(variables['buildAndPush'], true)
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-        - deployment:
+        - deployment: Build_${{dockerFile.name}}
           displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
           pool:
             vmImage: ubuntu-latest
@@ -187,3 +189,39 @@ stages :
                       az acr login --name $(containerRegistryName)
                       cd .${{ dockerFile.dockerFileRelativePath }}
                       az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
+
+  - stage: VulnerabilityScan
+    displayName: 'Vulnerability Scan'
+    dependsOn:
+    - BuildAndPush
+    condition: eq(variables['buildAndPush'], true)
+    jobs:
+      - job: WaitForScanResults
+        displayName: Wait for Scan results
+        pool: Server
+        steps:
+        - task: Delay@1
+          inputs:
+            delayForMinutes: 5
+      - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+          # Run Image scan gate - which extracts image scan results and assess whether 
+          # to fail the pipeline based on severity threshold configuration.
+          # Using the ImageScanSummaryAssessmentGate.ps1 script in same repo folder
+        - job: ImageScanGate_${{dockerFile.name}}
+          displayName: Image Scan security gate ${{dockerFile.displayName}}
+          pool:
+            vmImage: ubuntu-latest
+          dependsOn: 
+          - WaitForScanResults
+          steps:
+          # Read more here: https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/deploy/azure-cli?view=azure-devops)
+          - task: AzureCLI@2
+            displayName: Check for vulnerabilities
+            inputs:
+              azureSubscription: $(armServiceConnection)
+              scriptType: 'pscore'
+              scriptLocation: 'scriptPath'
+              # Security Gate powershell script in same folder
+              scriptPath: '$(Build.SourcesDirectory)/pipelines/scripts/ImageScanSummaryAssessmentGate.ps1'
+              arguments: '-registryName $(containerRegistryName) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
+                      
