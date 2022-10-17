@@ -4,115 +4,186 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- main
+  branches:
+    include:
+    - main
+  paths:
+    exclude:
+    - azure-pipelines.yml
+    - README.md
 
-jobs:
-  - job: Linux
-    pool:
-      vmImage: ubuntu-latest
-    strategy:
-      matrix:
-        Python3.7:
-          python.version: '3.7'
-    steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '$(python.version)'
-        displayName: 'Use Python $(python.version)'
+pr: none
 
-      - bash: echo "##vso[task.prependpath]$CONDA/bin"
-        displayName: 'Add conda to PATH'
+parameters:
+- name: SkipTests
+  displayName: "Skip pre-deployment tests"
+  type: boolean
+  default: false
+- name: BuildAndPush
+  displayName: "Build and push to ACR"
+  type: boolean
+  default: true
+- name: DockerFiles
+  type: object
+  default:
+    - displayName: 'Retrieve Images'
+      dockerFileName: 'retrieve_images.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'retrieve'
+      tag: 'latest'
+    - displayName: 'Blur'
+      dockerFileName: 'blur.Dockerfile'
+      dockerFileRelativePath: '/yolov5'
+      imageRepository: 'blur'
+      tag: 'latest'
 
-      - script: |
-          conda env create -f det2.yml
-          source activate det2
-          python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-        displayName: 'Install dependencies'
+variables:
+  armServiceConnection: 'ARM-CCC-CVT-ont-01'
+  containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
+  skipTests: ${{ parameters.SkipTests }}
+  buildAndPush: ${{ parameters.BuildAndPush }}
 
-      - script: |
-          source activate det2
-          pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
-        displayName: 'Install panorama'
-      - script: |
-          conda env create -f det2.yml
-          source activate det2
-          pytest -s --cov=. --cov-report html --cov-report term-missing
-        displayName: 'pytest'
+stages :
+  - stage: Tests
+    displayName: 'Run pre-deployment tests'
+    condition: eq(variables['skipTests'], false)
+    jobs:
+      - job: Style
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          matrix:
+            Python3.7:
+              python.version: '3.7'
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(python.version)'
+            displayName: 'Use Python $(python.version)'
 
+          - script: |
+              pip install -r requirements-style.txt
+            displayName: 'Install dependencies for code style checks'
 
-  - job: OSX
-    pool:
-      vmImage: macOS-latest
-    strategy:
-      matrix:
-        Python3.7:
-          python.version: '3.7'
-    steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '$(python.version)'
-        displayName: 'Use Python $(python.version)'
+          - script: |
+              isort .
+            displayName: 'isort'
 
-      - bash: echo "##vso[task.prependpath]$CONDA/bin"
-        displayName: 'Add conda to PATH'
+          - script: |
+              black .
+            displayName: 'black'
 
-        # On Hosted macOS, the agent user doesn't have ownership of Miniconda's installation directory/
-        # We need to take ownership if we want to update conda or install packages globally
-      - bash: sudo chown -R $USER $CONDA
-        displayName: 'Take ownership of conda installation'
+          - script: |
+              mypy --install-types --non-interactive --ignore-missing-imports --config-file=.mypyrc .
+            displayName: 'mypy'
 
-      - script: |
-          python -m pip install --upgrade pip
-          conda env create -f det2.yml
-        displayName: 'Create conda env'
+          - script: |
+              pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
+            displayName: 'pylint'
 
-      - script: |
-          source activate det2
-          export MACOSX_DEPLOYMENT_TARGET=10.9
-          CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git@v0.5'
-        displayName: 'Install dependencies'
+      - job: Linux
+        dependsOn:
+        - Style
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          matrix:
+            Python3.7:
+              python.version: '3.7'
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(python.version)'
+            displayName: 'Use Python $(python.version)'
 
-      - script: |
-          source activate det2
-          pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
-        displayName: 'Install panorama'
+          - bash: echo "##vso[task.prependpath]$CONDA/bin"
+            displayName: 'Add conda to PATH'
 
-      - script: |
-          source activate det2
-          pytest -s --cov=. --cov-report html --cov-report term-missing
-        displayName: 'pytest'
+          - script: |
+              conda env create -f det2.yml
+              source activate det2
+              python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+            displayName: 'Install dependencies'
 
+          - script: |
+              source activate det2
+              pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
+            displayName: 'Install panorama'
+          - script: |
+              conda env create -f det2.yml
+              source activate det2
+              pytest -s --cov=. --cov-report html --cov-report term-missing
+            displayName: 'pytest'
 
-  - job: Style
-    pool:
-      vmImage: ubuntu-latest
-    strategy:
-      matrix:
-        Python3.7:
-          python.version: '3.7'
-    steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '$(python.version)'
-        displayName: 'Use Python $(python.version)'
+      - job: OSX
+        dependsOn:
+        - Style
+        pool:
+          vmImage: macOS-latest
+        strategy:
+          matrix:
+            Python3.7:
+              python.version: '3.7'
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(python.version)'
+            displayName: 'Use Python $(python.version)'
 
-      - script: |
-          pip install -r requirements-style.txt
-        displayName: 'Install dependencies for code style checks'
+          - bash: echo "##vso[task.prependpath]$CONDA/bin"
+            displayName: 'Add conda to PATH'
 
-      - script: |
-          isort .
-        displayName: 'isort'
+            # On Hosted macOS, the agent user doesn't have ownership of Miniconda's installation directory/
+            # We need to take ownership if we want to update conda or install packages globally
+          - bash: sudo chown -R $USER $CONDA
+            displayName: 'Take ownership of conda installation'
 
-      - script: |
-          black .
-        displayName: 'black'
+          - script: |
+              python -m pip install --upgrade pip
+              conda env create -f det2.yml
+            displayName: 'Create conda env'
 
-      - script: |
-          mypy --install-types --non-interactive --ignore-missing-imports --config-file=.mypyrc .
-        displayName: 'mypy'
+          - script: |
+              source activate det2
+              export MACOSX_DEPLOYMENT_TARGET=10.9
+              CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install 'git+https://github.com/facebookresearch/detectron2.git@v0.5'
+            displayName: 'Install dependencies'
 
-      - script: |
-          pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
-        displayName: 'pylint'
+          - script: |
+              source activate det2
+              pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
+            displayName: 'Install panorama'
 
+          - script: |
+              source activate det2
+              pytest -s --cov=. --cov-report html --cov-report term-missing
+            displayName: 'pytest'
+
+  - stage: BuildAndPush
+    displayName: 'Build and Push'
+    dependsOn:
+    - Tests
+    condition: eq(variables['buildAndPush'], true)
+    jobs:
+      - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+        - deployment:
+          displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
+          pool:
+            vmImage: ubuntu-latest
+          environment: development
+          strategy:
+            runOnce:
+              deploy:
+                steps:
+                - checkout: self
+            
+                - task: AzureCLI@2
+                  displayName: Azure CLI ACR Build
+                  inputs:
+                    azureSubscription: $(armServiceConnection)
+                    scriptType: pscore
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az acr login --name $(containerRegistryName)
+                      cd .${{ dockerFile.dockerFileRelativePath }}
+                      az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
