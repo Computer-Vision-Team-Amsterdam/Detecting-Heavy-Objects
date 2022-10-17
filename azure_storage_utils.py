@@ -1,7 +1,7 @@
 import json
 import os
-from typing import List, Optional
 from abc import ABC
+from typing import List, Optional
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import ManagedIdentityCredential
@@ -52,9 +52,10 @@ class BaseAzureClient(ABC):
             print("Failed to get {} from Azure key vault.".format(secret_name))
             raise ex
 
+
 class StorageAzureClient(BaseAzureClient):
     def __init__(self, secret_account_url: str) -> None:
-        super(StorageAzureClient, self).__init__(secret_account_url)
+        super().__init__(secret_account_url)
 
         self.blob_service_client = BlobServiceClient(
             account_url=self.secret_value, credential=self.credential
@@ -134,9 +135,10 @@ class StorageAzureClient(BaseAzureClient):
             print("Failed to download blob.")
             raise ex
 
+
 class KeyVaultAzureClient(BaseAzureClient):
     def __init__(self, secret_account_url: str) -> None:
-        super(StorageAzureClient, self).__init__(secret_account_url)
+        super().__init__(secret_account_url)
 
     def get_secret_value(self) -> str:
         """Retrieve secret.
@@ -145,4 +147,3 @@ class KeyVaultAzureClient(BaseAzureClient):
         """
 
         return self.secret_value
-
