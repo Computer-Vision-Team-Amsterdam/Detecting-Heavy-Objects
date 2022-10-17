@@ -1,7 +1,5 @@
-# docker build . -f detection.Dockerfile -t epureanudiana/diana-container:bullseye0.1 --platform linux/arm64
-# docker run -it epureanudiana/diana-container:bullseye0.1
-# change entrypoint to prevent container from exiting, when debugging:
-# docker run -it --entrypoint=/bin/bash epureanudiana/diana-container:bullseye0.1
+# az acr build -t detection:latest -f detection.Dockerfile -r cvtweuacrogidgmnhwma3zq .
+
 FROM python:3.7.13-bullseye
 
 # Install project dependencies
@@ -33,12 +31,9 @@ COPY configs/* /app/configs/
 COPY inference.py evaluation.py utils.py /app/
 # copy weights
 COPY model_final.pth /app/
-# COPY data_sample/ /app/data_sample/
 
 RUN useradd appuser
 RUN chown -R appuser /app
 RUN chmod 755 /app
 USER appuser
-
-#ENTRYPOINT ["python", "-u", "inference.py"]
 

@@ -1,4 +1,12 @@
+# az acr build -t retrieve:latest -f retrieve.Dockerfile -r cvtweuacrogidgmnhwma3zq .
 FROM python:3.7.13-bullseye
+
+# install safe os package versions
+RUN apt-get update && \
+    apt-get -y install \
+        libexpat1-dev=2.2.10-2+deb11u4 \
+        libcre2-dev=10.36-2+deb11u1
+
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
@@ -14,6 +22,7 @@ RUN pip install \
 WORKDIR /opt
 COPY retrieve_images.py /opt
 COPY retrieved_images /opt/retrieved_images/
+COPY azure_storage_utils.py /opt
 
 RUN useradd appuser
 # needed in this case to get access look through the folders
