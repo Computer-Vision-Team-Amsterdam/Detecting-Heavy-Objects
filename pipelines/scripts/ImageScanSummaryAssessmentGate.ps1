@@ -169,8 +169,8 @@ if($scanReport.scanstatus -eq "unhealthy")
 	-or $scansummary.medium -gt $mediumFindingsCountFailThreshold `
 	-or $scansummary.low -gt $lowFindingsCountFailThreshold)
 	{
+		Write-Host "https://portal.azure.com/#view/Microsoft_Azure_Security_CloudNativeCompute/ImageScanReportBlade/digest/$imageDigest/registryHost/$registryname.azurecr.io/repository/$repository/registry/$registryname/subscriptionId/$subscriptionId/resourceGroup/$resourceGroupName/securityStateSeverity~/4/openedFromExternalLink~/false/os/Linux"
 		Write-Error "Unhealthy scan result, major vulnerabilities found in image summary"
-		Write-Error "https://portal.azure.com/#view/Microsoft_Azure_Security_CloudNativeCompute/ImageScanReportBlade/digest/$imageDigest/registryHost/$registryname.azurecr.io/repository/$repository/registry/$registryname/subscriptionId/$subscriptionId/resourceGroup/$resourceGroupName/securityStateSeverity~/4/openedFromExternalLink~/false/os/Linux"
 		exit 1
 	}
 	else
