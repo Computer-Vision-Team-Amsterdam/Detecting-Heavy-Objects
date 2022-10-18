@@ -1,11 +1,11 @@
-# az acr build -t retrieve:latest -f retrieve.Dockerfile -r cvtweuacrogidgmnhwma3zq .
-FROM python:3.7.13-bullseye
+# az acr build -t retrieve:latest -f retrieve_images.Dockerfile -r cvtweuacrogidgmnhwma3zq .
+FROM python:3.7.15-bullseye
 
 # install safe os package versions
-RUN apt-get update && \
-    apt-get -y install \
-        libexpat1-dev=2.2.10-2+deb11u4 \
-        libcre2-dev=10.36-2+deb11u1
+#RUN apt-get update && \
+#    apt-get -y install \
+#        libexpat1-dev=2.2.10-2+deb11u4 \
+#        libcre2-dev=10.36-2+deb11u1
 
 
 ENV VIRTUAL_ENV=/opt/venv

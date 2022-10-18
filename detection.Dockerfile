@@ -1,6 +1,6 @@
 # az acr build -t detection:latest -f detection.Dockerfile -r cvtweuacrogidgmnhwma3zq .
 
-FROM python:3.7.13-bullseye
+FROM python:3.7.15-bullseye
 
 # Install project dependencies
 RUN apt-get update && \

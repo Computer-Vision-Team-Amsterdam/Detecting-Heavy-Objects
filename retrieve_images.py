@@ -6,17 +6,19 @@ The images are downloaded in the `retrieved_images` folder.
 import os
 import argparse
 import shutil
-import requests
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple
-from requests.auth import HTTPBasicAuth
-from azure_storage_utils import AzureStorageUtils
 
-asUtils = AzureStorageUtils(secret_account_url="data-storage-account-url")
+import requests
+from requests.auth import HTTPBasicAuth
+
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
+
+azClient = BaseAzureClient()
 BASE_URL = "https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
-USERNAME = asUtils.get_secret("CloudVpsRawUsername")
-PASSWORD = asUtils.get_secret("CloudVpsRawPassword")
+USERNAME = azClient.get_secret_value("CloudVpsRawUsername")
+PASSWORD = azClient.get_secret_value("CloudVpsRawPassword")
 
 
 def split_pano_id(panorama_id: str) -> Tuple[str, str]:
@@ -25,7 +27,7 @@ def split_pano_id(panorama_id: str) -> Tuple[str, str]:
     """
     id_name = panorama_id.split("_")[0]
     index = panorama_id.index("_")
-    img_name = panorama_id[index + 1:]
+    img_name = panorama_id[index + 1 :]
 
     return id_name, img_name
 
@@ -86,7 +88,8 @@ if __name__ == "__main__":
         download_panorama_from_cloudvps(pano_date, pano_id)
 
     local_file_path = "retrieved_images"
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
     for file in os.listdir(local_file_path):
-        asUtils.upload_blob(cname="unblurred",
-                            blob_name=opt.date,
-                            local_file_path="retrieved_images")
+        saClient.upload_blob(
+            cname="unblurred", blob_name=f"{opt.date}/{file}", local_file_path=f"retrieved_images/{file}"
+        )

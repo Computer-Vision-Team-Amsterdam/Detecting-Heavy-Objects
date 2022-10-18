@@ -3,8 +3,7 @@ import os
 from pathlib import Path
 
 import torch
-from azure.identity import ManagedIdentityCredential
-from azure.storage.blob import BlobServiceClient
+
 from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
@@ -19,12 +18,9 @@ from utils.general import (
 )
 from utils.torch_utils import select_device
 
-client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
-credential = ManagedIdentityCredential(client_id=client_id)
-blob_service_client = BlobServiceClient(
-    account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
-    credential=credential,
-)
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
+
+azClient = BaseAzureClient()
 
 
 def blur_imagery(
@@ -140,23 +136,13 @@ if __name__ == "__main__":
     if not opt.output_folder.exists():
         opt.output_folder.mkdir(exist_ok=True, parents=True)
 
-    print("opts are:")
-    print(opt)
     # download images from storage account
-    container_client = blob_service_client.get_container_client(container="unblurred")
-    blob_list = container_client.list_blobs()
-    for blob in blob_list:
-        print(f"blob is {blob}")
-        path = blob.name
-        print(f"path is {path}")
-        if path.split("/")[0] == opt.date:  # only download images from one date
-            print("trying to open ..")
-
-            with open(f"unblurred/{blob.name}", "wb") as download_file:
-                # download_file.write(container_client.download_blob(f"{blob.name}").readall())
-                download_file.write(
-                    container_client.get_blob_client(blob).download_blob().readall()
-                )
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
+    blobs = saClient.list_container_content(cname="unblurred", blob_prefix=opt.date)
+    for blob in blobs:
+        saClient.download_blob(cname="unblurred",
+                               blob_name=f"{opt.date}/{blob}",
+                               local_file_path=f"{opt.date}/{blob}")
 
     print("downloaded files are")
     print(f"cwd is {os.getcwd()}")
@@ -172,12 +158,7 @@ if __name__ == "__main__":
     )
 
     # upload blurred images to storage account
-
     for file in os.listdir(f"{opt.output_folder}"):
-        blob_client = blob_service_client.get_blob_client(
-            container="blurred", blob=f"{opt.date}/{file}"
-        )
-
-        # Upload the created file
-        with open(Path(opt.output_folder, file), "rb") as data:
-            blob_client.upload_blob(data)
+        saClient.upload_blob(cname="blurred",
+                             blob_name=f"{opt.date}/{file}",
+                             local_file_path=f"{opt.date}/{file}")

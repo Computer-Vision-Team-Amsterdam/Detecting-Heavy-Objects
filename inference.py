@@ -3,12 +3,10 @@ incorporated into the Azure batch processing pipeline"""
 import argparse
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Union
 
-from azure.identity import ManagedIdentityCredential
-from azure.storage.blob import BlobServiceClient
+
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
@@ -17,13 +15,9 @@ from detectron2.evaluation import inference_on_dataset
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
-client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
-credential = ManagedIdentityCredential(client_id=client_id)
-blob_service_client = BlobServiceClient(
-    account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
-    credential=credential,
-)
+azClient = BaseAzureClient()
 
 
 logging.basicConfig(level=logging.INFO)
@@ -107,20 +101,12 @@ if __name__ == "__main__":
     print(os.listdir(Path(os.getcwd())))
 
     # download images from storage account
-    container_client = blob_service_client.get_container_client(container="blurred")
-
-    blob_list = container_client.list_blobs()
-    for blob in blob_list:
-        path = blob.name
-        if (
-            path.split("/")[0] == flags.subset
-        ):  # only download images from one date // subset is the sub-folder=date
-            print("trying to open ..")
-
-            with open(f"blurred/{blob.name}", "wb") as download_file:
-                download_file.write(
-                    container_client.get_blob_client(blob).download_blob().readall()
-                )
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
+    blobs = saClient.list_container_content(cname="blurred", blob_prefix=flags.subset)
+    for blob in blobs:
+        saClient.download_blob(cname="blurred",
+                               blob_name=f"{flags.subset}/{blob}",
+                               local_file_path=f"{flags.subset}/{blob}")
 
     print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
 
@@ -135,10 +121,7 @@ if __name__ == "__main__":
 
     # upload detection files to postgres
     for file in os.listdir(f"{flags.output_path}"):
-        blob_client = blob_service_client.get_blob_client(
-            container="detections", blob=f"{flags.subset}/{file}"
-        )
+        saClient.upload_blob(cname="detections",
+                             blob_name=f"{flags.subset}/{file}",
+                             local_file_path=f"{flags.output_path}/{file}")
 
-        # Upload the created file
-        with open(Path(flags.output_path, file), "rb") as data:
-            blob_client.upload_blob(data)

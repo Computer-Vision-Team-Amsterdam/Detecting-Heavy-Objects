@@ -5,43 +5,31 @@ as well as predictions of the container detection model.
 
 import argparse
 import json
-import os
-import socket
-from pathlib import Path
+
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import psycopg2  # type: ignore
-from azure.identity import ManagedIdentityCredential
 from azure.storage.blob import BlobServiceClient
-from azure.keyvault.secrets import SecretClient
 from panorama.client import PanoramaClient  # type: ignore
 from psycopg2._psycopg import connection  # pylint: disable-msg=E0611
 from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values  # type: ignore
 
-# ============================ CONNECTIONS =========================== #
-client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
-credential = ManagedIdentityCredential(client_id=client_id)
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
-airflow_secrets = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
-KVUri = airflow_secrets["vault_url"]
 blob_service_client = BlobServiceClient(
     account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
     credential=credential,
 )
 
-client = SecretClient(vault_url=KVUri, credential=credential)
-username_secret = client.get_secret(name="postgresUsername")
-password_secret = client.get_secret(name="postgresPassword-short")
-host_secret = client.get_secret(name="postgresHostname")
-socket.setdefaulttimeout(100)
-
-USERNAME = username_secret.value
+azClient = BaseAzureClient()
+USERNAME = azClient.get_secret_value("postgresUsername")
 USERNAME = f"{USERNAME}@cvt-weu-psql-o-01-silnc2achvsfi"
-PASSWORD = password_secret.value
-HOST = host_secret.value
+PASSWORD = azClient.get_secret_value("postgresPassword-short")
+HOST = azClient.get_secret_value("postgresHostname")
 PORT = "5432"
 
 
@@ -237,15 +225,16 @@ if __name__ == "__main__":
     if opt.table == "detections":
 
         # download detections file from the storage account
+        saClient = StorageAzureClient(secret_key="data-storage-account-url")
+
         if not Path(opt.date).exists():
             Path(opt.date).mkdir(exist_ok=True, parents=True)
-        input_file_path = f"{opt.date}/coco_instances_results.json"
 
-        with open(input_file_path, "wb") as download_file:
-            download_file.write(
-                blob_service_client.get_blob_client(container="detections",
-                                                    blob=input_file_path).download_blob().readall()
-            )
+        input_file_path = f"{opt.date}/coco_instances_results.json"
+        saClient.download_blob(cname="detections",
+                               blob_name=f"{opt.date}/coco_instances_results.json",
+                               local_file_path=f"{opt.date}/coco_instances_results.json")
+
         f = open(input_file_path)
         input_data = json.load(f)
         object_fields_to_select = ["pano_id", "score", "bbox"]
