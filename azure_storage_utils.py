@@ -136,3 +136,4 @@ class StorageAzureClient(BaseAzureClient):
         except ResourceNotFoundError as ex:
             print("Failed to download blob.")
             raise ex
+
