@@ -14,6 +14,10 @@ RUN pip install \
 
 WORKDIR /opt
 COPY upload_to_postgres.py /opt
+COPY azure_storage_utils.py /opt
+
 
 RUN useradd appuser
+RUN chown -R appuser /opt
+RUN chmod 755 /opt
 USER appuser

@@ -163,5 +163,5 @@ if __name__ == "__main__":
         saClient.upload_blob(
             cname="blurred",
             blob_name=f"{opt.date}/{file}",
-            local_file_path=f"{opt.date}/{file}",
+            local_file_path=f"{opt.output_folder}/{file}",
         )
