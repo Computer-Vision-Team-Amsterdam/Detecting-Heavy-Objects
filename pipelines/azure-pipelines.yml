@@ -35,9 +35,16 @@ parameters:
     - name: 'Blur'
       displayName: 'Blur'
       dockerFileName: 'blur.Dockerfile'
-      dockerFileRelativePath: '/yolov5'
+      dockerFileRelativePath: ''
       imageRepository: 'blur'
       tag: 'latest'
+    - name: 'Upload to Postgres'
+      displayName: 'Upload to Postgres'
+      dockerFileName: 'upload_to_postgres.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'upload_to_postgres'
+      tag: 'latest'
+
 
 variables:
   armServiceConnection: 'ARM-CCC-CVT-ont-01'
