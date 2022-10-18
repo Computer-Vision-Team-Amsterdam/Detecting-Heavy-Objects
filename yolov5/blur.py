@@ -138,10 +138,11 @@ if __name__ == "__main__":
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
     blobs = saClient.list_container_content(cname="unblurred", blob_prefix=opt.date)
     for blob in blobs:
+        blob = blob.split("/")[-1]  # only get file name, without prefix
         saClient.download_blob(
             cname="unblurred",
             blob_name=f"{opt.date}/{blob}",
-            local_file_path=f"{opt.date}/{blob}",
+            local_file_path=f"{opt.folder}/{blob}",
         )
 
     print("downloaded files are")
