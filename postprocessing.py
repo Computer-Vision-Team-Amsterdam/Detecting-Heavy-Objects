@@ -6,7 +6,7 @@ import csv
 import json
 import os
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, List
 
@@ -25,10 +25,9 @@ from triangulation.helpers import (
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
+from azure_storage_utils import StorageAzureClient
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
-
-from azure_storage_utils import AzureStorageUtils
 
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
@@ -79,7 +78,7 @@ class PostProcessing:
         json_predictions: str,
         threshold: float = 20000,
         mask_degrees: float = 90,
-        date_to_check: datetime = datetime(2021, 3, 17),
+        date_to_check: datetime = datetime(2021, 3, 17), # TODO remove
         permits_file: str = "decos.xml",  # TODO remove
         bridges_file: str = "bridges.geojson",  # TODO remove
         output_folder: Path = Path.cwd(),
@@ -213,6 +212,9 @@ class PostProcessing:
         )
         container_locations_geom = [Point(location) for location in container_locations]
 
+        if not bridge_locations_geom or not container_locations_geom or not permit_locations_geom:
+            print('WARNING! an empty list, please check permit, bridge and container file.')
+
         bridges_distances = []
         permit_distances = []
         for container_location in container_locations_geom:
@@ -224,7 +226,6 @@ class PostProcessing:
             )
             bridges_distances.append(closest_bridge_distance)
 
-            print(container_location.coords)
 
             closest_permit_distance = min(
                 [
@@ -235,6 +236,7 @@ class PostProcessing:
                 ]
             )
             permit_distances.append(closest_permit_distance)
+
         scores = [
             calculate_score(bridges_distances[idx], permit_distances[idx])
             for idx in range(len(container_locations))
@@ -310,16 +312,21 @@ if __name__ == "__main__":
     predictions_file = f"{args.date}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
-    azure_connection = AzureStorageUtils(secret_account_url="data-storage-account-url")
+    azure_connection = StorageAzureClient(secret_account_url="data-storage-account-url")
 
     # Download files to the WORKDIR of the Docker container.
     azure_connection.download_blob(args.bucket_ref_files, permits_file, permits_file)
-    azure_connection.download_blob(args.bucket_ref_files, args.bridges_file, args.bridges_file)
-    azure_connection.download_blob(args.bucket_detections, predictions_file, predictions_file)
+    azure_connection.download_blob(
+        args.bucket_ref_files, args.bridges_file, args.bridges_file
+    )
+    azure_connection.download_blob(
+        args.bucket_detections, predictions_file, predictions_file
+    )
 
     postprocess = PostProcessing(
         predictions_file,
         output_folder=output_folder,
+        date_to_check=datetime(2021, 3, 17),
         permits_file=permits_file,
         bridges_file=args.bridges_file,
     )
@@ -338,19 +345,19 @@ if __name__ == "__main__":
     # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
     panoramas = get_panos_from_points_of_interest(
         os.path.join(args.date, "points_of_interest.csv"),
-        start_date + timedelta(days=1),
-        start_date,
+        date(
+            2021, 3, 18
+        ),  # TODO, send date of processed in azure Today's date and one day later?
+        date(2020, 3, 17),
     )
     # TODO var panoramas is a list in a certain order defined by points_of_interest.csv, but without an identification nr...
     #  This is sensitive to errors, especially in the next step of sorting.
     #  And what if there are no panoramas found? list index out of range
-    # postprocess.prioritize_notifications(panoramas) # TODO uncomment when API works
+    postprocess.prioritize_notifications(panoramas)
 
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
 
     # Upload the file with found containers to the Azure Blob Storage.
-    # upload_to_blob("postprocessing-output", "prioritized_objects.csv") # TODO uncomment when API works
+    azure_connection.upload_to_blob("postprocessing-output", "prioritized_objects.csv")
 
     # TODO postgresql code from store_postprocessing_results.py
-
-    # TODO test with dummy data
