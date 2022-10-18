@@ -6,16 +6,15 @@ import os
 from pathlib import Path
 from typing import Union
 
-
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
 
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
 
@@ -104,9 +103,11 @@ if __name__ == "__main__":
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
     blobs = saClient.list_container_content(cname="blurred", blob_prefix=flags.subset)
     for blob in blobs:
-        saClient.download_blob(cname="blurred",
-                               blob_name=f"{flags.subset}/{blob}",
-                               local_file_path=f"{flags.subset}/{blob}")
+        saClient.download_blob(
+            cname="blurred",
+            blob_name=f"{flags.subset}/{blob}",
+            local_file_path=f"{flags.subset}/{blob}",
+        )
 
     print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
 
@@ -121,7 +122,8 @@ if __name__ == "__main__":
 
     # upload detection files to postgres
     for file in os.listdir(f"{flags.output_path}"):
-        saClient.upload_blob(cname="detections",
-                             blob_name=f"{flags.subset}/{file}",
-                             local_file_path=f"{flags.output_path}/{file}")
-
+        saClient.upload_blob(
+            cname="detections",
+            blob_name=f"{flags.subset}/{file}",
+            local_file_path=f"{flags.output_path}/{file}",
+        )

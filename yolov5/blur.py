@@ -3,11 +3,11 @@ import os
 from pathlib import Path
 
 import torch
-
 from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
 
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from utils.datasets import create_dataloader
 from utils.general import (
     check_file,
@@ -17,8 +17,6 @@ from utils.general import (
     set_logging,
 )
 from utils.torch_utils import select_device
-
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
 
@@ -140,9 +138,11 @@ if __name__ == "__main__":
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
     blobs = saClient.list_container_content(cname="unblurred", blob_prefix=opt.date)
     for blob in blobs:
-        saClient.download_blob(cname="unblurred",
-                               blob_name=f"{opt.date}/{blob}",
-                               local_file_path=f"{opt.date}/{blob}")
+        saClient.download_blob(
+            cname="unblurred",
+            blob_name=f"{opt.date}/{blob}",
+            local_file_path=f"{opt.date}/{blob}",
+        )
 
     print("downloaded files are")
     print(f"cwd is {os.getcwd()}")
@@ -159,6 +159,8 @@ if __name__ == "__main__":
 
     # upload blurred images to storage account
     for file in os.listdir(f"{opt.output_folder}"):
-        saClient.upload_blob(cname="blurred",
-                             blob_name=f"{opt.date}/{file}",
-                             local_file_path=f"{opt.date}/{file}")
+        saClient.upload_blob(
+            cname="blurred",
+            blob_name=f"{opt.date}/{file}",
+            local_file_path=f"{opt.date}/{file}",
+        )

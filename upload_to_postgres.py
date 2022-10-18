@@ -5,13 +5,11 @@ as well as predictions of the container detection model.
 
 import argparse
 import json
-
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
-import psycopg2  # type: ignore
-from azure.storage.blob import BlobServiceClient
+import psycopg2
 from panorama.client import PanoramaClient  # type: ignore
 from psycopg2._psycopg import connection  # pylint: disable-msg=E0611
 from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
@@ -19,11 +17,6 @@ from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values  # type: ignore
 
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
-
-blob_service_client = BlobServiceClient(
-    account_url="https://cvtdataweuogidgmnhwma3zq.blob.core.windows.net",
-    credential=credential,
-)
 
 azClient = BaseAzureClient()
 USERNAME = azClient.get_secret_value("postgresUsername")
@@ -80,9 +73,9 @@ def get_column_names(table_name: str, cur: cursor) -> List[str]:
 
 
 def row_to_upload(
-        data_element: Dict[str, Union[str, float]],
-        object_fields: List[str],
-        table_columns: List[str],
+    data_element: Dict[str, Union[str, float]],
+    object_fields: List[str],
+    table_columns: List[str],
 ) -> Dict[str, Union[str, float]]:
     """
     Creates row with data to upload to table such that
@@ -107,7 +100,7 @@ def row_to_upload(
 
 
 def row_to_upload_from_panorama(
-        panorama_id: str, table_columns: List[str]
+    panorama_id: str, table_columns: List[str]
 ) -> Dict[str, Union[str, float, datetime]]:
     """
     Creates row with data to upload to table such that the object keys match
@@ -136,9 +129,9 @@ def row_to_upload_from_panorama(
 
 
 def combine_rows_to_upload(
-        data: Union[List[str], Union[List[Dict[str, Union[str, float, datetime]]]]],
-        object_fields: List[Optional[str]],
-        table_columns: List[str],
+    data: Union[List[str], Union[List[Dict[str, Union[str, float, datetime]]]]],
+    object_fields: List[Optional[str]],
+    table_columns: List[str],
 ) -> List[Dict[str, Union[str, float, datetime]]]:
     """
     Creates list of rows with data to upload to table.
@@ -150,7 +143,7 @@ def combine_rows_to_upload(
     :return: rows to upload to table
     """
     is_object_fields = (
-            len(object_fields) != 0
+        len(object_fields) != 0
     )  # if there are no object fields passed, we query panorama for element
 
     rows: List[Dict[str, Union[str, float, datetime]]] = [
@@ -164,11 +157,11 @@ def combine_rows_to_upload(
 
 
 def upload_input(
-        conn: connection,
-        cur: cursor,
-        table_name: str,
-        data: Union[List, List[Dict[str, Union[str, float, datetime]]]],
-        object_fields: List[Union[None, str]],
+    conn: connection,
+    cur: cursor,
+    table_name: str,
+    data: Union[List[str], List[Dict[str, Union[str, float, datetime]]]],
+    object_fields: List[Union[None, str]],
 ) -> None:
     """
     Uploads rows to table in postgres.
@@ -212,7 +205,6 @@ if __name__ == "__main__":
     )
     opt = parser.parse_args()
 
-    input_data: List[Union[str, Dict[str, Union[str, float, datetime]]]] = []
     object_fields_to_select: List[Optional[str]] = []
     if opt.table == "images":
         input_data = [
@@ -231,9 +223,11 @@ if __name__ == "__main__":
             Path(opt.date).mkdir(exist_ok=True, parents=True)
 
         input_file_path = f"{opt.date}/coco_instances_results.json"
-        saClient.download_blob(cname="detections",
-                               blob_name=f"{opt.date}/coco_instances_results.json",
-                               local_file_path=f"{opt.date}/coco_instances_results.json")
+        saClient.download_blob(
+            cname="detections",
+            blob_name=f"{opt.date}/coco_instances_results.json",
+            local_file_path=f"{opt.date}/coco_instances_results.json",
+        )
 
         f = open(input_file_path)
         input_data = json.load(f)

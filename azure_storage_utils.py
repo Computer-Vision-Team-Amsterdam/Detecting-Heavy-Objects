@@ -60,7 +60,8 @@ class StorageAzureClient(BaseAzureClient):
 
         self.secret_key = secret_key
         self.blob_service_client = BlobServiceClient(
-            account_url=self.get_secret_value(self.secret_key), credential=self.credential
+            account_url=self.get_secret_value(self.secret_key),
+            credential=self.credential,
         )
 
     def list_containers(self) -> List[str]:
@@ -136,4 +137,3 @@ class StorageAzureClient(BaseAzureClient):
         except ResourceNotFoundError as ex:
             print("Failed to download blob.")
             raise ex
-

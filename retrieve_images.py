@@ -3,8 +3,8 @@ This module retrieves images from CloudVPS,
 downloads them locally and uploads them to the storage account
 The images are downloaded in the `retrieved_images` folder.
 """
-import os
 import argparse
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -91,5 +91,7 @@ if __name__ == "__main__":
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
     for file in os.listdir(local_file_path):
         saClient.upload_blob(
-            cname="unblurred", blob_name=f"{opt.date}/{file}", local_file_path=f"retrieved_images/{file}"
+            cname="unblurred",
+            blob_name=f"{opt.date}/{file}",
+            local_file_path=f"retrieved_images/{file}",
         )
