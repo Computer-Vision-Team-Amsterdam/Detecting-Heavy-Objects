@@ -13,7 +13,6 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN pip install \
     psycopg2==2.8.6 \
-    pandas==1.3.4 \
     azure-storage-blob==12.13.1
 
 WORKDIR /opt

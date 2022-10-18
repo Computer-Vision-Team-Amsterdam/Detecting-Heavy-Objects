@@ -24,6 +24,7 @@ from configs.config_parser import arg_parser
 
 EXPERIMENT_NAME = "inference_val"
 
+
 def get_Azure_model() -> str:
     """
     Return the path to model. Downloads model from remote to cache.

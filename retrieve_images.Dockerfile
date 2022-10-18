@@ -1,4 +1,6 @@
-FROM python:3.7
+# az acr build -t retrieve:latest -f retrieve_images.Dockerfile -r cvtweuacrogidgmnhwma3zq .
+FROM python:3.7.15-bullseye
+
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
@@ -11,9 +13,10 @@ RUN pip install \
     azure-keyvault-secrets==4.5.1 \
     azure-storage-blob==12.13.1
 
+RUN mkdir -p /opt/retrieved_images
 WORKDIR /opt
 COPY retrieve_images.py /opt
-COPY retrieved_images /opt/retrieved_images/
+COPY azure_storage_utils.py /opt
 
 RUN useradd appuser
 # needed in this case to get access look through the folders

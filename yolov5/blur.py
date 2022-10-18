@@ -1,5 +1,5 @@
-import os
 import argparse
+import os
 from pathlib import Path
 
 import torch
@@ -7,6 +7,7 @@ from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
 
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from utils.datasets import create_dataloader
 from utils.general import (
     check_file,
@@ -16,6 +17,8 @@ from utils.general import (
     set_logging,
 )
 from utils.torch_utils import select_device
+
+azClient = BaseAzureClient()
 
 
 def blur_imagery(
@@ -42,6 +45,8 @@ def blur_imagery(
     # Configure
     model.eval()
 
+    print(f"reading from the following folder: {opt.folder}")
+    print(f"contents of this folder: {os.listdir(Path(os.getcwd(), opt.folder))}")
     dataloader = create_dataloader(
         opt.folder, imgsz, batch_size, model.stride.max(), opt, pad=0.5, rect=True
     )[0]
@@ -90,7 +95,10 @@ if __name__ == "__main__":
         "--data", type=str, default=f"{os.getcwd()}/data/pano.yaml", help="*.data path"
     )
     parser.add_argument(
-        "--folder", type=Path, default=f"{os.getcwd()}/unblurred", help="folder with images to blur"
+        "--folder",
+        type=Path,
+        default=f"{os.getcwd()}/unblurred",
+        help="folder with images to blur",
     )
     parser.add_argument(
         "--output_folder",
@@ -110,9 +118,37 @@ if __name__ == "__main__":
     parser.add_argument(
         "--iou-thres", type=float, default=0.6, help="IOU threshold for NMS"
     )
+    parser.add_argument("--date", type=str, help="date for images to be blurred")
+
     opt = parser.parse_args()
     opt.data = check_file(opt.data)  # check file
     print(opt)
+
+    # update input folder
+    opt.folder = Path(opt.folder, opt.date)
+    if not opt.folder.exists():
+        opt.folder.mkdir(exist_ok=True, parents=True)
+
+    # update output folder
+    opt.output_folder = Path(opt.output_folder, opt.date)
+    if not opt.output_folder.exists():
+        opt.output_folder.mkdir(exist_ok=True, parents=True)
+
+    # download images from storage account
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
+    blobs = saClient.list_container_content(cname="unblurred", blob_prefix=opt.date)
+    for blob in blobs:
+        blob = blob.split("/")[-1]  # only get file name, without prefix
+        saClient.download_blob(
+            cname="unblurred",
+            blob_name=f"{opt.date}/{blob}",
+            local_file_path=f"{opt.folder}/{blob}",
+        )
+
+    print("downloaded files are")
+    print(f"cwd is {os.getcwd()}")
+    print(f"ls of files {os.listdir(os.getcwd())}")
+    print(os.listdir(Path(os.getcwd(), "unblurred", f"{opt.date}")))
 
     blur_imagery(
         opt.weights,
@@ -121,3 +157,11 @@ if __name__ == "__main__":
         opt.conf_thres,
         opt.iou_thres,
     )
+
+    # upload blurred images to storage account
+    for file in os.listdir(f"{opt.output_folder}"):
+        saClient.upload_blob(
+            cname="blurred",
+            blob_name=f"{opt.date}/{file}",
+            local_file_path=f"{opt.output_folder}/{file}",
+        )

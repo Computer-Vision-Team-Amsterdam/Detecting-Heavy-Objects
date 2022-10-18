@@ -5,7 +5,7 @@
 # change entrypoint to prevent container from exiting, when debugging:
 # docker run -it --entrypoint=/bin/bash epureanudiana/remove_panoramas
 
-FROM python:3.7.13-bullseye
+FROM python:3.7.15-bullseye
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV

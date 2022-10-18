@@ -33,7 +33,7 @@ RUN --mount=type=ssh \
 
 WORKDIR /opt
 COPY visualizations/stats.py visualizations/utils.py /opt/visualizations/
-COPY postprocessing.py /opt
+COPY map_for_evelien.py /opt
 
 RUN useradd appuser
 USER appuser

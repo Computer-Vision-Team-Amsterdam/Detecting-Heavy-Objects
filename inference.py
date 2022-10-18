@@ -1,9 +1,8 @@
 """This module contains functionality to load a model and run predictions that can be
 incorporated into the Azure batch processing pipeline"""
-
 import argparse
 import logging
-from datetime import datetime
+import os
 from pathlib import Path
 from typing import Union
 
@@ -12,9 +11,13 @@ from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
 
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
+
+azClient = BaseAzureClient()
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,6 +42,8 @@ def init_inference(flags: argparse.Namespace) -> CfgNode:
 
     cfg = setup_cfg(config_file)
 
+    cfg.MODEL.WEIGHTS = flags.weights
+    print(f"using weights: {cfg.MODEL.WEIGHTS}")
     cfg.MODEL.DEVICE = flags.device
 
     return cfg
@@ -68,8 +73,9 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 
     logging.info(f"Loaded model weights from {cfg.MODEL.WEIGHTS}.")
 
-    run_name = datetime.now().strftime("%b-%d-%H:%M")
-    output_dir = f"{cfg.OUTPUT_DIR}/{run_name}"
+    # run_name = datetime.now().strftime("%b-%d-%H:%M")
+    # output_dir = f"{cfg.OUTPUT_DIR}/{run_name}"
+    output_dir = f"{cfg.OUTPUT_DIR}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     evaluator = CustomCOCOEvaluator(
@@ -87,6 +93,24 @@ if __name__ == "__main__":
 
     flags = arg_parser()
 
+    input_path = Path(flags.data_folder, flags.subset)
+    if not input_path.exists():
+        input_path.mkdir(exist_ok=True, parents=True)
+
+    print(os.listdir(Path(os.getcwd())))
+
+    # download images from storage account
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
+    blobs = saClient.list_container_content(cname="blurred", blob_prefix=flags.subset)
+    for blob in blobs:
+        saClient.download_blob(
+            cname="blurred",
+            blob_name=f"{flags.subset}/{blob}",
+            local_file_path=f"{flags.subset}/{blob}",
+        )
+
+    print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
+
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
@@ -95,3 +119,11 @@ if __name__ == "__main__":
     )
 
     evaluate_model(flags, experimentConfig)
+
+    # upload detection files to postgres
+    for file in os.listdir(f"{flags.output_path}"):
+        saClient.upload_blob(
+            cname="detections",
+            blob_name=f"{flags.subset}/{file}",
+            local_file_path=f"{flags.output_path}/{file}",
+        )
