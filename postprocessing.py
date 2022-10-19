@@ -63,8 +63,12 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
     Writes a list of list with data to a csv file.
     """
     np.savetxt(
-        filename, data, header=",".join(data.dtype.names), fmt='%d,%d,%d,%d,%d,%s', delimiter=",",
-        comments=""
+        filename,
+        data,
+        header=",".join(data.dtype.names),
+        fmt="%d,%d,%d,%d,%d,%s",
+        delimiter=",",
+        comments="",
     )
 
 
@@ -75,7 +79,7 @@ class PostProcessing:
 
     def __init__(
         self,
-        json_predictions: str,
+        json_predictions: Path,
         date_to_check: datetime,
         permits_file: str,
         bridges_file: str,
@@ -104,7 +108,7 @@ class PostProcessing:
         self.data_file = Path("processed_predictions.json")
         self.prioritized_file = Path("prioritized_objects.csv")
 
-    def write_output(self, output_file_name, cluster_intersections) -> None:
+    def write_output(self, output_file_name: str, cluster_intersections: Any) -> None:
         """
         Write clustered intersections (a 2D list of floats) to an output file.
         """
@@ -123,7 +127,7 @@ class PostProcessing:
 
         print(f"Done writing cluster intersections to the file: {output_file_name}.")
 
-    def find_points_of_interest(self):
+    def find_points_of_interest(self) -> Any: # TODO Any to list of floats
         """
         Finds the points of interest given by COCO format json file, outputs a nested list with lon lat coordinates
         and a score. For example: [[52.32856949, 4.85737839, 2.0]]
@@ -182,7 +186,7 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self, panoramas: List) -> None:
+    def prioritize_notifications(self, panoramas: List[str]) -> None:
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
         """
@@ -212,8 +216,14 @@ class PostProcessing:
         )
         container_locations_geom = [Point(location) for location in container_locations]
 
-        if not bridge_locations_geom or not container_locations_geom or not permit_locations_geom:
-            print('WARNING! an empty list, please check the permit, bridge and container files.')
+        if (
+            not bridge_locations_geom
+            or not container_locations_geom
+            or not permit_locations_geom
+        ):
+            print(
+                "WARNING! an empty list, please check the permit, bridge and container files."
+            )
 
         bridges_distances = []
         permit_distances = []
@@ -225,7 +235,6 @@ class PostProcessing:
                 ]
             )
             bridges_distances.append(closest_bridge_distance)
-
 
             closest_permit_distance = min(
                 [
@@ -250,17 +259,24 @@ class PostProcessing:
 
         write_to_csv(
             np.array(
-                list(zip(
-                    prioritized_containers[:, 0],
-                    prioritized_containers[:, 1],
-                    sorted_scores,
-                    permit_distances_sorted,
-                    bridges_distances_sorted,
-                    sorted_panoramas,
-                )),
-                dtype=[("lat", float), ("lon", float), ("score", float),
-                       ("permit_distance", float), ("bridge_distance", float),
-                       ("closest_image", "S16")]
+                list(
+                    zip(
+                        prioritized_containers[:, 0],
+                        prioritized_containers[:, 1],
+                        sorted_scores,
+                        permit_distances_sorted,
+                        bridges_distances_sorted,
+                        sorted_panoramas,
+                    )
+                ),
+                dtype=[
+                    ("lat", float),
+                    ("lon", float),
+                    ("score", float),
+                    ("permit_distance", float),
+                    ("bridge_distance", float),
+                    ("closest_image", "S16"),
+                ],
             ),
             self.prioritized_file,
         )
@@ -324,7 +340,7 @@ if __name__ == "__main__":
     )
 
     postprocess = PostProcessing(
-        predictions_file,
+        Path(predictions_file),  # TODO why use Path
         output_folder=output_folder,
         date_to_check=datetime(2021, 3, 17),
         permits_file=permits_file,
@@ -351,13 +367,18 @@ if __name__ == "__main__":
     #     date(2020, 3, 17),
     # )
 
-    dummy_panoramas = [''] * len(clustered_intersections) # TODO only search for panos with a detection
+    dummy_panoramas = [""] * len(
+        clustered_intersections
+    )  # TODO only search for panos with a detection
     postprocess.prioritize_notifications(dummy_panoramas)
 
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
 
     # Upload the file with found containers to the Azure Blob Storage.
-    azure_connection.upload_blob("postprocessing-output", os.path.join(args.date, "prioritized_objects.csv"),
-                                 "prioritized_objects.csv")
+    azure_connection.upload_blob(
+        "postprocessing-output",
+        os.path.join(args.date, "prioritized_objects.csv"),
+        "prioritized_objects.csv",
+    )
 
     # TODO postgresql code from store_postprocessing_results.py

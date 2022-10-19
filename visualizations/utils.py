@@ -2,6 +2,7 @@
 Utility module containing shared code required to create visualizations,
 that may be used for more generic postprocessing tasks
 """
+import json
 import os
 import re
 import xml
@@ -10,10 +11,9 @@ from datetime import datetime
 from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, List, Union
-import requests
-import json
 
 import geojson
+import requests
 from osgeo import osr  # pylint: disable-all
 from tqdm import tqdm
 
@@ -71,7 +71,7 @@ def get_permit_locations(
         postal_code_ex = r"\d{4}\s*?[A-z]{2}"  # 4 digits, any amount of whitespace, and 2 letters (case-insensitive)
         return re.sub(postal_code_ex, "", address).strip()
 
-    def split_dutch_street_address(address: str) -> List:
+    def split_dutch_street_address(address: str) -> List[str]:
         """
         TODO use a function like this
         This function separates an address string (street name, house number, house number extension and zipcode)
@@ -125,10 +125,14 @@ def get_permit_locations(
         ):
             try:
                 # todo: use split_dutch_street_address(item.find("TEXT6").text)
-                address = remove_postal_code(item.find("TEXT6").text).replace(" ", "%20")
+                address = remove_postal_code(item.find("TEXT6").text).replace(
+                    " ", "%20"
+                )
 
                 with requests.get(bag_url + address) as response:
-                    bag_data_location = json.loads(response.content)['results'][0]['centroid']
+                    bag_data_location = json.loads(response.content)["results"][0][
+                        "centroid"
+                    ]
 
                 lonlat = [bag_data_location[1], bag_data_location[0]]
                 permit_locations.append(lonlat)
