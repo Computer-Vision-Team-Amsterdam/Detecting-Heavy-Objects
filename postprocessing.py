@@ -308,7 +308,7 @@ if __name__ == "__main__":
     predictions_file = f"{args.date}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
-    azure_connection = StorageAzureClient(secret_account_url="data-storage-account-url")
+    azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
 
     # Download files to the WORKDIR of the Docker container.
     azure_connection.download_blob(args.bucket_ref_files, permits_file, permits_file)
