@@ -58,12 +58,13 @@ def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
         json.dump(data, f)
 
 
-def write_to_csv(data: npt.NDArray[Any], header: List[str], filename: Path) -> None:
+def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
     """
     Writes a list of list with data to a csv file.
     """
     np.savetxt(
-        filename, data, header=",".join(header), fmt="%d", delimiter=",", comments=""
+        filename, data, header=",".join(data.dtype.names), fmt='%d,%d,%d,%d,%d,%s', delimiter=",",
+        comments=""
     )
 
 
@@ -249,17 +250,19 @@ class PostProcessing:
 
         write_to_csv(
             np.array(
-                [
+                list(zip(
                     prioritized_containers[:, 0],
                     prioritized_containers[:, 1],
                     sorted_scores,
                     permit_distances_sorted,
                     bridges_distances_sorted,
                     sorted_panoramas,
-                ]
+                )),
+                dtype=[("lat", float), ("lon", float), ("score", float),
+                       ("permit_distance", float), ("bridge_distance", float),
+                       ("closest_image", "S16")]
             ),
-            ["lat", "lon", "score", "permit_distance", "bridge_distance", "closest_image"],
-            self.output_folder / self.prioritized_file,
+            self.prioritized_file,
         )
 
 
@@ -267,7 +270,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run postprocessing for container detection pipeline"
     )
-    # TODO remove default args
+    parser.add_argument(
+        "--date",
+        type=str,
+        help="Processing date in the format YYYY-MM-DD",
+    )
     parser.add_argument(
         "--bucket_ref_files",
         type=str,
@@ -280,17 +287,14 @@ if __name__ == "__main__":
         help="Azure Blob Storage with predictions file.",
         default="detections",
     )
-    parser.add_argument(
-        "--date",
-        type=str,
-        help="Processing date in the format YYYY-MM-DD",
-    )
+    # TODO remove default args
     parser.add_argument(
         "--permits_file",
         type=str,
         help="Full path to permits file",
         default="930651BCFAD14D26A3CC96C751CD208E_small.xml",
     )
+    # TODO remove default args
     parser.add_argument(
         "--bridges_file",
         type=str,
