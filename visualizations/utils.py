@@ -132,10 +132,9 @@ def get_permit_locations(
                     bag_data_location = json.loads(response.content)['results'][0]['centroid']
 
                 lonlat = [bag_data_location[1], bag_data_location[0]]
+                permit_locations.append(lonlat)
             except Exception as ex:
                 raise ex
-
-            permit_locations.append(lonlat)
     return permit_locations
 
 
