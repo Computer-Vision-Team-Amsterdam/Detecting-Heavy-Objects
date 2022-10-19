@@ -14,7 +14,6 @@ import geopy.distance
 import numpy as np
 import numpy.typing as npt
 import pycocotools.mask as mask_util
-import requests
 from panorama.client import PanoramaClient
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
@@ -76,11 +75,11 @@ class PostProcessing:
     def __init__(
         self,
         json_predictions: str,
+        date_to_check: datetime,
+        permits_file: str,
+        bridges_file: str,
         threshold: float = 20000,
         mask_degrees: float = 90,
-        date_to_check: datetime = datetime(2021, 3, 17), # TODO remove
-        permits_file: str = "decos.xml",  # TODO remove
-        bridges_file: str = "bridges.geojson",  # TODO remove
         output_folder: Path = Path.cwd(),
     ) -> None:
         """
@@ -261,7 +260,7 @@ class PostProcessing:
                     sorted_panoramas,
                 ]
             ),
-            ["lat", "lon", "score", "permit_distance", "bridge_distance", "img_id"],
+            ["lat", "lon", "score", "permit_distance", "bridge_distance", "closest_image"],
             self.output_folder / self.prioritized_file,
         )
 
@@ -340,24 +339,24 @@ if __name__ == "__main__":
     )
 
     # Convert string to datetime object
-    start_date = datetime.strptime(args.date, "%Y-%m-%d").date()
+    # start_date = datetime.strptime(args.date, "%Y-%m-%d").date()
+    #
+    # # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
+    # panoramas = get_panos_from_points_of_interest(
+    #     os.path.join(args.date, "points_of_interest.csv"),
+    #     date(
+    #         2021, 3, 18
+    #     ),  # TODO, send date of processed in azure Today's date and one day later?
+    #     date(2020, 3, 17),
+    # )
 
-    # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
-    panoramas = get_panos_from_points_of_interest(
-        os.path.join(args.date, "points_of_interest.csv"),
-        date(
-            2021, 3, 18
-        ),  # TODO, send date of processed in azure Today's date and one day later?
-        date(2020, 3, 17),
-    )
-    # TODO var panoramas is a list in a certain order defined by points_of_interest.csv, but without an identification nr...
-    #  This is sensitive to errors, especially in the next step of sorting.
-    #  And what if there are no panoramas found? list index out of range
-    postprocess.prioritize_notifications(panoramas)
+    dummy_panoramas = [''] * len(clustered_intersections) # TODO only search for panos with a detection
+    postprocess.prioritize_notifications(dummy_panoramas)
 
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
 
     # Upload the file with found containers to the Azure Blob Storage.
-    azure_connection.upload_to_blob("postprocessing-output", "prioritized_objects.csv")
+    azure_connection.upload_blob("postprocessing-output", os.path.join(args.date, "prioritized_objects.csv"),
+                                 "prioritized_objects.csv")
 
     # TODO postgresql code from store_postprocessing_results.py
