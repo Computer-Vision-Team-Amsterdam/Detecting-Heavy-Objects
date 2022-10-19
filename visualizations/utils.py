@@ -10,9 +10,10 @@ from datetime import datetime
 from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, List, Union
+import requests
+import json
 
 import geojson
-import geopy
 from osgeo import osr  # pylint: disable-all
 from tqdm import tqdm
 
@@ -70,15 +71,30 @@ def get_permit_locations(
         postal_code_ex = r"\d{4}\s*?[A-z]{2}"  # 4 digits, any amount of whitespace, and 2 letters (case-insensitive)
         return re.sub(postal_code_ex, "", address).strip()
 
+    def split_dutch_street_address(address: str) -> List:
+        """
+        TODO use a function like this
+        This function separates an address string (street name, house number, house number extension and zipcode)
+        into parts.
+
+        Regular expression quantifiers:
+        X?  X, once or not at all
+        X*  X, zero or more times
+        X+  X, one or more times
+        """
+
+        regex = "(\D+)\s+(\d+)\s?(.*)\s+(\d{4}\s*?[A-z]{2})"
+        return re.findall(regex, address)
+
     def is_container_permit(permit: Any) -> bool:
         """
         Check whether permit is for a container
         """
+        # TODO remove *container*
         container_words = [
             "puinbak",
             "puincontainer",
             "container",
-            "puincontainer",
             "afvalcontainer",
             "zeecontainer",
             "keet",
@@ -96,7 +112,6 @@ def get_permit_locations(
 
     xmlparse = Xet.parse(file)
     root = xmlparse.getroot()
-    locator = geopy.Nominatim(user_agent="myGeocoder")
     permit_locations = []
     print("Parsing the permits information")
     running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
@@ -107,11 +122,19 @@ def get_permit_locations(
             and is_container_permit(item)
             and is_permit_valid_on_day(item)
         ):
-            # todo: Check some categories: Street + number, coordinates,
-            # can we be sure that there will be no typo's in the street names?
-            address = remove_postal_code(item.find("TEXT6").text)
-            location = locator.geocode(address + ", Amsterdam, Netherlands")
-            lonlat = [location.latitude, location.longitude]
+            try:
+                # todo: use split_dutch_street_address(item.find("TEXT6").text)
+                address = remove_postal_code(item.find("TEXT6").text)
+                address = address.replace(" ", "%20")
+                bag_url = f"https://api.data.amsterdam.nl/atlas/search/adres/?q={address}"
+
+                with requests.get(bag_url) as response:
+                    bag_data_location = json.loads(response.content)['results'][0]['centroid']
+
+                lonlat = [bag_data_location[1], bag_data_location[0]]
+            except Exception as ex:
+                raise ex
+
             permit_locations.append(lonlat)
     return permit_locations
 
