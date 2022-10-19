@@ -12,15 +12,12 @@ RUN apt-get update && \
         libsm6 \
         libxext6
 
-#RUN  mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
-
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN python -m pip install --upgrade pip
 
-#RUN --mount=type=ssh \
 RUN pip install --no-cache \
         gdal==3.2.2 \
         geojson==2.5.0 \
@@ -39,8 +36,7 @@ RUN pip install --no-cache \
 
 WORKDIR /app
 COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
-COPY azure_storage_utils.py /app
-COPY postprocessing.py /app
+COPY azure_storage_utils.py postprocessing.py /app
 
 RUN useradd appuser
 RUN chown -R appuser /app
