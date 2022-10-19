@@ -115,6 +115,7 @@ def get_permit_locations(
     permit_locations = []
     print("Parsing the permits information")
     running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
+    bag_url = f"https://api.data.amsterdam.nl/atlas/search/adres/?q="
     for item in tqdm(root, disable=running_in_k8s):
         # The permits seem to have a quite free format. Let's catch some exceptions
         if (
@@ -124,11 +125,9 @@ def get_permit_locations(
         ):
             try:
                 # todo: use split_dutch_street_address(item.find("TEXT6").text)
-                address = remove_postal_code(item.find("TEXT6").text)
-                address = address.replace(" ", "%20")
-                bag_url = f"https://api.data.amsterdam.nl/atlas/search/adres/?q={address}"
+                address = remove_postal_code(item.find("TEXT6").text).replace(" ", "%20")
 
-                with requests.get(bag_url) as response:
+                with requests.get(bag_url + address) as response:
                     bag_data_location = json.loads(response.content)['results'][0]['centroid']
 
                 lonlat = [bag_data_location[1], bag_data_location[0]]
