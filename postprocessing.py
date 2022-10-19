@@ -212,7 +212,7 @@ class PostProcessing:
         container_locations_geom = [Point(location) for location in container_locations]
 
         if not bridge_locations_geom or not container_locations_geom or not permit_locations_geom:
-            print('WARNING! an empty list, please check permit, bridge and container file.')
+            print('WARNING! an empty list, please check the permit, bridge and container files.')
 
         bridges_distances = []
         permit_distances = []
@@ -247,8 +247,6 @@ class PostProcessing:
         sorted_scores = np.array(scores)[sorted_indices]
         sorted_panoramas = np.array(panoramas)[sorted_indices]
 
-        # TODO add columns defined in Miro
-        # TODO do we want start_date provided by args here? or do we want also the time next to it?
         write_to_csv(
             np.array(
                 [
@@ -286,7 +284,6 @@ if __name__ == "__main__":
         "--date",
         type=str,
         help="Processing date in the format YYYY-MM-DD",
-        default="2022-10-03",
     )
     parser.add_argument(
         "--permits_file",
