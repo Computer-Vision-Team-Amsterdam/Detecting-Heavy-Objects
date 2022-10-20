@@ -36,7 +36,8 @@ RUN pip install --no-cache \
 
 WORKDIR /app
 COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
-COPY azure_storage_utils.py postprocessing.py /app
+COPY postprocessing.py /app
+COPY azure_storage_utils.py /app
 
 RUN useradd appuser
 RUN chown -R appuser /app
