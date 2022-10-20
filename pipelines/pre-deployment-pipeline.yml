@@ -3,7 +3,9 @@
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
-trigger:
+trigger: none
+
+pr:
   branches:
     include:
     - main
@@ -11,7 +13,6 @@ trigger:
     exclude:
     - pipelines/*
     - README.md
-
 
 stages :
   - stage: Tests
