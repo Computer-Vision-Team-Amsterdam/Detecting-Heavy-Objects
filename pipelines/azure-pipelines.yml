@@ -22,19 +22,19 @@ parameters:
 - name: DockerFiles
   type: object
   default:
-    - name: 'Retrieve'
+    - name: 'Retrieve' #No spaces or special chars
       displayName: 'Retrieve Images'
       dockerFileName: 'retrieve_images.Dockerfile'
       dockerFileRelativePath: ''
       imageRepository: 'retrieve'
       tag: 'latest'
-    - name: 'Blur'
+    - name: 'Blur' #No spaces or special chars
       displayName: 'Blur'
       dockerFileName: 'blur.Dockerfile'
       dockerFileRelativePath: ''
       imageRepository: 'blur'
       tag: 'latest'
-    - name: 'Upload to Postgres'
+    - name: 'UploadToPostgres' #No spaces or special chars
       displayName: 'Upload to Postgres'
       dockerFileName: 'upload_to_postgres.Dockerfile'
       dockerFileRelativePath: ''
