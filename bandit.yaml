@@ -1,0 +1,3 @@
+# bandit configuration file
+
+exclude_dirs: ['./tests', './evaluation.py', './yolov5']
