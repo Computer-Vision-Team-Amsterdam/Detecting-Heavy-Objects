@@ -116,7 +116,7 @@ def row_to_upload_from_panorama(
     pano_object = PanoramaClient.get_panorama(panorama_id)
     row: Dict[str, Union[str, float, datetime]] = {key: "" for key in table_columns}
 
-    row["file_name"] = pano_object.id
+    row["file_name"] = pano_object.filename
     row["camera_location_lat"] = pano_object.geometry.coordinates[1]
     row["camera_location_lon"] = pano_object.geometry.coordinates[0]
     row["heading"] = pano_object.heading
@@ -210,6 +210,10 @@ if __name__ == "__main__":
             "TMX7315120208-000020_pano_0000_000000",
             "TMX7315120208-000020_pano_0000_000001",
             "TMX7315120208-000020_pano_0000_000002",
+            "TMX7316010203-001697_pano_0000_000220",
+            "TMX7316010203-001697_pano_0000_000215",
+            "TMX7316010203-001697_pano_0000_000216",
+            "TMX7316010203-001697_pano_0000_000217",
         ]
         object_fields_to_select = []
 
