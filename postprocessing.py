@@ -299,7 +299,7 @@ class PostProcessing:
                 ("score", float),
                 ("permit_distance", float),
                 ("bridge_distance", float),
-                ("closest_image", ">U1"),
+                ("closest_image", "U64"),
             ],
         )
 
