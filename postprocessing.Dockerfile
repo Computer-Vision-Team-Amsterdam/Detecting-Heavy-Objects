@@ -25,6 +25,9 @@ RUN pip install --no-cache \
         numpy==1.21.6 \
         pycocotools==2.0.4 \
         requests==2.28.0 \
+        pandas==1.3.5 \
+        psycopg2==2.8.6 \
+        scipy==1.7.3 \
         shapely==1.8.2 \
         tqdm==4.64.0 \
         azure-cli==2.39.0 \
@@ -38,6 +41,7 @@ WORKDIR /app
 COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
 COPY postprocessing.py /app
 COPY azure_storage_utils.py /app
+COPY upload_to_postgres.py /app
 
 RUN useradd appuser
 RUN chown -R appuser /app

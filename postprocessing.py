@@ -18,15 +18,38 @@ from panorama.client import PanoramaClient
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 from tqdm import tqdm
-from triangulation.helpers import (
-    get_panos_from_points_of_interest,
-)  # pylint: disable-all
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
-from azure_storage_utils import StorageAzureClient
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
+
+import pandas as pd
+import pandas.io.sql as sqlio
+from psycopg2.extras import execute_values
+import psycopg2
+from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
+from scipy.spatial.distance import cdist
+
+import upload_to_postgres
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
+
+azClient = BaseAzureClient()
+USERNAME = azClient.get_secret_value("postgresUsername")
+USERNAME = f"{USERNAME}@cvt-weu-psql-o-01-silnc2achvsfi"
+PASSWORD = azClient.get_secret_value("postgresPassword-short")
+HOST = azClient.get_secret_value("postgresHostname")
+PORT = "5432"
+DATABASE = "container-detection-database"
+
+def closest_point(point, points):
+    """ Find closest point from a list of points. """
+    return points[cdist([point], points).argmin()]
+
+
+def match_value(df, col1, x, col2):
+    """ Match value x from col1 row to value in col2. """
+    return df[df[col1] == x][col2].values[0]
 
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
@@ -62,11 +85,13 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
     """
     Writes a list of list with data to a csv file.
     """
+    print(data)
+
     np.savetxt(
         filename,
         data,
         header=",".join(data.dtype.names),
-        fmt="%d,%d,%d,%d,%d,%s",
+        fmt="%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s",
         delimiter=",",
         comments="",
     )
@@ -275,7 +300,7 @@ class PostProcessing:
                     ("score", float),
                     ("permit_distance", float),
                     ("bridge_distance", float),
-                    ("closest_image", "S16"),
+                    ("closest_image", ">U1"),
                 ],
             ),
             self.prioritized_file,
@@ -355,24 +380,35 @@ if __name__ == "__main__":
         os.path.join(args.date, "points_of_interest.csv"), clustered_intersections
     )
 
-    # Convert string to datetime object
-    # start_date = datetime.strptime(args.date, "%Y-%m-%d").date()
-    #
-    # # Find a panoramic image for each object intersection. # TODO only search for panos with a detection
-    # panoramas = get_panos_from_points_of_interest(
-    #     os.path.join(args.date, "points_of_interest.csv"),
-    #     date(
-    #         2021, 3, 18
-    #     ),  # TODO, send date of processed in azure Today's date and one day later?
-    #     date(2020, 3, 17),
-    # )
+    table_name = 'containers'
+    conn, cur = upload_to_postgres.connect()
+    keys = upload_to_postgres.get_column_names(table_name, cur)  # column names from table in postgres
 
-    dummy_panoramas = [""] * len(
-        clustered_intersections
-    )  # TODO only search for panos with a detection
-    postprocess.prioritize_notifications(dummy_panoramas)
+    sql = f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE date_trunc('day', taken_at) = '{args.date}'::date;"
+    dat = sqlio.read_sql_query(sql, conn)
+    print(dat) # TODO check if records are found
+
+    df1 = pd.DataFrame(dat)
+
+    df1['point'] = [(x, y) for x, y in zip(df1['camera_location_lat'], df1['camera_location_lon'])]
+
+    closest_points = [closest_point(x, list(df1['point'])) for x in clustered_intersections[:,:2]]
+    pano_match = [match_value(df1, 'point', x, 'file_name') for x in closest_points]
+    pano_match_flatten = np.concatenate(pano_match).ravel()
+
+    print(pano_match_flatten)
+    postprocess.prioritize_notifications(pano_match_flatten)
 
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
+
+    # # TODO postgresql code from store_postprocessing_results.py
+    # query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
+    # values = [list(item.values()) for item in to_upload_data]
+    #
+    # execute_values(cur, query, values)
+    # conn.commit()
+
+    print(keys)
 
     # Upload the file with found containers to the Azure Blob Storage.
     azure_connection.upload_blob(
@@ -380,5 +416,3 @@ if __name__ == "__main__":
         os.path.join(args.date, "prioritized_objects.csv"),
         "prioritized_objects.csv",
     )
-
-    # TODO postgresql code from store_postprocessing_results.py

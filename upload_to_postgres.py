@@ -23,6 +23,7 @@ USERNAME = azClient.get_secret_value("postgresUsername")
 PASSWORD = azClient.get_secret_value("postgresPassword")
 HOST = azClient.get_secret_value("postgresHostname")
 PORT = "5432"
+DATABASE = "container-detection-database"
 
 
 def connect() -> Tuple[connection, cursor]:
@@ -187,9 +188,6 @@ def upload_input(
 
 
 if __name__ == "__main__":
-
-    DATABASE = "container-detection-database"
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--table",
