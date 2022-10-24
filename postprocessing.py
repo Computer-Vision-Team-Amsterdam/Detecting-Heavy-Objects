@@ -211,7 +211,7 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self, panoramas: List[str]) -> None:
+    def prioritize_notifications(self, panoramas: List[str]):
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
         """
@@ -282,30 +282,33 @@ class PostProcessing:
         sorted_scores = np.array(scores)[sorted_indices]
         sorted_panoramas = np.array(panoramas)[sorted_indices]
 
-        write_to_csv(
-            np.array(
-                list(
-                    zip(
-                        prioritized_containers[:, 0],
-                        prioritized_containers[:, 1],
-                        sorted_scores,
-                        permit_distances_sorted,
-                        bridges_distances_sorted,
-                        sorted_panoramas,
-                    )
-                ),
-                dtype=[
-                    ("lat", float),
-                    ("lon", float),
-                    ("score", float),
-                    ("permit_distance", float),
-                    ("bridge_distance", float),
-                    ("closest_image", ">U1"),
-                ],
+        structured_array = np.array(
+            list(
+                zip(
+                    prioritized_containers[:, 0],
+                    prioritized_containers[:, 1],
+                    sorted_scores,
+                    permit_distances_sorted,
+                    bridges_distances_sorted,
+                    sorted_panoramas,
+                )
             ),
+            dtype=[
+                ("lat", float),
+                ("lon", float),
+                ("score", float),
+                ("permit_distance", float),
+                ("bridge_distance", float),
+                ("closest_image", ">U1"),
+            ],
+        )
+
+        write_to_csv(
+            structured_array,
             self.prioritized_file,
         )
 
+        return structured_array
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -380,15 +383,28 @@ if __name__ == "__main__":
         os.path.join(args.date, "points_of_interest.csv"), clustered_intersections
     )
 
-    table_name = 'containers'
+    table_name = "containers"
     conn, cur = upload_to_postgres.connect()
-    keys = upload_to_postgres.get_column_names(table_name, cur)  # column names from table in postgres
+    # table_columns = upload_to_postgres.get_column_names(table_name, cur)  # column names from table in postgres
+    sql = f"SELECT * FROM {table_name}"
+    cur.execute(sql)
+    print(cur.description)
+    table_columns = [desc[0] for desc in cur.description]
+    table_columns.pop(0) # Remove the id column
+    print(table_columns)
 
+    if conn:
+        cur.close()
+        conn.close()
+        print("PostgreSQL connection is closed")
+
+    conn, cur = upload_to_postgres.connect()
     sql = f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE date_trunc('day', taken_at) = '{args.date}'::date;"
     dat = sqlio.read_sql_query(sql, conn)
     print(dat) # TODO check if records are found
 
     df1 = pd.DataFrame(dat)
+    print(df1)
 
     df1['point'] = [(x, y) for x, y in zip(df1['camera_location_lat'], df1['camera_location_lon'])]
 
@@ -397,7 +413,19 @@ if __name__ == "__main__":
     pano_match_flatten = np.concatenate(pano_match).ravel()
 
     print(pano_match_flatten)
-    postprocess.prioritize_notifications(pano_match_flatten)
+    structured_array = postprocess.prioritize_notifications(pano_match_flatten)
+
+    # row = {key: "" for key in table_columns}
+    #
+    # if len(table_columns) != len(row):
+    #     raise ValueError(
+    #         "You are trying to add more/less columns than current table columns."
+    #     )
+    # for i, column_name in enumerate(table_columns):
+    #     row[column_name] = structured_array[i]
+    #
+    # print('jm!')
+    # print(row)
 
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
 
@@ -408,11 +436,14 @@ if __name__ == "__main__":
     # execute_values(cur, query, values)
     # conn.commit()
 
-    print(keys)
-
     # Upload the file with found containers to the Azure Blob Storage.
     azure_connection.upload_blob(
         "postprocessing-output",
         os.path.join(args.date, "prioritized_objects.csv"),
         "prioritized_objects.csv",
     )
+
+    if conn:
+        cur.close()
+        conn.close()
+        print("PostgreSQL connection is closed")
