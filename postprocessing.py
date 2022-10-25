@@ -385,56 +385,27 @@ if __name__ == "__main__":
 
     table_name = "containers"
     conn, cur = upload_to_postgres.connect()
-    # table_columns = upload_to_postgres.get_column_names(table_name, cur)  # column names from table in postgres
+
     sql = f"SELECT * FROM {table_name}"
     cur.execute(sql)
-    print(cur.description)
+
     table_columns = [desc[0] for desc in cur.description]
     table_columns.pop(0) # Remove the id column
-    print(table_columns)
 
-    if conn:
-        cur.close()
-        conn.close()
-        print("PostgreSQL connection is closed")
-
-    conn, cur = upload_to_postgres.connect()
     sql = f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE date_trunc('day', taken_at) = '{args.date}'::date;"
     dat = sqlio.read_sql_query(sql, conn)
     print(dat) # TODO check if records are found
 
     df1 = pd.DataFrame(dat)
-    print(df1)
-
     df1['point'] = [(x, y) for x, y in zip(df1['camera_location_lat'], df1['camera_location_lon'])]
 
     closest_points = [closest_point(x, list(df1['point'])) for x in clustered_intersections[:,:2]]
     pano_match = [match_value(df1, 'point', x, 'file_name') for x in closest_points]
     pano_match_flatten = np.concatenate(pano_match).ravel()
 
-    print(pano_match_flatten)
     structured_array = postprocess.prioritize_notifications(pano_match_flatten)
 
-    # row = {key: "" for key in table_columns}
-    #
-    # if len(table_columns) != len(row):
-    #     raise ValueError(
-    #         "You are trying to add more/less columns than current table columns."
-    #     )
-    # for i, column_name in enumerate(table_columns):
-    #     row[column_name] = structured_array[i]
-    #
-    # print('jm!')
-    # print(row)
-
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
-
-    # # TODO postgresql code from store_postprocessing_results.py
-    # query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
-    # values = [list(item.values()) for item in to_upload_data]
-    #
-    # execute_values(cur, query, values)
-    # conn.commit()
 
     # Upload the file with found containers to the Azure Blob Storage.
     azure_connection.upload_blob(
@@ -442,6 +413,12 @@ if __name__ == "__main__":
         os.path.join(args.date, "prioritized_objects.csv"),
         "prioritized_objects.csv",
     )
+
+    query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+
+    execute_values(cur, query, structured_array)
+    conn.commit()
+
 
     if conn:
         cur.close()
