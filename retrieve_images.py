@@ -77,8 +77,15 @@ if __name__ == "__main__":
     parser.add_argument("--date", type=str, help="date to retrieve images")
     opt = parser.parse_args()
 
-    pano_dates = [datetime(2016, 3, 17), datetime(2016, 3, 17), datetime(2016, 3, 17), datetime(2020, 5, 8),
-                  datetime(2020, 5, 8), datetime(2020, 5, 8), datetime(2020, 5, 8)]
+    pano_dates = [
+        datetime(2016, 3, 17),
+        datetime(2016, 3, 17),
+        datetime(2016, 3, 17),
+        datetime(2020, 5, 8),
+        datetime(2020, 5, 8),
+        datetime(2020, 5, 8),
+        datetime(2020, 5, 8),
+    ]
     pano_ids = [
         "TMX7315120208-000020_pano_0000_000000",
         "TMX7315120208-000020_pano_0000_000001",
