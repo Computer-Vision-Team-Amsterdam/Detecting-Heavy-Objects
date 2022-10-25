@@ -39,18 +39,19 @@ PORT = "5432"
 DATABASE = "container-detection-database"
 
 
-def closest_point(point, points):
+def closest_point(point: float, points: List[float]) -> Any:
     """Find closest point from a list of points."""
     return points[cdist([point], points).argmin()]
 
 
-def match_value(df, col1, x, col2):
+def match_value(df: Any, col1: str, x: float, col2: str) -> Any:
     """Match value x from col1 row to value in col2."""
     return df[df[col1] == x][col2].values[0]
 
 
-def get_closest_pano(dat, clustered_intersections):
-    df1 = pd.DataFrame(dat)
+def get_closest_pano(df: Any, clustered_intersections: Any) -> Any:
+    """Find a panorama closest to a found container (intersection point)."""
+    df1 = pd.DataFrame(df)
     df1["point"] = [
         (x, y) for x, y in zip(df1["camera_location_lat"], df1["camera_location_lon"])
     ]
@@ -59,7 +60,9 @@ def get_closest_pano(dat, clustered_intersections):
         closest_point(x, list(df1["point"])) for x in clustered_intersections[:, :2]
     ]
     pano_match = [match_value(df1, "point", x, "file_name") for x in closest_points]
-    return np.concatenate(pano_match).ravel() # Flatten the list
+
+    # Flatten the list
+    return np.concatenate(pano_match).ravel()
 
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
@@ -219,9 +222,7 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(
-        self, panoramas: List[str], write_file: bool = False
-    ) -> List:
+    def prioritize_notifications(self, panoramas: List[str]) -> np.ndarray[Any, Any]:
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
         """
@@ -313,11 +314,10 @@ class PostProcessing:
             ],
         )
 
-        if write_file:
-            write_to_csv(
-                structured_array,
-                self.prioritized_file,
-            )
+        write_to_csv(
+            structured_array,
+            self.prioritized_file,
+        )
 
         return structured_array
 
@@ -411,11 +411,10 @@ if __name__ == "__main__":
         f"date_trunc('day', taken_at) = '{args.date}'::date;"
     )
     df_pano_det = sqlio.read_sql_query(sql, conn)
-    print(df_pano_det)  # TODO check if records are found
+    print(df_pano_det)  # TODO check if records are found, otherwise raise
 
     # Find a panorama closest to an intersection
     pano_match = get_closest_pano(df_pano_det, clustered_intersections)
-
     pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
 
     # Insert the values in the database
