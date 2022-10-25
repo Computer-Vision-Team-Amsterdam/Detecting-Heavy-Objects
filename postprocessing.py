@@ -391,12 +391,6 @@ if __name__ == "__main__":
     conn, cur = upload_to_postgres.connect()
     table_name = "containers"
 
-    # Get columns
-    sql = f"SELECT * FROM {table_name}"
-    cur.execute(sql)
-    table_columns = [desc[0] for desc in cur.description]
-    table_columns.pop(0)  # Remove the id column
-
     # Get images with a detection
     sql = (
         f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
@@ -409,6 +403,12 @@ if __name__ == "__main__":
             "DataFrame is empty! No images with a detection are found for the provided date."
         )
     else:
+        # Get columns
+        sql = f"SELECT * FROM {table_name}"
+        cur.execute(sql)
+        table_columns = [desc[0] for desc in cur.description]
+        table_columns.pop(0)  # Remove the id column
+
         # Find a panorama closest to an intersection
         pano_match = get_closest_pano(query_df, clustered_intersections)
         pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
