@@ -6,7 +6,7 @@ import csv
 import json
 import os
 from copy import deepcopy
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, List
 
@@ -26,17 +26,9 @@ from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
 import upload_to_postgres
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
+from azure_storage_utils import StorageAzureClient
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
-
-azClient = BaseAzureClient()
-USERNAME = azClient.get_secret_value("postgresUsername")
-USERNAME = f"{USERNAME}@cvt-weu-psql-o-01-silnc2achvsfi"
-PASSWORD = azClient.get_secret_value("postgresPassword-short")
-HOST = azClient.get_secret_value("postgresHostname")
-PORT = "5432"
-DATABASE = "container-detection-database"
 
 
 def closest_point(point: float, points: List[float]) -> Any:
@@ -222,7 +214,7 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self, panoramas: List[str]) -> np.ndarray[Any, Any]:
+    def prioritize_notifications(self, panoramas: List[str]) -> Any:
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
         """
@@ -410,26 +402,30 @@ if __name__ == "__main__":
         f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
         f"date_trunc('day', taken_at) = '{args.date}'::date;"
     )
-    df_pano_det = sqlio.read_sql_query(sql, conn)
-    print(df_pano_det)  # TODO check if records are found, otherwise raise
+    query_df = sqlio.read_sql_query(sql, conn)
 
-    # Find a panorama closest to an intersection
-    pano_match = get_closest_pano(df_pano_det, clustered_intersections)
-    pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
+    if query_df.empty:
+        print(
+            "DataFrame is empty! No images with a detection are found for the provided date."
+        )
+    else:
+        # Find a panorama closest to an intersection
+        pano_match = get_closest_pano(query_df, clustered_intersections)
+        pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
 
-    # Insert the values in the database
-    sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-    execute_values(cur, sql, pano_match_prioritized)
-    conn.commit()  # TODO verschil commit en execute?
+        # Insert the values in the database
+        sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+        execute_values(cur, sql, pano_match_prioritized)
+        conn.commit()
+
+        # Upload the file with found containers to the Azure Blob Storage # TODO define prioritized_objects.csv
+        azure_connection.upload_blob(
+            "postprocessing-output",
+            os.path.join(args.date, "prioritized_objects.csv"),
+            "prioritized_objects.csv",
+        )
 
     if conn:
         cur.close()
         conn.close()
         print("PostgreSQL connection is closed")
-
-    # Upload the file with found containers to the Azure Blob Storage
-    azure_connection.upload_blob(
-        "postprocessing-output",
-        os.path.join(args.date, "prioritized_objects.csv"),
-        "prioritized_objects.csv",
-    )
