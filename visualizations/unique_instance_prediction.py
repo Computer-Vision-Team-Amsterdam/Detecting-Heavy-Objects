@@ -118,7 +118,7 @@ def generate_map(
 
     # add container locations to the map
     if detections:
-        marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
+        #marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
         for i in range(0, len(detections)):
 
             # get link to panorama to display
@@ -134,10 +134,12 @@ def generate_map(
                    <html>
                    <center><img src=\""""
                 + image_link
-                + """\" width=400 height=200 ></center>
+                + f"""\" width=400 height=200 ></center>
+                <p> Cluster: {detections[i].cluster}</p>
                    </html>
                    """
             )
+
             popup = folium.Popup(folium.Html(html, script=True), max_width=500)
             folium.Marker(
                 location=[detections[i].coords[0], detections[i].coords[1]],
@@ -152,7 +154,8 @@ def generate_map(
                     prefix="fa",
                 ),
                 radius=15,
-            ).add_to(marker_cluster)
+            #).add_to(marker_cluster)
+            ).add_to(Map)
 
     # add line with car trajectory on the map
     if trajectory:
