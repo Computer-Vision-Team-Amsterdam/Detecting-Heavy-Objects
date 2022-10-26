@@ -15,6 +15,8 @@ class BaseAzureClient:
         )
         self.key_vault_name = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
         self.key_vault_url = self.key_vault_name["vault_url"]
+        #  TODO: remove line below after DaVe updates the [AIRFLOW__SECRETS__BACKEND_KWARGS]
+        self.key_vault_url = "https://cvt-weu-o-gidgmnhwma3zq.vault.azure.net"
 
         self.secret_client = self._get_secret_client()
 
@@ -78,7 +80,7 @@ class StorageAzureClient(BaseAzureClient):
             raise ex
 
     def list_container_content(
-        self, cname: str, blob_prefix: Optional[str] = None
+            self, cname: str, blob_prefix: Optional[str] = None
     ) -> List[str]:
         """List the content of a container.
         Args:

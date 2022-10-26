@@ -20,8 +20,7 @@ from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
 USERNAME = azClient.get_secret_value("postgresUsername")
-USERNAME = f"{USERNAME}@cvt-weu-psql-o-01-silnc2achvsfi"
-PASSWORD = azClient.get_secret_value("postgresPassword-short")
+PASSWORD = azClient.get_secret_value("postgresPassword")
 HOST = azClient.get_secret_value("postgresHostname")
 PORT = "5432"
 
