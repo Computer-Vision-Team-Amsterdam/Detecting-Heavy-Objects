@@ -1,6 +1,7 @@
 import json
 import os
 import socket
+from typing import Final
 from datetime import datetime
 import requests
 from azure.identity import ManagedIdentityCredential
