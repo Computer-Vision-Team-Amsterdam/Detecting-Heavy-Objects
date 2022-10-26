@@ -32,17 +32,23 @@ from visualizations.utils import get_bridge_information, get_permit_locations
 
 
 def closest_point(point: float, points: List[float]) -> Any:
-    """Find closest point from a list of points."""
+    """
+    Find closest point from a list of points.
+    """
     return points[cdist([point], points).argmin()]
 
 
 def match_value(df: Any, col1: str, x: float, col2: str) -> Any:
-    """Match value x from col1 row to value in col2."""
+    """
+    Match value x from col1 row to value in col2.
+    """
     return df[df[col1] == x][col2].values[0]
 
 
 def get_closest_pano(df: Any, clustered_intersections: Any) -> Any:
-    """Find a panorama closest to a found container (intersection point)."""
+    """
+    Find a panorama closest to a found container (intersection point).
+    """
     df1 = pd.DataFrame(df)
     df1["point"] = [
         (x, y) for x, y in zip(df1["camera_location_lat"], df1["camera_location_lon"])
@@ -80,7 +86,7 @@ def get_container_locations(file: Path) -> List[List[float]]:
 
 def save_json_data(data: Any, filename: Path, output_folder: Path) -> None:
     """
-    Write the data to a json file
+    Write the data to a json file.
     """
     with open(output_folder / filename, "w") as f:
         json.dump(data, f)
@@ -155,7 +161,7 @@ class PostProcessing:
 
         print(f"Done writing cluster intersections to the file: {output_file_name}.")
 
-    def find_points_of_interest(self) -> Any:  # TODO Any to list of floats
+    def find_points_of_interest(self) -> Any:
         """
         Finds the points of interest given by COCO format json file, outputs a nested list with lon lat coordinates
         and a score. For example: [[52.32856949, 4.85737839, 2.0]]
@@ -214,9 +220,10 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self, panoramas: List[str]) -> Any:
+    def prioritize_notifications(self, panoramas: List[str]) -> npt.NDArray[Any]:
         """
-        Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and canals
+        Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and
+        canals. This function returns a structured array (column based) with floats and strings inside.
         """
 
         def calculate_score(bridge_distance: float, permit_distance: float) -> float:
