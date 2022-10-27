@@ -121,7 +121,7 @@ files = {'media': open('colors.jpeg', 'rb')}
 
 signal_id = "11670"
 
-url = f"/signals/v1/private/signals/{signal_id}/attachments/"
+url = BASE_URL + f"/{signal_id}/attachments/"
 
 headers = {'Authorization': "Bearer {}".format(access_token)}
 
