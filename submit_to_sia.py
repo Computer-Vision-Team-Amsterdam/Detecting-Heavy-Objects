@@ -1,26 +1,16 @@
 import json
 import os
 import socket
-from typing import Final
 from datetime import datetime
 import requests
-from azure.identity import ManagedIdentityCredential
-from azure.keyvault.secrets import SecretClient
 
-# Command that you want to run on container start
-AKS_NAMESPACE: Final = os.getenv("AIRFLOW__KUBERNETES__NAMESPACE")
-AKS_NODE_POOL: Final = "cvision2work"
+from azure_storage_utils import BaseAzureClient, StorageAzureClient
+
+azClient = BaseAzureClient()
+sia_password = azClient.get_secret_value("sia-password-acc")
 
 BASE_URL = "https://acc.api.data.amsterdam.nl/signals/v1/private/signals"
 
-client_id = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY")
-credential = ManagedIdentityCredential(client_id=client_id)
-
-airflow_secrets = json.loads(os.environ["AIRFLOW__SECRETS__BACKEND_KWARGS"])
-KVUri = airflow_secrets["vault_url"]
-
-client = SecretClient(vault_url=KVUri, credential=credential)
-sia_password = client.get_secret(name="sia-password-acc")
 socket.setdefaulttimeout(100)
 
 def to_signal(text: str, date_now, lat_lng: dict):
@@ -95,7 +85,7 @@ def _post_signal(access_token):
         return response.raise_for_status()
 
 # def image_upload():
-#     # TODO get image from blob storage, download it
+    # # TODO get image from blob storage, download it
     # list_endpoint = '/signals/v1/private/signals/'
     # detail_endpoint = list_endpoint + '{}'
     # attachment_endpoint = detail_endpoint + '/attachments/'
@@ -105,14 +95,40 @@ def _post_signal(access_token):
     # image = SimpleUploadedFile('image.gif', small_gif, content_type='image/gif')
     #
     # response = self.client.post(endpoint, data={'file': image})
+
+    # list_endpoint = '/signals/v1/private/signals/'
+    # detail_endpoint = list_endpoint + '{}'
+    # attachment_endpoint = detail_endpoint + '/attachments/'
+
+
     #
-    # import requests
-    # url = 'http://file.api.wechat.com/cgi-bin/media/upload?access_token=ACCESS_TOKEN&type=TYPE'
     # files = {'media': open('test.jpg', 'rb')}
     # requests.post(url, files=files)
 
 # def check_sia_connection():
-access_token = _get_access_token("sia-cvt", f"{sia_password.value}")
-# print(_get_signals_page(access_token, "?page_size=1"))
+access_token = _get_access_token("sia-cvt", sia_password)
+print(_get_signals_page(access_token, "?page_size=1"))
 
 # print(_post_signal(access_token))
+
+# Get access to the Azure Storage account.
+azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
+
+# Download files to the WORKDIR of the Docker container.
+azure_connection.download_blob("postprocessing-input", "colors.jpeg", "colors.jpeg")
+
+files = {'media': open('colors.jpeg', 'rb')}
+
+signal_id = "11670"
+
+url = f"/signals/v1/private/signals/{signal_id}/attachments/"
+
+headers = {'Authorization': "Bearer {}".format(access_token)}
+
+response = requests.post(url, files=files, headers=headers)
+
+if response.status_code == 200:
+    print("The server successfully performed the POST request.")
+    print(response.json())
+else:
+    print(response.raise_for_status())
