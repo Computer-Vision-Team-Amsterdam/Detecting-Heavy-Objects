@@ -35,9 +35,9 @@ def connect() -> Tuple[connection, cursor]:
     try:
         # Connect to an existing database
         conn = psycopg2.connect(
-            user=USERNAME,
+            user=f"{USERNAME}@{HOST}",
             password=PASSWORD,
-            host=HOST,
+            host=f"{HOST}.postgres.database.azure.com",
             port=PORT,
             database=DATABASE,
         )
