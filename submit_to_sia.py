@@ -10,12 +10,16 @@ API_MAX_UPLOAD_SIZE = 20*1024*1024  # 20MB = 20*1024*1024
 
 socket.setdefaulttimeout(100)
 
-def _to_signal(text: str, text_extra, date_now, lat_lng: dict):
+TEXT = "CVT Dit is een automatisch gegenereerd signaal."
+TEXT_EXTRA = "Dit is een text extra"
+
+def _to_signal(date_now, lat_lng: dict):
     # TODO add notitie
     # signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object
 
     return {
-        "text": text,
+        "text": TEXT,
+        "text_extra": TEXT_EXTRA,
         "location": {
             "geometrie": {
                 "type": "Point",
@@ -34,7 +38,7 @@ def _to_signal(text: str, text_extra, date_now, lat_lng: dict):
         "incident_date_start": date_now.strftime("%Y-%m-%d %H:%M")
     }
 
-def _get_access_token(client_id, client_secret): # TODO change quotes
+def _get_access_token(client_id, client_secret):
     token_url = "https://iam.amsterdam.nl/auth/realms/datapunt-ad-acc/protocol/openid-connect/token"
     payload = {
         'client_id': client_id,
@@ -66,7 +70,7 @@ def _post_signal(auth_headers, json_content):
 
     if response.status_code == 201:
         print("The server successfully performed the POST request.")
-        return response.json()
+        return response.json()["id"]
     else:
         return response.raise_for_status()
 
@@ -79,7 +83,7 @@ def _image_upload(auth_headers, filename):
 
     response = requests.post(url, files=files, headers=auth_headers)
 
-    if response.status_code == 200:
+    if response.status_code == 201:
         print("The server successfully performed the POST request.")
         return response.json()
     else:
@@ -97,19 +101,15 @@ if __name__ == "__main__":
 
     # TODO
     file_to_upload = "colors.jpeg"
-    text = "CVT Dit is een automatisch gegenereerd signaal."
-    text_extra = "Dit is een text extra"
     date_now: datetime = datetime.now()
     lat_lng = {"lat": 52.367527, "lng": 4.901257}
-    json_content = _to_signal(text, text_extra, date_now, lat_lng)
-    print(_post_signal(headers, json_content))
+    signal_id = _post_signal(headers, _to_signal(date_now, lat_lng))
 
-    # # Get access to the Azure Storage account.
-    # azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
-    # # Download files to the WORKDIR of the Docker container.
-    # azure_connection.download_blob("postprocessing-input", file_to_upload, file_to_upload)
-    #
-    # signal_id = "11670" # TODO get signal from new melding id
-    # url = BASE_URL + f"/{signal_id}/attachments/"
-    #
-    # print(_image_upload(headers, file_to_upload))
+    # Get access to the Azure Storage account.
+    azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
+    # Download files to the WORKDIR of the Docker container.
+    azure_connection.download_blob("postprocessing-input", file_to_upload, file_to_upload)
+
+    url = BASE_URL + f"/{signal_id}/attachments/"
+
+    response_json = _image_upload(headers, file_to_upload)
