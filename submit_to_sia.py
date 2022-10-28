@@ -10,7 +10,10 @@ API_MAX_UPLOAD_SIZE = 20*1024*1024  # 20MB = 20*1024*1024
 
 socket.setdefaulttimeout(100)
 
-def to_signal(text: str, date_now, lat_lng: dict):
+def _to_signal(text: str, text_extra, date_now, lat_lng: dict):
+    # TODO add notitie
+    # signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object
+
     return {
         "text": text,
         "location": {
@@ -20,7 +23,7 @@ def to_signal(text: str, date_now, lat_lng: dict):
             }
         },
         "category": {
-            "sub_category": "signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object"
+            "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/overig-openbare-ruimte"
         },
         "reporter": {
             "email": "cvt@amsterdam.nl"
@@ -34,9 +37,9 @@ def to_signal(text: str, date_now, lat_lng: dict):
 def _get_access_token(client_id, client_secret): # TODO change quotes
     token_url = "https://iam.amsterdam.nl/auth/realms/datapunt-ad-acc/protocol/openid-connect/token"
     payload = {
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "grant_type": "client_credentials"
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'grant_type': "client_credentials"
     }
     response = requests.post(token_url, data=payload)
     if response.status_code == 200:
@@ -45,9 +48,8 @@ def _get_access_token(client_id, client_secret): # TODO change quotes
     else:
         response.raise_for_status()
 
-def _get_signals_page(headers, page):
-    url = BASE_URL + page
-    response = requests.get(url, headers=headers)
+def _get_signals_page(auth_headers, page="?page_size=1"):
+    response = requests.get(BASE_URL + page, headers=auth_headers)
 
     if response.status_code == 200:
         print("The server successfully performed the GET request.")
@@ -55,54 +57,59 @@ def _get_signals_page(headers, page):
     else:
         return response.raise_for_status()
 
-def _post_signal(headers):
-    # TODO
-    text = "CVT Dit is een automatisch gegenereerd signaal."
-    date_now: datetime = datetime.now()
-    lat_lng = {"lat": 52.367527, "lng": 4.901257}
-
+def _post_signal(auth_headers, json_content):
     response = requests.post(
         BASE_URL,
-        json=to_signal(text, date_now, lat_lng),
-        headers=headers
+        json=json_content,
+        headers=auth_headers
     )
 
-    if response.status_code == 200:
+    if response.status_code == 201:
         print("The server successfully performed the POST request.")
         return response.json()
     else:
         return response.raise_for_status()
 
-def image_upload(headers, file_to_upload):
-    if os.path.getsize(file_to_upload) > API_MAX_UPLOAD_SIZE:
+def _image_upload(auth_headers, filename):
+    if os.path.getsize(filename) > API_MAX_UPLOAD_SIZE:
         msg = f"File can be a maximum of {API_MAX_UPLOAD_SIZE} bytes in size."
         raise Exception(msg)
 
-    files = {"file": (file_to_upload, open(file_to_upload, "rb"))}
+    files = {"file": (filename, open(filename, "rb"))}
 
-    response = requests.post(url, files=files, headers=headers)
+    response = requests.post(url, files=files, headers=auth_headers)
 
     if response.status_code == 200:
         print("The server successfully performed the POST request.")
         return response.json()
     else:
         return response.raise_for_status()
+
+# def create_note(self.note_data, signal):
+
 
 if __name__ == "__main__":
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
     access_token = _get_access_token("sia-cvt", sia_password)
-    headers = {"Authorization": "Bearer {}".format(access_token)}
+    headers = {'Authorization': "Bearer {}".format(access_token)}
 
-    print(_get_signals_page(headers, "?page_size=1"))
-    # print(_post_signal(headers))
+    print(_get_signals_page(headers))
 
+    # TODO
     file_to_upload = "colors.jpeg"
-    # Get access to the Azure Storage account.
-    azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
-    # Download files to the WORKDIR of the Docker container.
-    azure_connection.download_blob("postprocessing-input", file_to_upload, file_to_upload)
+    text = "CVT Dit is een automatisch gegenereerd signaal."
+    text_extra = "Dit is een text extra"
+    date_now: datetime = datetime.now()
+    lat_lng = {"lat": 52.367527, "lng": 4.901257}
+    json_content = _to_signal(text, text_extra, date_now, lat_lng)
+    print(_post_signal(headers, json_content))
 
-    signal_id = "11670"
-    url = BASE_URL + f"/{signal_id}/attachments/"
-
-    print(image_upload(headers, file_to_upload))
+    # # Get access to the Azure Storage account.
+    # azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
+    # # Download files to the WORKDIR of the Docker container.
+    # azure_connection.download_blob("postprocessing-input", file_to_upload, file_to_upload)
+    #
+    # signal_id = "11670" # TODO get signal from new melding id
+    # url = BASE_URL + f"/{signal_id}/attachments/"
+    #
+    # print(_image_upload(headers, file_to_upload))
