@@ -83,21 +83,13 @@ stages :
 
           - script: |
               bandit -c bandit.yaml -b $(banditBaselineFile) -r .
+              exit 0
             displayName: 'Bandit scan'
 
       - job: Linux
         dependsOn:
         - Style
         - Bandit
-        condition: |
-          and
-          (
-            in(dependencies.Style.result, 'Succeeded', 'SucceededWithIssues', 'Skipped'),
-            or (
-              in(dependencies.Bandit.result, 'Succeeded', 'SucceededWithIssues', 'Skipped'),
-              eq('${{ parameters.ContinueAfterBanditFail }}', 'true')
-            )
-          )
         pool:
           vmImage: ubuntu-latest
         strategy:
@@ -133,15 +125,6 @@ stages :
         dependsOn:
         - Style
         - Bandit
-        condition: |
-          and
-          (
-            in(dependencies.Style.result, 'Succeeded', 'SucceededWithIssues', 'Skipped'),
-            or (
-              in(dependencies.Bandit.result, 'Succeeded', 'SucceededWithIssues', 'Skipped'),
-              eq('${{ parameters.ContinueAfterBanditFail }}', 'true')
-            )
-          )
         pool:
           vmImage: macOS-latest
         strategy:
