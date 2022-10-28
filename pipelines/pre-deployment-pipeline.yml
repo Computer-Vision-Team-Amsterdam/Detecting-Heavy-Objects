@@ -21,7 +21,7 @@ parameters:
   default: bandit-report.json
 - name: ContinueAfterBanditFail
   displayName: "Continue pipeline if Bandit scan fails"
-  type: string
+  type: boolean
   default: true
 
 variables:
