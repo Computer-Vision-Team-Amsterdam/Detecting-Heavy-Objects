@@ -26,6 +26,7 @@ parameters:
 
 variables:
   banditBaselineFile: ${{ parameters.BanditBaselineFile }}
+  continueAfterBanditFail: ${{ parameters.ContinueAfterBanditFail }}
 
 stages :
   - stage: Tests
@@ -81,10 +82,15 @@ stages :
               pip install bandit
             displayName: 'Install Bandit'
 
-          - script: |
-              bandit -c bandit.yaml -b $(banditBaselineFile) -r .
-              exit 0
-            displayName: 'Bandit scan'
+          - ${{ if eq(variables.continueAfterBanditFail, 'true') }}:
+            - script: |
+                bandit -c bandit.yaml -b $(banditBaselineFile) -r .
+                exit 0
+              displayName: 'Bandit scan - ALWAYS PASS!'
+          - ${{ else }}:
+            - script: |
+                bandit -c bandit.yaml -b $(banditBaselineFile) -r .
+              displayName: 'Bandit scan'
 
       - job: Linux
         dependsOn:
