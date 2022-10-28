@@ -14,6 +14,15 @@ pr:
     - pipelines/*
     - README.md
 
+parameters:
+- name: BanditBaselineFile
+  displayName: "Bandit baseline file"
+  type: string
+  default: bandit-report.json
+
+variables:
+  banditBaselineFile: ${{ parameters.BanditBaselineFile }}
+
 stages :
   - stage: Tests
     displayName: 'Run pre-deployment tests'
@@ -50,6 +59,27 @@ stages :
           - script: |
               pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
             displayName: 'pylint'
+
+      - job: BanditScan
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          matrix:
+            Python3.7:
+              python.version: '3.7'
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(python.version)'
+            displayName: 'Use Python $(python.version)'
+
+          - script: |
+              pip install bandit
+            displayName: 'Install Bandit'
+
+          - script: |
+              bandit -c bandit.yaml -b $(banditBaselineFile) -r .
+            displayName: 'Bandit scan'
 
       - job: Linux
         dependsOn:
