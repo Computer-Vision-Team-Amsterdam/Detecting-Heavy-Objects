@@ -1,13 +1,8 @@
-import json
-import os
 import socket
 from datetime import datetime
 import requests
 
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
-
-azClient = BaseAzureClient()
-sia_password = azClient.get_secret_value("sia-password-acc")
 
 BASE_URL = "https://acc.api.data.amsterdam.nl/signals/v1/private/signals"
 
@@ -48,11 +43,10 @@ def _get_access_token(client_id, client_secret): # TODO change quotes
     else:
         response.raise_for_status()
 
-def _get_signals_page(access_token, page):
+def _get_signals_page(headers, page):
     if access_token is None:
         raise Exception("Access token cannot be None")
 
-    headers = {'Authorization': "Bearer {}".format(access_token)}
     url = BASE_URL + page
     response = requests.get(url, headers=headers)
 
@@ -62,11 +56,9 @@ def _get_signals_page(access_token, page):
     else:
         return response.raise_for_status()
 
-def _post_signal(access_token):
+def _post_signal(headers):
     if access_token is None:
         raise Exception("Access token cannot be None")
-
-    headers = {'Authorization': "Bearer {}".format(access_token)}
 
     text = "CVT Dit is een automatisch gegenereerd signaal."
     date_now: datetime = datetime.now()
@@ -84,51 +76,34 @@ def _post_signal(access_token):
     else:
         return response.raise_for_status()
 
-# def image_upload():
-    # # TODO get image from blob storage, download it
-    # list_endpoint = '/signals/v1/private/signals/'
-    # detail_endpoint = list_endpoint + '{}'
-    # attachment_endpoint = detail_endpoint + '/attachments/'
-    # test_host = 'http://testserver'
-    #
-    # endpoint = attachment_endpoint.format(self.signal.id)
-    # image = SimpleUploadedFile('image.gif', small_gif, content_type='image/gif')
-    #
-    # response = self.client.post(endpoint, data={'file': image})
+def image_upload(headers):
+    files = {'file': (file_to_upload, open(file_to_upload, 'rb'))}
 
-    # list_endpoint = '/signals/v1/private/signals/'
-    # detail_endpoint = list_endpoint + '{}'
-    # attachment_endpoint = detail_endpoint + '/attachments/'
+    response = requests.post(url, files=files, headers=headers)
 
+    if response.status_code == 200:
+        print("The server successfully performed the POST request.")
+        print(response.json())
+    else:
+        print(response.raise_for_status())
 
-    #
-    # files = {'media': open('test.jpg', 'rb')}
-    # requests.post(url, files=files)
+if __name__ == "__main__":
+    azClient = BaseAzureClient()
+    sia_password = azClient.get_secret_value("sia-password-acc")
+    
+    access_token = _get_access_token("sia-cvt", sia_password)
+    headers = {'Authorization': "Bearer {}".format(access_token)}
 
-# def check_sia_connection():
-access_token = _get_access_token("sia-cvt", sia_password)
-print(_get_signals_page(access_token, "?page_size=1"))
+    print(_get_signals_page(headers, "?page_size=1"))
+    # print(_post_signal(headers))
 
-# print(_post_signal(access_token))
+    file_to_upload = "colors.jpeg"
+    # Get access to the Azure Storage account.
+    azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
+    # Download files to the WORKDIR of the Docker container.
+    azure_connection.download_blob("postprocessing-input", file_to_upload, file_to_upload)
 
-# Get access to the Azure Storage account.
-azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
+    signal_id = "11670"
+    url = BASE_URL + f"/{signal_id}/attachments/"
 
-# Download files to the WORKDIR of the Docker container.
-azure_connection.download_blob("postprocessing-input", "colors.jpeg", "colors.jpeg")
-
-files = {'media': open('colors.jpeg', 'rb')}
-
-signal_id = "11670"
-
-url = BASE_URL + f"/{signal_id}/attachments/"
-
-headers = {'Authorization': "Bearer {}".format(access_token)}
-
-response = requests.post(url, files=files, headers=headers)
-
-if response.status_code == 200:
-    print("The server successfully performed the POST request.")
-    print(response.json())
-else:
-    print(response.raise_for_status())
+    image_upload(headers)
