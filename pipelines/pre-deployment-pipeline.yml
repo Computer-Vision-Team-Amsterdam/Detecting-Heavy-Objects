@@ -23,7 +23,7 @@ parameters:
   displayName: "Continue pipeline if Bandit scan fails"
   type: string
   default: true
-  
+
 variables:
   banditBaselineFile: ${{ parameters.BanditBaselineFile }}
 
@@ -88,7 +88,7 @@ stages :
           - script: |
               echo "Bandit scan complete."
             displayName: 'Scan results'
-            condition: 'or(succeeded(), eq('${{ parameters.continueAfterBanditFail }}', 'true'))'
+            condition: or(succeeded(), eq('${{ parameters.continueAfterBanditFail }}', 'true'))
 
       - job: Linux
         dependsOn:
