@@ -5,6 +5,7 @@ import socket
 socket.setdefaulttimeout(100)
 import pandas as pd
 import pandas.io.sql as sqlio
+import argparse
 
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
 import upload_to_postgres
@@ -122,30 +123,45 @@ def _image_upload(auth_headers, filename, sig_id):
         return response.raise_for_status()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Run postprocessing for container detection pipeline"
+    )
+    parser.add_argument(
+        "--date",
+        type=str,
+        help="Processing date in the format YYYY-MM-DD",
+    )
+    args = parser.parse_args()
+
+    # Get API data
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
     access_token = _get_access_token("sia-cvt", sia_password)
     headers = {"Authorization": "Bearer {}".format(access_token)}
+    # Get access to the Azure Storage account.
+    azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # TODO
     # Make a connection to the database
     conn, cur = upload_to_postgres.connect()
-    table_name = "containers"
 
     # Get images with a detection
     sql = (
-        f"SELECT * FROM {table_name};"
+        f"SELECT * FROM containers;"
     )
     query_df = sqlio.read_sql_query(sql, conn)
 
-    file_to_upload = "colors.jpeg"
-    date_now: datetime = datetime.now()
-    lat_lng = {"lat": 52.367527, "lng": 4.901257}
-    signal_id = "11742" # _post_signal(headers, _to_signal(date_now, lat_lng))
+    for index, row in query_df.iterrows():
+        # Convert string to datetime object
+        date_now = datetime.strptime(args.date, "%Y-%m-%d").date()
 
-    # Get access to the Azure Storage account.
-    azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
-    # Download files to the WORKDIR of the Docker container.
-    azure_connection.download_blob("postprocessing-input", file_to_upload, file_to_upload)
+        closest_image = row["closest_image"]
 
-    #_image_upload(headers, file_to_upload, signal_id) # TODO uncomment in production
-    _patch_signal(headers, signal_id) # TODO uncomment in production
+        lat_lng = {"lat": row["lat"], "lng":  row["lon"]}
+        signal_id = "11742" # _post_signal(headers, _to_signal(date_now, lat_lng))
+
+        # Download files to the WORKDIR of the Docker container.
+        azure_connection.download_blob("postprocessing-input", closest_image, closest_image)
+
+        # _image_upload(headers, file_to_upload, signal_id) # TODO uncomment in production
+        # _patch_signal(headers, signal_id) # TODO uncomment in production
+
+    print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
