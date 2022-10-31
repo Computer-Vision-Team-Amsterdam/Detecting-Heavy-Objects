@@ -34,6 +34,9 @@ def _to_signal(date_now, lat_lng: dict):
         "priority": {
             "priority": "low",
         },
+        "notes": {
+            "text": "string \n dit is een nieuwe regel. of dit \\n even testen."
+        },
         "incident_date_start": date_now.strftime("%Y-%m-%d %H:%M")
     }
 
@@ -73,7 +76,7 @@ def _post_signal(auth_headers, json_content):
     else:
         return response.raise_for_status()
 
-def _image_upload(auth_headers, filename):
+def _image_upload(auth_headers, filename, url):
     if os.path.getsize(filename) > API_MAX_UPLOAD_SIZE:
         msg = f"File can be a maximum of {API_MAX_UPLOAD_SIZE} bytes in size."
         raise Exception(msg)
@@ -81,25 +84,6 @@ def _image_upload(auth_headers, filename):
     files = {"file": (filename, open(filename, "rb"))}
 
     response = requests.post(url, files=files, headers=auth_headers)
-
-    if response.status_code == 201:
-        print("The server successfully performed the POST request.")
-        return response.json()
-    else:
-        return response.raise_for_status()
-
-def create_note(auth_headers):
-    payload = {
-        'notes': [{
-            'text': 'TEST NOTE BODY',
-        }]
-    }
-
-    response = requests.post(
-        BASE_URL + "/11737",
-        json=payload,
-        headers=auth_headers
-    )
 
     if response.status_code == 201:
         print("The server successfully performed the POST request.")
@@ -118,7 +102,7 @@ if __name__ == "__main__":
     file_to_upload = "colors.jpeg"
     date_now: datetime = datetime.now()
     lat_lng = {"lat": 52.367527, "lng": 4.901257}
-    signal_id = "11737" #_post_signal(headers, _to_signal(date_now, lat_lng))
+    signal_id = _post_signal(headers, _to_signal(date_now, lat_lng))
 
     # Get access to the Azure Storage account.
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
@@ -127,6 +111,4 @@ if __name__ == "__main__":
 
     url = BASE_URL + f"/{signal_id}/attachments/"
 
-    #response_json = _image_upload(headers, file_to_upload)
-
-    create_note(headers)
+    response_json = _image_upload(headers, file_to_upload, url)
