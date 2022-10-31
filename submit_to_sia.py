@@ -11,15 +11,14 @@ API_MAX_UPLOAD_SIZE = 20*1024*1024  # 20MB = 20*1024*1024
 socket.setdefaulttimeout(100)
 
 TEXT = "CVT Dit is een automatisch gegenereerd signaal."
-TEXT_EXTRA = "Dit is een text extra"
+TEXT_NOTE = "Dit is een Notitie"
 
 def _to_signal(date_now, lat_lng: dict):
-    # TODO add notitie
-    # signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object
+    # TODO Straatnaam
+    # TODO signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object
 
     return {
         "text": TEXT,
-        "text_extra": TEXT_EXTRA,
         "location": {
             "geometrie": {
                 "type": "Point",
@@ -89,8 +88,24 @@ def _image_upload(auth_headers, filename):
     else:
         return response.raise_for_status()
 
-# def create_note(self.note_data, signal):
+def create_note(auth_headers):
+    payload = {
+        'notes': [{
+            'text': 'TEST NOTE BODY',
+        }]
+    }
 
+    response = requests.post(
+        BASE_URL + "/11737",
+        json=payload,
+        headers=auth_headers
+    )
+
+    if response.status_code == 201:
+        print("The server successfully performed the POST request.")
+        return response.json()
+    else:
+        return response.raise_for_status()
 
 if __name__ == "__main__":
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
@@ -103,7 +118,7 @@ if __name__ == "__main__":
     file_to_upload = "colors.jpeg"
     date_now: datetime = datetime.now()
     lat_lng = {"lat": 52.367527, "lng": 4.901257}
-    signal_id = _post_signal(headers, _to_signal(date_now, lat_lng))
+    signal_id = "11737" #_post_signal(headers, _to_signal(date_now, lat_lng))
 
     # Get access to the Azure Storage account.
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
@@ -112,4 +127,6 @@ if __name__ == "__main__":
 
     url = BASE_URL + f"/{signal_id}/attachments/"
 
-    response_json = _image_upload(headers, file_to_upload)
+    #response_json = _image_upload(headers, file_to_upload)
+
+    create_note(headers)
