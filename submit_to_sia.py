@@ -3,8 +3,11 @@ import requests
 import os
 import socket
 socket.setdefaulttimeout(100)
+import pandas as pd
+import pandas.io.sql as sqlio
 
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
+import upload_to_postgres
 
 BASE_URL = "https://acc.api.data.amsterdam.nl/signals/v1/private/signals"
 API_MAX_UPLOAD_SIZE = 20*1024*1024  # 20MB = 20*1024*1024
@@ -124,6 +127,16 @@ if __name__ == "__main__":
     headers = {"Authorization": "Bearer {}".format(access_token)}
 
     # TODO
+    # Make a connection to the database
+    conn, cur = upload_to_postgres.connect()
+    table_name = "containers"
+
+    # Get images with a detection
+    sql = (
+        f"SELECT * FROM {table_name};"
+    )
+    query_df = sqlio.read_sql_query(sql, conn)
+
     file_to_upload = "colors.jpeg"
     date_now: datetime = datetime.now()
     lat_lng = {"lat": 52.367527, "lng": 4.901257}
