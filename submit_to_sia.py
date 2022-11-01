@@ -162,7 +162,7 @@ if __name__ == "__main__":
         closest_image = row["closest_image"]
         # Download files to the WORKDIR of the Docker container.
         azure_connection.download_blob(
-            "postprocessing-input", os.path.join(args.date, closest_image), closest_image
+            "blurred", os.path.join(args.date, closest_image), closest_image
         )
 
         lat_lng = {"lat": row["lat"], "lng": row["lon"]}
