@@ -117,7 +117,7 @@ def row_to_upload_from_panorama(
     pano_object = PanoramaClient.get_panorama(panorama_id)
     row: Dict[str, Union[str, float, datetime]] = {key: "" for key in table_columns}
 
-    row["file_name"] = pano_object.filename
+    row["file_name"] = pano_object.id + ".jpg"
     row["camera_location_lat"] = pano_object.geometry.coordinates[1]
     row["camera_location_lon"] = pano_object.geometry.coordinates[0]
     row["heading"] = pano_object.heading
