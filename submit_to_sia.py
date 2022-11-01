@@ -1,13 +1,13 @@
 import os
 import socket
 from datetime import datetime
+from typing import Any, Dict
 
 import requests
 
 socket.setdefaulttimeout(100)
 import argparse
 
-import pandas as pd
 import pandas.io.sql as sqlio
 
 import upload_to_postgres
@@ -39,7 +39,7 @@ TEXT_NOTE = (
 )
 
 
-def _to_signal(date_now: datetime, lat_lng: dict):
+def _to_signal(date_now: datetime, lat_lng: Dict[str, float]) -> Any:
     return {
         "text": TEXT,
         "location": {
@@ -59,7 +59,7 @@ def _to_signal(date_now: datetime, lat_lng: dict):
     }
 
 
-def _get_access_token(client_id: str, client_secret: str):
+def _get_access_token(client_id: str, client_secret: str) -> Any:
     token_url = "https://iam.amsterdam.nl/auth/realms/datapunt-ad-acc/protocol/openid-connect/token"
     payload = {
         "client_id": client_id,
@@ -71,10 +71,10 @@ def _get_access_token(client_id: str, client_secret: str):
         print("The server successfully answered the request.")
         return response.json()["access_token"]
     else:
-        response.raise_for_status()
+        return response.raise_for_status()
 
 
-def _get_signals_page(auth_headers, page="?page_size=1"):
+def _get_signals_page(auth_headers: Dict[str, str], page: str = "?page_size=1") -> Any:
     response = requests.get(BASE_URL + page, headers=auth_headers)
 
     if response.status_code == 200:
@@ -84,7 +84,7 @@ def _get_signals_page(auth_headers, page="?page_size=1"):
         return response.raise_for_status()
 
 
-def _post_signal(auth_headers, json_content):
+def _post_signal(auth_headers: Dict[str, str], json_content: Any) -> Any:
     response = requests.post(BASE_URL, json=json_content, headers=auth_headers)
 
     if response.status_code == 201:
@@ -94,7 +94,7 @@ def _post_signal(auth_headers, json_content):
         return response.raise_for_status()
 
 
-def _patch_signal(auth_headers, sig_id: str):
+def _patch_signal(auth_headers: Dict[str, str], sig_id: str) -> Any:
     json_content = {"notes": [{"text": TEXT_NOTE}]}
 
     response = requests.patch(
@@ -108,7 +108,7 @@ def _patch_signal(auth_headers, sig_id: str):
         return response.raise_for_status()
 
 
-def _image_upload(auth_headers, filename: str, sig_id: str):
+def _image_upload(auth_headers: Dict[str, str], filename: str, sig_id: str) -> Any:
     if os.path.getsize(filename) > API_MAX_UPLOAD_SIZE:
         msg = f"File can be a maximum of {API_MAX_UPLOAD_SIZE} bytes in size."
         raise Exception(msg)
