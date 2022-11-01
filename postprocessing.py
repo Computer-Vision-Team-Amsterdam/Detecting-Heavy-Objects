@@ -49,15 +49,14 @@ def get_closest_pano(df: Any, clustered_intersections: Any) -> Any:
     """
     Find a panorama closest to a found container (intersection point).
     """
-    df1 = pd.DataFrame(df)
-    df1["point"] = [
-        (x, y) for x, y in zip(df1["camera_location_lat"], df1["camera_location_lon"])
+    df["point"] = [
+        (x, y) for x, y in zip(df["camera_location_lat"], df["camera_location_lon"])
     ]
 
     closest_points = [
-        closest_point(x, list(df1["point"])) for x in clustered_intersections[:, :2]
+        closest_point(x, list(df["point"])) for x in clustered_intersections[:, :2]
     ]
-    pano_match = [match_value(df1, "point", x, "file_name") for x in closest_points]
+    pano_match = [match_value(df, "point", x, "file_name") for x in closest_points]
 
     # Flatten the list
     return np.concatenate(pano_match).ravel()
@@ -404,6 +403,7 @@ if __name__ == "__main__":
         f"date_trunc('day', taken_at) = '{args.date}'::date;"
     )
     query_df = sqlio.read_sql_query(sql, conn)
+    query_df = pd.DataFrame(query_df)
 
     if query_df.empty:
         print(
