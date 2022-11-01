@@ -197,7 +197,7 @@ def generate_map(
 
 def geo_clustering(
     container_locations: List[PointOfInterest], prefix_length: int
-) -> Tuple[List[PointOfInterest], int]:
+) -> Tuple[List[PointOfInterest], Dict[str, int]]:
     """
     This method looks at all container geocodes and clusters them based on the first prefix_length digits.
     For example: We have 2 geocodes u173yffw8qjy and u173yffvndbb.
@@ -206,12 +206,15 @@ def geo_clustering(
 
     :param container_locations: container latitude, longitudes, geohash + metadata such as confidence score
     :param prefix_length: length of the common geohash prefix.
+
+
+    return updated clustered points of interest, unique cluster prefixes
     """
 
     if prefix_length < 0 or prefix_length > 12:
         raise ValueError("Prefix must be an integer in [0, 12] interval.")
 
-    unique_prefixes: Dict[str, int] = {}
+    unique_prefixes: Dict[str, int] = {}  # map geoprefix to int, easier to work with ints
     cluster_id = 0
     for container_loc in container_locations:
         geohash = container_loc.geohash
@@ -223,15 +226,25 @@ def geo_clustering(
             container_loc.cluster = cluster_id
             cluster_id = cluster_id + 1
 
-    nr_clusters = cluster_id
+    return container_locations, unique_prefixes
 
-    return container_locations, nr_clusters
+
+def get_points(points: List[PointOfInterest], cluster_id: int) \
+        -> List[PointOfInterest]:
+    """
+    Return all points of interest from a cluster
+    """
+    points_by_cluster = [point for point in points if point.cluster == cluster_id]
+    return points_by_cluster
+
+
+
 
 
 if __name__ == "__main__":
     container_metadata = read_coordinates("../decos/Decos.xlsx")
     container_metadata_with_geohash = append_geohash(container_metadata)
-    container_metadata_clustered, total_clusters = geo_clustering(
+    container_metadata_clustered, clusters = geo_clustering(
         container_metadata_with_geohash, prefix_length=5
     )
 
@@ -240,5 +253,5 @@ if __name__ == "__main__":
         permit_locations=[],
         detections=container_metadata_clustered,
         name="Decos containers",
-        colors=color_generator(total_clusters),
+        colors=color_generator(len(clusters)),
     )

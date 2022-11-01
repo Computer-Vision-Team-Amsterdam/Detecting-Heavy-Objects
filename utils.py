@@ -1,5 +1,11 @@
 """
 This module contains general functionality to handle the annotated data
+
+
+input = "/Users/dianaepureanu/Documents/Projects/versions_of_data/data_extended/annotations-renamed-filenames-4000x2000.json"
+output_dir = "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/converter_output_data_extended"
+converter = DataFormatConverter(input, output_dir)
+converter.convert_data()
 """
 import copy
 import json
@@ -534,9 +540,3 @@ def correct_faulty_panoramas() -> None:
     _update_dims()
 
 
-"""
-input = "/Users/dianaepureanu/Documents/Projects/versions_of_data/data_extended/annotations-renamed-filenames-4000x2000.json"
-output_dir = "/Users/dianaepureanu/Documents/Projects/Detecting-Heavy-objects/tests/converter_output_data_extended"
-converter = DataFormatConverter(input, output_dir)
-converter.convert_data()
-"""
