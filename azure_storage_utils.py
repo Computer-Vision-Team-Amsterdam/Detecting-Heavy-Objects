@@ -78,7 +78,7 @@ class StorageAzureClient(BaseAzureClient):
             raise ex
 
     def list_container_content(
-            self, cname: str, blob_prefix: Optional[str] = None
+        self, cname: str, blob_prefix: Optional[str] = None
     ) -> List[str]:
         """List the content of a container.
         Args:

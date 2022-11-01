@@ -25,13 +25,12 @@ TEXT_NOTE = "Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n" \
             "bouwkeet op de foto staat. \n " \
             "- De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit " \
             "signaal herkennen in City Control onder 'Signalering'.\n\n" \
-            "Instructie BOA’s:\n " \
-            "- Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek ter " \
-            "plaatse nodig is.\n" \
-            "- Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n " \
             "- Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
 
 def _to_signal(date_now, lat_lng: dict):
+API_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB = 20*1024*1024
+
+TEXT = (
     return {
         "text": TEXT,
         "location": {

@@ -21,6 +21,7 @@ RUN python -m pip install --upgrade pip
 RUN pip install --no-cache \
         numpy==1.21.6 \
         requests==2.28.0 \
+        pandas==1.3.5 \
         azure-cli==2.39.0 \
         azure-identity==1.10.0 \
         azure-keyvault-secrets==4.5.1 \
@@ -29,6 +30,7 @@ RUN pip install --no-cache \
 WORKDIR /app
 COPY submit_to_sia.py /app
 COPY azure_storage_utils.py /app
+COPY upload_to_postgres.py /app
 
 RUN useradd appuser
 RUN chown -R appuser /app
