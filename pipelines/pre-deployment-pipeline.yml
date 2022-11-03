@@ -18,7 +18,10 @@ parameters:
 - name: BanditBaselineFile
   displayName: "Bandit baseline file"
   type: string
-  default: bandit-report.json
+  default: bandit-relaxed.json
+  values:
+  - bandit-relaxed.json
+  - bandit-strict.json
 - name: ContinueAfterBanditFail
   displayName: "Continue pipeline if Bandit scan fails"
   type: boolean
