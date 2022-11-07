@@ -49,7 +49,7 @@ variables:
 stages :
   - stage: BuildAndPush
     displayName: 'Build and Push'
-    condition: eq(variables['buildAndPush'], true)
+    condition: and(succeeded(), eq(variables['buildAndPush'], true))
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - deployment: Build_${{dockerFile.name}}
