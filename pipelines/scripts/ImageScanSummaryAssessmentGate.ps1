@@ -85,7 +85,7 @@ Param(
 
 az extension add --name resource-graph -y
 
-dig +short myip.opendns.com @resolver1.opendns.com # test public IP address
+curl -s http://ipinfo.io/ip # test public IP address
 az acr login --name $registryName # added to login to ACR - CVT
 
 $imageDigest = az acr repository show -n $registryName --image "$($repository):$($tag)" -o tsv --query digest
