@@ -22,6 +22,7 @@ RUN pip install --no-cache \
         numpy==1.21.6 \
         requests==2.28.0 \
         pandas==1.3.5 \
+        psycopg2==2.8.6 \
         azure-cli==2.39.0 \
         azure-identity==1.10.0 \
         azure-keyvault-secrets==4.5.1 \
