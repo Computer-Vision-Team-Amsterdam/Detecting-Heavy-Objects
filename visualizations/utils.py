@@ -119,7 +119,7 @@ def get_permit_locations(
     for item in tqdm(root, disable=running_in_k8s):
         # The permits seem to have a quite free format. Let's catch some exceptions
         if (
-            is_form_valid(item)
+            is_form_valid(item) # TODO still use?
             and is_container_permit(item)
             and is_permit_valid_on_day(item)
         ):
