@@ -137,6 +137,7 @@ def get_permit_locations(
                     address_format = child_item.find("TEXT8").text + " " + child_item.find("INITIALS").text
             except Exception as ex:
                 print(f"XML scrape failed with error: {ex}.")
+                # Continue to next iteration
 
             try:
                 if address_format:
@@ -149,6 +150,7 @@ def get_permit_locations(
                     permit_locations.append(lonlat)
             except Exception as ex:
                 print(f"BAG scrape failed with error: {ex}. Address is {address_format}")
+                # Continue to next iteration
 
     return permit_locations
 
