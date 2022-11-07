@@ -124,10 +124,10 @@ def get_permit_locations(
             and is_permit_valid_on_day(item)
         ):
             address_raw = item.find("TEXT6").text
+            address_format = []  # TODO needed?
 
             try:
                 address = split_dutch_street_address(address_raw)
-
                 if address:
                     # Street name and house number
                     address_format = address[0][0] + " " + address[0][1]
@@ -136,18 +136,19 @@ def get_permit_locations(
                     child_item = item.getchildren()[-1].getchildren()[0]
                     address_format = child_item.find("TEXT8").text + " " + child_item.find("INITIALS").text
             except Exception as ex:
-                print(ex)
+                print(f"XML scrape failed with error: {ex}.")
 
-            if address_format:
-                with requests.get(bag_url + address_format) as response:
-                    bag_data_location = json.loads(response.content)["results"][0][
-                        "centroid"
-                    ]
+            try:
+                if address_format:
+                    with requests.get(bag_url + address_format) as response:
+                        bag_data_location = json.loads(response.content)["results"][0][
+                            "centroid"
+                        ]
 
-                lonlat = [bag_data_location[1], bag_data_location[0]]
-                permit_locations.append(lonlat)
-            else:
-                print("Failed to get proper format for a permit in the XML file.")
+                    lonlat = [bag_data_location[1], bag_data_location[0]]
+                    permit_locations.append(lonlat)
+            except Exception as ex:
+                print(f"BAG scrape failed with error: {ex}. Address is {address_format}")
 
     return permit_locations
 
