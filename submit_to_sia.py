@@ -23,8 +23,8 @@ TEXT = (
 # TODO move to function and add arguments
 TEXT_NOTE = (
     "Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n"
-    "Afstand tot kwetsbare kade: … meter\n"
-    "Afstand tot objectvergunning: … meter\n\n"
+    "Afstand tot kwetsbare kade: TODO meter\n"
+    "Afstand tot objectvergunning: TODO meter\n\n"
     "Tijdstip scanfoto: dd/mm/yy hh:mm\n"
     "Tijdstip signaal: dd/mm/yy hh:mm\n\n"
     "Instructie ASC:\n"
