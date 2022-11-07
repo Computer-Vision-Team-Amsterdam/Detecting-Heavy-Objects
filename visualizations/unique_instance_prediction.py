@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import folium
 import geohash as gh
 import pandas as pd
-from folium.plugins import MarkerCluster
 from panorama.client import PanoramaClient
 
 from .model import PointOfInterest
@@ -118,7 +117,6 @@ def generate_map(
 
     # add container locations to the map
     if detections:
-        marker_cluster = MarkerCluster().add_to(Map)  # options={"maxClusterRadius":20}
         for i in range(0, len(detections)):
 
             # get link to panorama to display
@@ -152,7 +150,7 @@ def generate_map(
                     prefix="fa",
                 ),
                 radius=15,
-            ).add_to(marker_cluster)
+            ).add_to(Map)
 
     # add line with car trajectory on the map
     if trajectory:
