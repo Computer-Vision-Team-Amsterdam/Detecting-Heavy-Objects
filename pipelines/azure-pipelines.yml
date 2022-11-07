@@ -70,6 +70,7 @@ stages :
                     scriptType: pscore
                     scriptLocation: inlineScript
                     inlineScript: |
+                      dig +short myip.opendns.com @resolver1.opendns.com
                       az acr login --name $(containerRegistryName)
                       cd .${{ dockerFile.dockerFileRelativePath }}
                       az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
