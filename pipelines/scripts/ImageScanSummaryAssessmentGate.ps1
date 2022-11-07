@@ -85,6 +85,8 @@ Param(
 
 az extension add --name resource-graph -y
 
+az acr login --name $registryName # added to login to ACR - CVT
+
 $imageDigest = az acr repository show -n $registryName --image "$($repository):$($tag)" -o tsv --query digest
 if(!$imageDigest)
 {
