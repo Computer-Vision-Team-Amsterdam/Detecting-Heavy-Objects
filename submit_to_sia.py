@@ -20,6 +20,7 @@ TEXT = (
     "Dit is een automatisch gegenereerd signaal. Met behulp van beeldherkenning is een bouwcontainer of bouwkeet "
     "gedetecteerd op onderstaande locatie, waar mogelijk geen vergunning voor is. "
 )
+# TODO move to function and add arguments
 TEXT_NOTE = (
     "Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n"
     "Afstand tot kwetsbare kade: … meter\n"
@@ -170,5 +171,3 @@ if __name__ == "__main__":
         #
         # _image_upload(headers, closest_image, signal_id) # TODO uncomment in production
         # _patch_signal(headers, signal_id)  # TODO uncomment in production
-
-    print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
