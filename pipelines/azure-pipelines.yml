@@ -78,7 +78,7 @@ stages :
     displayName: 'Vulnerability Scan'
     dependsOn:
     - BuildAndPush
-    condition: eq(variables['buildAndPush'], true)
+    condition: and(succeeded(), eq(variables['buildAndPush'], true))
     jobs:
       - job: WaitForScanResults
         displayName: Wait for Scan results
