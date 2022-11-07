@@ -27,15 +27,15 @@ TEXT_NOTE = (
     "Tijdstip scanfoto: dd/mm/yy hh:mm\n"
     "Tijdstip signaal: dd/mm/yy hh:mm\n\n"
     "Instructie ASC:\n"
-    "+ Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een bouwcontainer of "
+    "o Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een bouwcontainer of "
     "bouwkeet op de foto staat. \n "
-    "+ De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
+    "o De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
     "signaal herkennen in City Control onder 'Signalering'.\n\n"
     "Instructie BOA’s:\n "
-    "+ Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek ter "
+    "o Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek ter "
     "plaatse nodig is.\n"
-    "+ Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n "
-    "+ Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+    "o Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n "
+    "o Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
 )
 
 
@@ -166,9 +166,9 @@ if __name__ == "__main__":
         )
 
         lat_lng = {"lat": row["lat"], "lng": row["lon"]}
-        signal_id = "11742"  # _post_signal(headers, _to_signal(date_now, lat_lng)) # TODO uncomment in production
-
-        # _image_upload(headers, file_to_upload, signal_id) # TODO uncomment in production
+        # signal_id = _post_signal(headers, _to_signal(date_now, lat_lng)) # TODO uncomment in production
+        #
+        # _image_upload(headers, closest_image, signal_id) # TODO uncomment in production
         # _patch_signal(headers, signal_id)  # TODO uncomment in production
 
     print(f"Files in WORKDIR {os.getcwd()} are {os.listdir(os.getcwd())}")
