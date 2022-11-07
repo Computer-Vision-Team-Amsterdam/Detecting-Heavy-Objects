@@ -98,6 +98,19 @@ class StorageAzureClient(BaseAzureClient):
             print("List blobs operation failed")
             raise ex
 
+
+    def delete_blob(self, cname: str, blob_names: List[str], blob_prefix: str) -> None:
+        try:
+            container_client = self.blob_service_client.get_container_client(
+                container=cname
+            )
+            for blob_name in blob_names:
+                container_client.delete_blob(blob=blob_prefix + blob_name)
+        except Exception as ex:
+            print("Delete blobs operation failed")
+            raise ex
+
+
     def upload_blob(self, cname: str, blob_name: str, local_file_path: str) -> None:
         """Upload a file to a container in the cloud.
         Args:

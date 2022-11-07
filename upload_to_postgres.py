@@ -235,6 +235,23 @@ if __name__ == "__main__":
         input_data = json.load(f)
         object_fields_to_select = ["pano_id", "score", "bbox"]
 
+        # Get all images with detections (with duplicates)
+        images_w_det = [item["pano_id"] for item in input_data]
+
+        images_all = saClient.list_container_content(
+            cname="blurred",
+            blob_prefix=opt.date,
+        )
+
+        images_to_remove = set(images_all) - set(images_w_det)
+        print(f"Images without a detection: {images_to_remove}")
+        saClient.delete_blob(
+            cname="blurred",
+            blob_names=images_to_remove,
+            blob_prefix=opt.date,
+        )
+
+
     connection, cursor = connect()
     upload_input(connection, cursor, opt.table, input_data, object_fields_to_select)
 
