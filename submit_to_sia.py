@@ -1,6 +1,6 @@
 import os
 import socket
-from datetime import datetime
+from datetime import datetime, date
 from typing import Any, Dict
 
 import requests
@@ -40,7 +40,7 @@ TEXT_NOTE = (
 )
 
 
-def _to_signal(date_now: datetime, lat_lng: Dict[str, float]) -> Any:
+def _to_signal(date_now: date, lat_lng: Dict[str, float]) -> Any:
     return {
         "text": TEXT,
         "location": {
