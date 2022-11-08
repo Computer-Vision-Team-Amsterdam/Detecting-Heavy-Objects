@@ -162,6 +162,7 @@ if __name__ == "__main__":
         # Convert string to datetime object
         date_now = datetime.strptime(args.date, "%Y-%m-%d").date()
 
+        # Get panoramic image closest to the found container
         closest_image = row["closest_image"]
         # Download files to the WORKDIR of the Docker container
         azure_connection.download_blob(
@@ -173,7 +174,7 @@ if __name__ == "__main__":
         if add_notification:
             # Add a new signal to meldingen.amsterdam.nl
             signal_id = _post_signal(headers, _to_signal(date_now, lat_lng))
-            # Add an attachment to the signal
+            # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
-            # Add a description to the signal
+            # Add a description to the previously created signal
             _patch_signal(headers, signal_id)
