@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import folium
 import geohash as gh
 import pandas as pd
-from folium.plugins import MarkerCluster
 from panorama.client import PanoramaClient
 
 from .model import PointOfInterest
@@ -124,8 +123,8 @@ def generate_map(
             # get link to panorama to display
 
             pano_id = detections[i].pano_id
-            image = PanoramaClient.get_panorama(pano_id)
-            image_link = image.links.equirectangular_small.href
+            #image = PanoramaClient.get_panorama(pano_id)
+            #image_link = image.links.equirectangular_small.href
 
             # create HTML with more info
             html = (
@@ -133,7 +132,7 @@ def generate_map(
                    <!DOCTYPE html>
                    <html>
                    <center><img src=\""""
-                + image_link
+                + pano_id
                 + f"""\" width=400 height=200 ></center>
                 <p> Cluster: {detections[i].cluster}</p>
                    </html>
