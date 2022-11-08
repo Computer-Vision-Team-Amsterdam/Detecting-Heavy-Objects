@@ -1,4 +1,3 @@
-# python -m examples.examples
 
 import os
 import json
@@ -65,7 +64,7 @@ def get_filenames_metadata(filenames: List[str]) -> Container[PointOfInterest]:
     return filenames_loc
 
 
-def split_pano_ids(points, nr_clusters , train_ratio=0.7, validation_ratio=0.15):
+def split_pano_ids(points, nr_clusters, train_ratio=0.7, validation_ratio=0.15):
     """
     Split panorama filenames in train.txt, val.txt and test.txt based on given split ratio
     Panos that start with pano* are firstly moved based on where they already are.
@@ -73,9 +72,12 @@ def split_pano_ids(points, nr_clusters , train_ratio=0.7, validation_ratio=0.15)
     pano0001 in train.txt.
     """
 
-    train_count = int(train_ratio*len(points))
-    val_count = int(validation_ratio*len(points))
-    test_count = len(points) - train_count - val_count
+    total = len(points) + 355 # add the pano files
+
+    print(f"total: {total}")
+    train_count = int(train_ratio*total)
+    val_count = int(validation_ratio*total)
+    test_count = total - train_count - val_count
 
     train_points = []
     val_points = []
@@ -91,11 +93,11 @@ def split_pano_ids(points, nr_clusters , train_ratio=0.7, validation_ratio=0.15)
 
     for cluster_id in range(nr_clusters):
         points_subset = get_points(points, cluster_id=cluster_id)
-        if _not_full(train_points, threshold=train_count):
+        if _not_full(train_points, threshold=train_count - 355):  # we already start with 355 pano* filenames.
             train_points.extend(points_subset)
         elif _not_full(val_points, threshold=val_count):
             val_points.extend(points_subset)
-        else:
+        elif _not_full(test_points, threshold=test_count):
             test_points.extend(points_subset)
 
     print(f"After filename splitting, train count is {len(train_points)}, val count is {len(val_points)}"

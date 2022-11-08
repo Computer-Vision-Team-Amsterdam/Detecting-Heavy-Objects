@@ -19,8 +19,22 @@ srcs = ["05-16-2022_111258_UTC/annotations-as-aml.json",
 
 # merge names of filenames from all annotation files
 file_names = collect_pano_ids(srcs, exclude_prefix="pano")
-
 ``` 
+
+There are 1408 filenames that start with *TMX*.
+
+There are 355 filenames that start with *pano*.
+
+In total there are 1763 images.
+
+All images that start with *pano* go to the training set.
+
+So, if we want an 70-15-15 split, then this means 1234-264-264 images.
+
+
+
+Out of the 863 training images, 355 will be the filenames starting with *pano*.
+
 
 2. Query panorama API and store metadata of the images in json
    (so we don't send too many requests)
@@ -83,6 +97,12 @@ print(f"{50*'-'}STATS{50*'-'}")
 ```
 
 4. Plot train, validation, test on a map 
+
+We split the set in `70-15-15`.
+
+After filename splitting, train TMX count is 895, val TMX count is 265 and test TXM count is 248.
+Therefore, we have a total of `895+355 = 1250` train images.
+
 ```python
 
 from visualizations.model import PointOfInterest
@@ -127,3 +147,70 @@ generate_map(vulnerable_bridges=[],
              colors=colors)
 
 ```
+
+We have split the panoramas PointOfInterest starting with TMX in train, validation and test. 
+We can also save them, so we can easily access them later.
+
+```python
+from visualizations.model import PointOfInterest
+from dataclass_wizard import Container
+
+
+Container[PointOfInterest](train_points).to_json_file("examples/points_train_TMX.json", indent=4)
+Container[PointOfInterest](val_points).to_json_file("examples/points_val_TMX.json", indent=4)
+Container[PointOfInterest](test_points).to_json_file("examples/points_test_TMX.json", indent=4)
+```
+
+5. Next, we create the annotation files based on the split.
+
+First, place all *pano* filenames in the training annotations
+
+```python
+
+import json
+
+src = "05-16-2022_111258_UTC/containers-annotated-COCO-train.json"
+
+with open(src, "r") as read_file:
+    content = json.load(read_file)
+read_file.close()
+
+images = [image for image in content["images"] if image["file_name"].split("/")[-1].startswith("pano")]
+ids = [image["id"] for image in content["images"] if image["file_name"].split("/")[-1].startswith("pano")]
+annotations = [ann for ann in content["annotations"] if ann["image_id"] in ids]
+
+train = {"images": images, "annotations": annotations, "categories": content["categories"]}
+
+# save
+filename_output = f"0_{src.split('/')[-1]}"  # 0_containers-annotated-COCO-train.json
+with open(f"examples/{filename_output}", 'w') as f:
+    json.dump(train, f)
+
+```
+
+Secondly, we reformat the annotation file from Azure AML to a correct COCO format
+```python
+
+```
+
+Thirdly, we reindex the annotation files. 
+This is because the `annotations-as-aml.json` has ids starting from 1, but we already have id 1 in the 
+previous annotations, so we find the last ids in the old annotations and reindex `annotations-as-aml.json` 
+from that id.
+```python
+# get last id
+```
+
+
+Next, we add the *TMX* starting filenames to the annotation json files. 
+Keep in mind that the train json is updated (there are already the *pano* files in there), whereas the val 
+and test and created.
+
+```python
+
+```
+
+
+
+
+Next, we can filter the annotations files based on area, so we only keep the larger annotations

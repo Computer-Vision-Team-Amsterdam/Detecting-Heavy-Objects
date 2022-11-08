@@ -351,6 +351,7 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
 
     if expCfg.data_format == "coco":
         ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
+        # ann_path = f"{expCfg.data_folder}/containers-annotated-COCO-{expCfg.subset}.json"
         try:
             with open(ann_path) as f:
                 _ = json.load(f)

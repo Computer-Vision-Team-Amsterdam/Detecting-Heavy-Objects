@@ -16,7 +16,7 @@ from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
 
-azClient = BaseAzureClient()
+# azClient = BaseAzureClient()
 
 
 logging.basicConfig(level=logging.INFO)
@@ -93,6 +93,7 @@ if __name__ == "__main__":
 
     flags = arg_parser()
 
+    """
     input_path = Path(flags.data_folder, flags.subset)
     if not input_path.exists():
         input_path.mkdir(exist_ok=True, parents=True)
@@ -110,7 +111,7 @@ if __name__ == "__main__":
         )
 
     print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
-
+    """
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
@@ -119,7 +120,7 @@ if __name__ == "__main__":
     )
 
     evaluate_model(flags, experimentConfig)
-
+    """
     # upload detection files to postgres
     for file in os.listdir(f"{flags.output_path}"):
         saClient.upload_blob(
@@ -127,3 +128,5 @@ if __name__ == "__main__":
             blob_name=f"{flags.subset}/{file}",
             local_file_path=f"{flags.output_path}/{file}",
         )
+
+    """
