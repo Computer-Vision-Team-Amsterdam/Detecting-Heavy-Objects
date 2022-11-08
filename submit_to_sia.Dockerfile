@@ -1,8 +1,6 @@
-# Build with following command to forward SSH keys from host machine to access private GitHub repo's:
-# DOCKER_BUILDKIT=1 docker build --ssh default -f postprocessing.dockerfile -t as01weuacrovja4xx7veccq.azurecr.io/container-detection-postprocessing:0.1 .
-# This should be addressed when building this image in a pipeline
+# az acr build -t sia:latest -f submit_to_sia.Dockerfile -r cvtweuacrogidgmnhwma3zq .
 
-FROM python:3.7.13-bullseye
+FROM python:3.7.15-bullseye
 
 RUN apt-get update && \
     apt-get -y install \
@@ -23,7 +21,6 @@ RUN pip install --no-cache \
         requests==2.28.0 \
         pandas==1.3.5 \
         psycopg2==2.8.6 \
-        azure-cli==2.39.0 \
         azure-identity==1.10.0 \
         azure-keyvault-secrets==4.5.1 \
         azure-storage-blob==12.13.1

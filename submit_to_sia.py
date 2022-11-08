@@ -138,6 +138,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    add_notification = True # TODO make this an argument
+
     # Get API data
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
     access_token = _get_access_token("sia-cvt", sia_password)
@@ -161,13 +163,17 @@ if __name__ == "__main__":
         date_now = datetime.strptime(args.date, "%Y-%m-%d").date()
 
         closest_image = row["closest_image"]
-        # Download files to the WORKDIR of the Docker container.
+        # Download files to the WORKDIR of the Docker container
         azure_connection.download_blob(
             "blurred", os.path.join(args.date, closest_image), closest_image
         )
 
         lat_lng = {"lat": row["lat"], "lng": row["lon"]}
-        # signal_id = _post_signal(headers, _to_signal(date_now, lat_lng)) # TODO uncomment in production
-        #
-        # _image_upload(headers, closest_image, signal_id) # TODO uncomment in production
-        # _patch_signal(headers, signal_id)  # TODO uncomment in production
+
+        if add_notification:
+            # Add a new signal to meldingen.amsterdam.nl
+            signal_id = _post_signal(headers, _to_signal(date_now, lat_lng))
+            # Add an attachment to the signal
+            _image_upload(headers, closest_image, signal_id)
+            # Add a description to the signal
+            _patch_signal(headers, signal_id)
