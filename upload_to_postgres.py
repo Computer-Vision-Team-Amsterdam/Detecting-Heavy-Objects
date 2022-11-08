@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import psycopg2
-from panorama.client import PanoramaClient
 from psycopg2._psycopg import connection  # pylint: disable-msg=E0611
 from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
@@ -114,10 +113,12 @@ def row_to_upload_from_panorama(
 
     :return: object with ordered row-content to be inserted into table
     """
+    from panorama.client import PanoramaClient
+
     pano_object = PanoramaClient.get_panorama(panorama_id)
     row: Dict[str, Union[str, float, datetime]] = {key: "" for key in table_columns}
 
-    row["file_name"] = pano_object.filename
+    row["file_name"] = pano_object.id + ".jpg"
     row["camera_location_lat"] = pano_object.geometry.coordinates[1]
     row["camera_location_lon"] = pano_object.geometry.coordinates[0]
     row["heading"] = pano_object.heading
