@@ -88,11 +88,11 @@ class DataFormatConverter:
         """
 
         for image in self._input["images"]:
-            """
+
             assert isinstance(image["height"], float) and isinstance(image["width"], float), \
                 f'Image dimensions must be integers,' \
                 f'found {type(image["height"])} x {type(image["width"])} instead!'
-            """
+
             assert image["height"] == 2000 and image["width"] == 4000, (
                 f"Image resolution should be 2000x4000,"
                 f'found resolution {image["height"]} x {image["width"]} instead!'
@@ -165,6 +165,19 @@ class DataFormatConverter:
                 bbox_absolute_values.append(y * height)
             self._input["annotations"][i]["bbox"] = bbox_absolute_values
 
+    def _save(self, data, subset=None) -> None:
+        """
+        Save file to json
+        """
+        # create output directory structure if it does not exist already
+        Path(self._output_dir).mkdir(parents=True, exist_ok=True)
+        output_name = f'{self._filename}-{subset+"-" if subset else ""}converted.json'
+        self._logger.info(f"Storing json at {Path(self._output_dir, output_name)}.")
+
+        with open(Path(self._output_dir, output_name), "w") as f:
+            json.dump(data, f)
+        f.close()
+
     def _split(self) -> None:
         """
         Splits input file in train, val and test json files.
@@ -205,23 +218,21 @@ class DataFormatConverter:
                 "categories": self._input["categories"],
             }
 
-            # create output directory structure if it does not exist already
-            Path(self._output_dir).mkdir(parents=True, exist_ok=True)
-            output_name = f"{self._filename}_{subset}.json"
+            self._save(data=output, subset=subset)
 
-            self._logger.info(
-                f"Storing {subset} json at {Path(self._output_dir, output_name)}."
-            )
-            with open(Path(self._output_dir, output_name), "w") as f:
-                json.dump(output, f)
-            f.close()
-
-    def convert_data(self) -> None:
+    def convert_data(self, do_split=True) -> None:
+        """
+        Edit: Actually, splitting is an optional step. We can also train without separate train, val and test folders,
+        as long as we have 3 separate annotation files.
+        """
         self._dimensions_to_int()
         self._add_key(key="iscrowd", value=0)
         self._to_absolute()  # we must calculate area based on absolute values
         self._calculate_area()
-        self._split()
+        if do_split:
+            self._split()
+        else:
+            self._save(data=self._input)
 
 
 class ExperimentConfig(NamedTuple):
