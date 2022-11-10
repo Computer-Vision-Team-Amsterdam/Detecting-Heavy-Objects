@@ -40,7 +40,6 @@ parameters:
 variables:
   armServiceConnection: 'ARM-CCC-CVT-ont-01'
   containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
-  buildAndPush: ${{ parameters.BuildAndPush }}
 
 stages :
   - stage: Build
@@ -63,19 +62,20 @@ stages :
                 cd .${{ dockerFile.dockerFileRelativePath }}
                 docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
                 docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
-        - job: PublishArtifacts
-          displayName: 'Publish images artifacts'
-          dependsOn:
-          - ${{ each dockerFile in parameters.DockerFiles }}:
-            - Build_${{ DockerFile }}
-          pool:
-            vmImage: ubuntu-latest
-          steps:
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publishing Images as Pipeline Artifact'
-            inputs:
-              path: $(build.artifactstagingdirectory)
-              artifact: 'ContainerImages'
+
+      - job: PublishArtifacts
+        displayName: 'Publish images artifacts'
+        dependsOn:
+        - ${{ each dockerFile in parameters.DockerFiles }}:
+          - Build_${{ dockerFile }}
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+        - task: PublishPipelineArtifact@1
+          displayName: 'Publishing Images as Pipeline Artifact'
+          inputs:
+            path: $(build.artifactstagingdirectory)
+            artifact: 'ContainerImages'
 
   - stage: Deploy_DEV
     displayName: 'Deploy DEV (CD)'
