@@ -47,7 +47,7 @@ stages :
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - job: Build_${{ dockerFile.Name }}
-          displayName: '${{ dockerFile.displayName }} - Build'
+          displayName: 'Build - ${{ dockerFile.displayName }}'
           pool:
             vmImage: ubuntu-latest
           steps:
@@ -74,36 +74,29 @@ stages :
     dependsOn:
     - Build
     jobs:
-      - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-        - deployment: Build_${{ dockerFile.Name }}
-          displayName: '${{ dockerFile.displayName }} - Deploy'
-          pool:
-            vmImage: ubuntu-latest
-          environment: development
-          strategy:
-            runOnce:
-              deploy:
-                steps:
-                - checkout: self
+    - deployment: Deploy
+      displayName: 'Deployment'
+      pool:
+        vmImage: ubuntu-latest
+      environment: development
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
 
-                - task: DownloadPipelineArtifact@2
-                  displayName: 'Download Image from Pipeline Artifacts'
-                  inputs:
-                    buildType: 'current'
-                    artifactName: 'ContainerImage_${{ dockerFile.Name }}'
-                    targetPath: '$(Pipeline.Workspace)/ContainerImages'
-
-                - task: AzureCLI@2
-                  displayName: Docker Push
-                  inputs:
-                    azureSubscription: $(armServiceConnection)
-                    scriptType: pscore
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      az acr login --name $(containerRegistryName)
-                      docker load -i $(Pipeline.Workspace)/ContainerImages/${{ dockerFile.imageRepository }}.image.tar
-                      docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
-                      docker push $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+              - task: AzureCLI@2
+                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+                inputs:
+                  azureSubscription: $(armServiceConnection)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az acr login --name $(containerRegistryName)
+                    docker load -i $(Pipeline.Workspace)/ContainerImages/${{ dockerFile.imageRepository }}.image.tar
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
 
   - stage: VulnerabilityScan
     displayName: 'Vulnerability Scan'
@@ -121,8 +114,8 @@ stages :
           # Run Image scan gate - which extracts image scan results and assess whether 
           # to fail the pipeline based on severity threshold configuration.
           # Using the ImageScanSummaryAssessmentGate.ps1 script in same repo folder
-        - job: ImageScanGate_${{dockerFile.name}}
-          displayName: Image Scan security gate ${{dockerFile.displayName}}
+        - job: ImageScanGate_${{ dockerFile.name }}
+          displayName: 'Vulnerability Scan - ${{ dockerFile.displayName }}'
           pool:
             vmImage: ubuntu-latest
           dependsOn: 
