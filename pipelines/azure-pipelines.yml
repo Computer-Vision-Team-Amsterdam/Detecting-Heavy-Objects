@@ -103,7 +103,7 @@ stages :
   - stage: Deploy_TEST
     displayName: 'Deploy TEST (CD)'
     dependsOn:
-    - Build
+    - Deploy_DEV
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
