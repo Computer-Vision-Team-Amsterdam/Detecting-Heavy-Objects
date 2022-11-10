@@ -38,8 +38,10 @@ parameters:
       tag: 'latest'
 
 variables:
-  armServiceConnection: 'ARM-CCC-CVT-ont-01'
-  containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
+  armServiceConnection.dev: 'ARM-CCC-CVT-ont-01'
+  armServiceConnection.test: 'ARM-CCC-CVT-test-01'
+  containerRegistryName.dev: 'cvtweuacrogidgmnhwma3zq'
+  containerRegistryName.test: 'cvtweuacrtwingwbb3xpfra'
 
 stages :
   - stage: Build
@@ -54,11 +56,11 @@ stages :
           - task: AzureCLI@2
             displayName: Docker Build
             inputs:
-              azureSubscription: $(armServiceConnection)
+              azureSubscription: $(armServiceConnection.dev)
               scriptType: pscore
               scriptLocation: inlineScript
               inlineScript: |
-                az acr login --name $(containerRegistryName)
+                az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
                 docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
                 docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
@@ -89,14 +91,43 @@ stages :
               - task: AzureCLI@2
                 displayName: 'Docker Push - ${{ dockerFile.displayName }}'
                 inputs:
-                  azureSubscription: $(armServiceConnection)
+                  azureSubscription: $(armServiceConnection.dev)
                   scriptType: pscore
                   scriptLocation: inlineScript
                   inlineScript: |
-                    az acr login --name $(containerRegistryName)
+                    az acr login --name $(containerRegistryName.dev)
                     docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
-                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
-                    docker push $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+
+  - stage: Deploy_TEST
+    displayName: 'Deploy TEST (CD)'
+    dependsOn:
+    - Build
+    jobs:
+    - deployment: Deploy
+      displayName: 'Deployment'
+      pool:
+        vmImage: ubuntu-latest
+      environment: development
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+
+            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+              - task: AzureCLI@2
+                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+                inputs:
+                  azureSubscription: $(armServiceConnection.test)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az acr login --name $(containerRegistryName.test)
+                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
 
   - stage: VulnerabilityScan
     displayName: 'Vulnerability Scan'
@@ -125,10 +156,10 @@ stages :
           - task: AzureCLI@2
             displayName: Check for vulnerabilities
             inputs:
-              azureSubscription: $(armServiceConnection)
+              azureSubscription: $(armServiceConnection.dev)
               scriptType: 'pscore'
               scriptLocation: 'scriptPath'
               # Security Gate powershell script in same folder
               scriptPath: '$(Build.SourcesDirectory)/pipelines/scripts/ImageScanSummaryAssessmentGate.ps1'
-              arguments: '-registryName $(containerRegistryName) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
+              arguments: '-registryName $(containerRegistryName.dev) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
                       
