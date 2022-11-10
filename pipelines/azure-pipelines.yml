@@ -52,7 +52,7 @@ stages :
             vmImage: ubuntu-latest
           steps:
           - task: AzureCLI@2
-            displayName: Azure CLI ACR Build
+            displayName: Docker Build
             inputs:
               azureSubscription: $(armServiceConnection)
               scriptType: pscore
@@ -63,36 +63,17 @@ stages :
                 docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
                 docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
 
-      - job: PublishArtifacts
-        displayName: 'Publish images artifacts'
-        dependsOn:
-        - ${{ each dockerFile in parameters.DockerFiles }}:
-          - Build_${{ dockerFile.Name }}
-        pool:
-          vmImage: ubuntu-latest
-        steps:
-        - task: PublishPipelineArtifact@1
-          displayName: 'Publishing Images as Pipeline Artifact'
-          inputs:
-            path: $(build.artifactstagingdirectory)
-            artifact: 'ContainerImages'
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publishing Image as Pipeline Artifact'
+            inputs:
+              path: $(Build.ArtifactStagingDirectory)
+              artifact: ContainerImage_${{ dockerFile.Name }}
 
   - stage: Deploy_DEV
     displayName: 'Deploy DEV (CD)'
     dependsOn:
     - Build
     jobs:
-      - job: DownloadArtifacts
-        displayName: 'Download images artifacts'
-        pool:
-          vmImage: ubuntu-latest
-        steps:
-        - task: DownloadPipelineArtifact@2
-          inputs:
-            buildType: 'current'
-            artifactName: 'ContainerImages'
-            targetPath: '$(Pipeline.Workspace)/ContainerImages'
-
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - deployment: Build_${{ dockerFile.Name }}
           displayName: '${{ dockerFile.displayName }} - Deploy'
@@ -106,9 +87,16 @@ stages :
               deploy:
                 steps:
                 - checkout: self
-            
+
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Image from Pipeline Artifacts'
+                  inputs:
+                    buildType: 'current'
+                    artifactName: 'ContainerImage_${{ dockerFile.Name }}'
+                    targetPath: '$(Pipeline.Workspace)/ContainerImages'
+
                 - task: AzureCLI@2
-                  displayName: Azure CLI ACR Build
+                  displayName: Docker Push
                   inputs:
                     azureSubscription: $(armServiceConnection)
                     scriptType: pscore
