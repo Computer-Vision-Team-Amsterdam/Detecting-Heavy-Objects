@@ -94,7 +94,7 @@ stages :
                   scriptLocation: inlineScript
                   inlineScript: |
                     az acr login --name $(containerRegistryName)
-                    docker load -i $(Pipeline.Workspace)/ContainerImages/${{ dockerFile.imageRepository }}.image.tar
+                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
                     docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
                     docker push $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
 
