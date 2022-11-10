@@ -15,10 +15,6 @@ trigger:
 pr: none
 
 parameters:
-- name: BuildAndPush
-  displayName: "Build and push to ACR"
-  type: boolean
-  default: true
 - name: DockerFiles
   type: object
   default:
@@ -47,13 +43,61 @@ variables:
   buildAndPush: ${{ parameters.BuildAndPush }}
 
 stages :
-  - stage: BuildAndPush
-    displayName: 'Build and Push'
-    condition: and(succeeded(), eq(variables['buildAndPush'], true))
+  - stage: Build
+    displayName: 'Build (CI)'
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-        - deployment: Build_${{dockerFile.name}}
-          displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
+        - job: Build_${{ dockerFile.Name }}
+          displayName: '${{ dockerFile.displayName }} - Build'
+          pool:
+            vmImage: ubuntu-latest
+          steps:
+          - task: AzureCLI@2
+            displayName: Azure CLI ACR Build
+            inputs:
+              azureSubscription: $(armServiceConnection)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az acr login --name $(containerRegistryName)
+                cd .${{ dockerFile.dockerFileRelativePath }}
+                docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
+                docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
+        - job: PublishArtifacts
+          displayName: 'Publish images artifacts'
+          dependsOn:
+          - ${{ each dockerFile in parameters.DockerFiles }}:
+            - Build_${{ DockerFile }}
+          pool:
+            vmImage: ubuntu-latest
+          steps:
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publishing Images as Pipeline Artifact'
+            inputs:
+              path: $(build.artifactstagingdirectory)
+              artifact: 'ContainerImages'
+
+  - stage: Deploy_DEV
+    displayName: 'Deploy DEV (CD)'
+    dependsOn:
+    - Build
+    jobs:
+      - job: DownloadArtifacts
+          displayName: 'Download images artifacts'
+          pool:
+            vmImage: ubuntu-latest
+          steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              buildType: 'current'
+              artifactName: 'ContainerImages'
+              targetPath: '$(Pipeline.Workspace)/ContainerImages'
+
+      - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+        - deployment: Build_${{ dockerFile.Name }}
+          displayName: '${{ dockerFile.displayName }} - Deploy'
+          dependsOn:
+          - DownloadArtifacts
           pool:
             vmImage: ubuntu-latest
           environment: development
@@ -71,14 +115,14 @@ stages :
                     scriptLocation: inlineScript
                     inlineScript: |
                       az acr login --name $(containerRegistryName)
-                      cd .${{ dockerFile.dockerFileRelativePath }}
-                      az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
+                      docker load -i $(Pipeline.Workspace)/ContainerImages/${{ dockerFile.imageRepository }}.image.tar
+                      docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                      docker push $(containerRegistryName).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
 
   - stage: VulnerabilityScan
     displayName: 'Vulnerability Scan'
     dependsOn:
-    - BuildAndPush
-    condition: and(succeeded(), eq(variables['buildAndPush'], true))
+    - Deploy_DEV
     jobs:
       - job: WaitForScanResults
         displayName: Wait for Scan results
