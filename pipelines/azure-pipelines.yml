@@ -67,7 +67,7 @@ stages :
         displayName: 'Publish images artifacts'
         dependsOn:
         - ${{ each dockerFile in parameters.DockerFiles }}:
-          - Build_${{ dockerFile }}
+          - Build_${{ dockerFile.Name }}
         pool:
           vmImage: ubuntu-latest
         steps:
