@@ -70,7 +70,6 @@ stages :
                     scriptType: pscore
                     scriptLocation: inlineScript
                     inlineScript: |
-                      curl -s http://ipinfo.io/ip
                       az acr login --name $(containerRegistryName)
                       cd .${{ dockerFile.dockerFileRelativePath }}
                       az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
