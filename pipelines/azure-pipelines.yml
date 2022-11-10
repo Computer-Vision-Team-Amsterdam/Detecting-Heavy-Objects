@@ -77,8 +77,6 @@ stages :
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - deployment: Build_${{ dockerFile.Name }}
           displayName: '${{ dockerFile.displayName }} - Deploy'
-          dependsOn:
-          - DownloadArtifacts
           pool:
             vmImage: ubuntu-latest
           environment: development
