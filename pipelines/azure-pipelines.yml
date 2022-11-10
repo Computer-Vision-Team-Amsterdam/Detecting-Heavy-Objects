@@ -83,15 +83,15 @@ stages :
     - Build
     jobs:
       - job: DownloadArtifacts
-          displayName: 'Download images artifacts'
-          pool:
-            vmImage: ubuntu-latest
-          steps:
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              buildType: 'current'
-              artifactName: 'ContainerImages'
-              targetPath: '$(Pipeline.Workspace)/ContainerImages'
+        displayName: 'Download images artifacts'
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            buildType: 'current'
+            artifactName: 'ContainerImages'
+            targetPath: '$(Pipeline.Workspace)/ContainerImages'
 
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - deployment: Build_${{ dockerFile.Name }}
