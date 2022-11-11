@@ -67,3 +67,5 @@ if __name__ == "__main__":
                 cname=cname,
                 blob_names=all_data,
             )
+
+            print(f"There are {len(all_data)} blobs deleted in container {cname}")
