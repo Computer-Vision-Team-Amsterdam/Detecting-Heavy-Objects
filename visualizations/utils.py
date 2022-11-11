@@ -90,16 +90,11 @@ def get_permit_locations(
         """
         Check whether permit is for a container
         """
-        # TODO remove *container* -> "puinbak", "container", "keet",
         container_words = [
             "puinbak",
-            "puincontainer",
             "container",
-            "afvalcontainer",
-            "zeecontainer",
             "keet",
-            "schaftkeet",
-            "vuilcontainer",
+            "cabin",
         ]
         description = permit.find("TEXT8")
         if any(
