@@ -59,18 +59,6 @@ def get_permit_locations(
             return True
         return False
 
-    def remove_postal_code(address: str) -> str:
-        """
-        geopy/Nominatim only recognize (Dutch) postal codes with a space in them between the digits and letters.
-        Postal codes may or may not be present in the Decos permit, and may or may not be formatted using a space. They
-        are, however, not required to retrieve the coordinates of an address: the combination of street name, house
-        number, and place name suffices.
-
-        This function removes the postal code, if present, from an address, and returns the cleaned up string.
-        """
-        postal_code_ex = r"\d{4}\s*?[A-z]{2}"  # 4 digits, any amount of whitespace, and 2 letters (case-insensitive)
-        return re.sub(postal_code_ex, "", address).strip()
-
     def split_dutch_street_address(address: str) -> List[str]:
         """
         TODO use a function like this
