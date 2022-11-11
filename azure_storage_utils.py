@@ -99,7 +99,13 @@ class StorageAzureClient(BaseAzureClient):
             raise ex
 
 
-    def delete_blob(self, cname: str, blob_names: List[str], blob_prefix: str) -> None:
+    def delete_blobs(self, cname: str, blob_names: List[str], blob_prefix: str) -> None:
+        """Delete blobs from a container in the cloud.
+        Args:
+            cname: Name of the Azure Storage Container.
+            blob_names: Names of the blobs you want to delete.
+            blob_prefix: The base folder of a blob. For example the date.
+        """
         try:
             container_client = self.blob_service_client.get_container_client(
                 container=cname

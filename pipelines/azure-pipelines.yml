@@ -36,6 +36,18 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'upload_to_postgres'
       tag: 'latest'
+    - name: 'Postprocessing' #No spaces or special chars
+      displayName: 'postprocessing'
+      dockerFileName: 'postprocessing.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'postprocessing'
+      tag: 'latest'
+    - name: 'SubmitToSia' #No spaces or special chars
+      displayName: 'Submit to SIA'
+      dockerFileName: 'submit_to_sia.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'submit_to_sia'
+      tag: 'latest'
 
 variables:
   armServiceConnection.dev: 'ARM-CCC-CVT-ont-01'
