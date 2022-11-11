@@ -119,7 +119,6 @@ def get_permit_locations(
             and is_permit_valid_on_day(item)
         ):
             address_raw = item.find("TEXT6").text
-            address_format = []  # TODO needed?
 
             try:
                 address = split_dutch_street_address(address_raw)
