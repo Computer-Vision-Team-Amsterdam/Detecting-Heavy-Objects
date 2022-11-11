@@ -133,19 +133,20 @@ def get_permit_locations(
             except Exception as ex:
                 print(f"XML scrape failed with error: {ex}.")
                 # Continue to next iteration
+                continue
 
             try:
-                if address_format:
-                    with requests.get(bag_url + address_format) as response:
-                        bag_data_location = json.loads(response.content)["results"][0][
-                            "centroid"
-                        ]
-
-                    lonlat = [bag_data_location[1], bag_data_location[0]]
-                    permit_locations.append(lonlat)
+                with requests.get(bag_url + address_format) as response:
+                    bag_data_location = json.loads(response.content)["results"][0][
+                        "centroid"
+                    ]
+                lonlat = [bag_data_location[1], bag_data_location[0]]
             except Exception as ex:
                 print(f"BAG scrape failed with error: {ex}. Address is {address_format}")
                 # Continue to next iteration
+                continue
+
+            permit_locations.append(lonlat)
 
     return permit_locations
 
