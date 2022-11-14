@@ -111,7 +111,7 @@ stages :
       displayName: 'Deployment'
       pool:
         vmImage: ubuntu-latest
-      environment: development
+      environment: test
       strategy:
         runOnce:
           deploy:
@@ -140,7 +140,7 @@ stages :
       displayName: 'Deployment'
       pool:
         vmImage: ubuntu-latest
-      environment: development
+      environment: acceptance
       strategy:
         runOnce:
           deploy:
