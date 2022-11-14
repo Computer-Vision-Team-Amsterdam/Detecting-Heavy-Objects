@@ -65,11 +65,11 @@ variables:
   armServiceConnection.dev: 'ARM-CCC-CVT-ont-01'
   armServiceConnection.test: 'ARM-CCC-CVT-test-01'
   armServiceConnection.acc: 'ARM-CCC-CVT-acc-01'
-  armServiceConnection.acc: 'ARM-CCC-CVT-prd-01'
+  armServiceConnection.prod: 'ARM-CCC-CVT-prd-01'
   containerRegistryName.dev: 'cvtweuacrogidgmnhwma3zq'
   containerRegistryName.test: 'cvtweuacrtwingwbb3xpfra'
   containerRegistryName.acc: 'cvtweuacraytg6p4gqriwb6'
-  containerRegistryName.acc: '<not-yet-deployed>'
+  containerRegistryName.prod: '<not-yet-deployed>'
 
 stages :
   - stage: Build
