@@ -25,23 +25,6 @@ def get_permit_locations(
     Returns all the containers permits from an decos objects permit file.
     """
 
-    def is_form_valid(permit: xml.etree.ElementTree.Element) -> bool:
-        """
-        Check if a form has all the requirements
-        """
-        address = permit.find("TEXT6")
-        description = permit.find("TEXT8")
-        start_date = permit.find("DATE6")
-        end_date = permit.find("DATE7")
-        if (
-            address.text  # type:ignore
-            and description.text  # type:ignore
-            and start_date.text  # type:ignore
-            and end_date.text  # type:ignore
-        ):
-            return True
-        return False
-
     def is_permit_valid_on_day(permit: xml.etree.ElementTree.Element) -> bool:
         """
         Check whether container is valid on that day
@@ -102,23 +85,19 @@ def get_permit_locations(
     for item in tqdm(root, disable=running_in_k8s):
         # The permits seem to have a quite free format. Let's catch some exceptions
         if (
-            is_form_valid(item) # TODO still use?
-            and is_container_permit(item)
+            is_container_permit(item)
             and is_permit_valid_on_day(item)
         ):
-            address_raw = item.find("TEXT6").text
-
             try:
-                address = split_dutch_street_address(address_raw)
-                if address:
-                    # Street name and house number
-                    address_format = address[0][0] + " " + address[0][1]
+                if len(item.getchildren()[-1]) > 0:  # Check if c_object exists
+                    address = item.getchildren()[-1].getchildren()[0]
+                    address_format = address.find("TEXT8").text + " " + address.find("INITIALS").text
                 else:
-                    # Dive deeper in the XML file
-                    child_item = item.getchildren()[-1].getchildren()[0]
-                    address_format = child_item.find("TEXT8").text + " " + child_item.find("INITIALS").text
+                    address_raw = item.find("TEXT6").text
+                    address = split_dutch_street_address(address_raw)
+                    address_format = address[0][0] + " " + address[0][1]
             except Exception as ex:
-                print(f"XML scrape failed with error: {ex}.")
+                print(f"XML scrape for item {item.find('ITEM_KEY').text} failed with error: {ex}.")
                 # Continue to next iteration
                 continue
 
