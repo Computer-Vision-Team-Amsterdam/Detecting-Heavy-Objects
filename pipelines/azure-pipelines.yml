@@ -41,9 +41,11 @@ variables:
   armServiceConnection.dev: 'ARM-CCC-CVT-ont-01'
   armServiceConnection.test: 'ARM-CCC-CVT-test-01'
   armServiceConnection.acc: 'ARM-CCC-CVT-acc-01'
+  armServiceConnection.acc: 'ARM-CCC-CVT-prd-01'
   containerRegistryName.dev: 'cvtweuacrogidgmnhwma3zq'
   containerRegistryName.test: 'cvtweuacrtwingwbb3xpfra'
   containerRegistryName.acc: 'cvtweuacraytg6p4gqriwb6'
+  containerRegistryName.acc: '<not-yet-deployed>'
 
 stages :
   - stage: Build
@@ -193,3 +195,33 @@ stages :
               # Security Gate powershell script in same folder
               scriptPath: '$(Build.SourcesDirectory)/pipelines/scripts/ImageScanSummaryAssessmentGate.ps1'
               arguments: '-registryName $(containerRegistryName.dev) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
+  
+  - stage: Deploy_PROD
+    displayName: 'Deploy PROD (CD)'
+    dependsOn:
+    - Deploy_ACC
+    #- VulnerabilityScan
+    jobs:
+    - deployment: Deploy
+      displayName: 'Deployment'
+      pool:
+        vmImage: ubuntu-latest
+      environment: production
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+
+            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+              - task: AzureCLI@2
+                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+                inputs:
+                  azureSubscription: $(armServiceConnection.prod)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+#                    az acr login --name $(containerRegistryName.prod)
+#                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+#                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+#                    docker push $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
