@@ -131,7 +131,7 @@ stages :
                     docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
                     docker push $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
 
-- stage: Deploy_ACC
+  - stage: Deploy_ACC
     displayName: 'Deploy ACC (CD)'
     dependsOn:
     - Deploy_TEST
