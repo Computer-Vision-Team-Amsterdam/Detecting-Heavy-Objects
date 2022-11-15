@@ -138,7 +138,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    add_notification = True  # TODO make this an argument
+    add_notification = False  # TODO make this an argument
 
     # Get API data
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
