@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    if opt.table == "no_detections":
+    if opt.stage == "no_detections":
         if not Path(opt.date).exists():
             Path(opt.date).mkdir(exist_ok=True, parents=True)
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         )
         print(f"Removed {len(images_to_remove)} images without a detection from the cloud.")
 
-    if opt.table == "all_data":
+    if opt.stage == "all_data":
         # For a container, delete all content from a certain date.
         cnames = ["blurred", "detections", "postprocessing-output"]
 
