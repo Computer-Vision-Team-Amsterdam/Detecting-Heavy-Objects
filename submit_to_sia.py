@@ -50,7 +50,7 @@ def _to_signal(date_now: date, lat_lng: Dict[str, float]) -> Any:
             }
         },
         "category": {
-            "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/overig-openbare-ruimte"  # TODO hinderlijk-geplaatst-object
+            "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object"
         },
         "reporter": {"email": "cvt@amsterdam.nl"},
         "priority": {
