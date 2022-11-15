@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
         # download detections file from the storage account
         input_file_path = f"{opt.date}/coco_instances_results.json"
-        saClient.download_blobs(
+        saClient.download_blob(
             cname="detections",
             blob_name=f"{opt.date}/coco_instances_results.json",
             local_file_path=f"{opt.date}/coco_instances_results.json",
