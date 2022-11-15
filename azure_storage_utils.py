@@ -98,7 +98,6 @@ class StorageAzureClient(BaseAzureClient):
             print("List blobs operation failed")
             raise ex
 
-
     def delete_blobs(self, cname: str, blob_names: List[str]) -> None:
         """Delete blobs from a container in the cloud.
         Args:
@@ -115,7 +114,6 @@ class StorageAzureClient(BaseAzureClient):
         except Exception as ex:
             print("Delete blobs operation failed")
             raise ex
-
 
     def upload_blob(self, cname: str, blob_name: str, local_file_path: str) -> None:
         """Upload a file to a container in the cloud.

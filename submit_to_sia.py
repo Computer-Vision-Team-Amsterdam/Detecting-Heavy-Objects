@@ -1,6 +1,6 @@
 import os
 import socket
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any, Dict
 
 import requests
@@ -13,7 +13,7 @@ import pandas.io.sql as sqlio
 import upload_to_postgres
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
-BASE_URL = "https://acc.api.data.amsterdam.nl/signals/v1/private/signals"
+BASE_URL = "https://https://acc.api.meldingen.amsterdam.nl/signals/v1/private/signals"
 API_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB = 20*1024*1024
 
 TEXT = (

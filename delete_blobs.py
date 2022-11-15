@@ -1,6 +1,6 @@
 import argparse
-from pathlib import Path
 import json
+from pathlib import Path
 
 from azure_storage_utils import StorageAzureClient
 
@@ -44,12 +44,14 @@ if __name__ == "__main__":
             blob_prefix=opt.date,
         )
 
-        images_to_remove = set(images_all) - set(images_w_det)
+        images_to_remove = list(set(images_all) - set(images_w_det))
         saClient.delete_blobs(
             cname="blurred",
             blob_names=images_to_remove,
         )
-        print(f"Removed {len(images_to_remove)} images without a detection from the cloud.")
+        print(
+            f"Removed {len(images_to_remove)} images without a detection from the cloud."
+        )
 
     if opt.stage == "all_data":
         # For a container, delete all content from a certain date.
