@@ -99,7 +99,7 @@ class StorageAzureClient(BaseAzureClient):
             raise ex
 
 
-    def delete_blobs(self, cname: str, blob_names: List[str], blob_prefix: str) -> None:
+    def delete_blobs(self, cname: str, blob_names: List[str]) -> None:
         """Delete blobs from a container in the cloud.
         Args:
             cname: Name of the Azure Storage Container.
@@ -111,7 +111,7 @@ class StorageAzureClient(BaseAzureClient):
                 container=cname
             )
             for blob_name in blob_names:
-                container_client.delete_blob(blob=blob_prefix + blob_name)
+                container_client.delete_blob(blob_name)
         except Exception as ex:
             print("Delete blobs operation failed")
             raise ex

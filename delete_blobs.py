@@ -37,7 +37,7 @@ if __name__ == "__main__":
         input_data = json.load(f)
 
         # Get all images with detections (with duplicates)
-        images_w_det = [item["pano_id"] for item in input_data]
+        images_w_det = [opt.date + "/" + item["pano_id"] for item in input_data]
 
         images_all = saClient.list_container_content(
             cname="blurred",
@@ -45,10 +45,9 @@ if __name__ == "__main__":
         )
 
         images_to_remove = set(images_all) - set(images_w_det)
-        saClient.delete_blob(
+        saClient.delete_blobs(
             cname="blurred",
             blob_names=images_to_remove,
-            blob_prefix=opt.date,
         )
         print(f"Removed {len(images_to_remove)} images without a detection from the cloud.")
 
@@ -63,9 +62,9 @@ if __name__ == "__main__":
                 blob_prefix=opt.date,
             )
 
-            saClient.delete_blob(
+            saClient.delete_blobs(
                 cname=cname,
-                blob_names=all_data,
+                blob_names=images_to_remove,
             )
 
             print(f"Removed {len(all_data)} blobs from container {cname}.")
