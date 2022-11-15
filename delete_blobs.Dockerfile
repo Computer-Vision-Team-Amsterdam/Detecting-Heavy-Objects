@@ -10,12 +10,12 @@ RUN pip install \
     azure-keyvault-secrets==4.5.1 \
     azure-storage-blob==12.13.1
 
-WORKDIR /opt
-COPY delete_blobs.py /opt
-COPY azure_storage_utils.py /opt
+WORKDIR /app
+COPY delete_blobs.py /app
+COPY azure_storage_utils.py /app
 
 
 RUN useradd appuser
-RUN chown -R appuser /opt
-RUN chmod 755 /opt
+RUN chown -R appuser /app
+RUN chmod 755 /app
 USER appuser
