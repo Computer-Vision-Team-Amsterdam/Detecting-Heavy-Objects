@@ -232,7 +232,10 @@ class PostProcessing:
             medium score --> Permit big, bridge big or permit small, bridge big
             low score --> permit small, bridge big
             """
-            return permit_distance + max([25 - bridge_distance, 0])
+            if permit_distance >= 25:
+                return 1 + max([25 - bridge_distance, 0])
+            else:
+                return 0
 
         permit_locations = get_permit_locations(self.permits_file, self.date_to_check)
         permit_locations_geom = [
