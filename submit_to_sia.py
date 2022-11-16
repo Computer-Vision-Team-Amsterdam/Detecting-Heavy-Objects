@@ -21,6 +21,7 @@ TEXT = (
     "gedetecteerd op onderstaande locatie, waar mogelijk geen vergunning voor is. "
 )
 
+
 def _get_description(permit_distance: str, bridge_distance: str) -> str:
     return (
         f"Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n"
@@ -37,6 +38,7 @@ def _get_description(permit_distance: str, bridge_distance: str) -> str:
         f"o Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n "
         f"o Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
     )
+
 
 def _to_signal(date_now: date, lat_lng: Dict[str, float]) -> Any:
     return {
@@ -175,4 +177,8 @@ if __name__ == "__main__":
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
             # Add a description to the previously created signal
-            _patch_signal(headers, signal_id, _get_description(row["permit_distance"], row["bridge_distance"]))
+            _patch_signal(
+                headers,
+                signal_id,
+                _get_description(row["permit_distance"], row["bridge_distance"]),
+            )
