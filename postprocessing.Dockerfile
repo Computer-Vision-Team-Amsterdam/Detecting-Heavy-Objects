@@ -2,7 +2,7 @@
 # DOCKER_BUILDKIT=1 docker build --ssh default -f postprocessing.dockerfile -t as01weuacrovja4xx7veccq.azurecr.io/container-detection-postprocessing:0.1 .
 # This should be addressed when building this image in a pipeline
 
-FROM python:3.7.13-bullseye
+FROM python:3.7
 
 RUN apt-get update && \
     apt-get -y install \

@@ -1,5 +1,5 @@
 # az acr build -t retrieve:latest -f retrieve_images.Dockerfile -r cvtweuacrogidgmnhwma3zq .
-FROM python:3.7.15-bullseye
+FROM python:3.7
 
 
 ENV VIRTUAL_ENV=/opt/venv

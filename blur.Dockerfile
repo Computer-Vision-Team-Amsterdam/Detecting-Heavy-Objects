@@ -1,6 +1,6 @@
 # Partly copied from https://github.com/ultralytics/yolov5/blob/master/utils/docker/Dockerfile-cpu
 # az acr build -t blur:latest -f blur.Dockerfile -r cvtweuacrogidgmnhwma3zq .
-FROM python:3.7.15-bullseye
+FROM python:3.7
 
 # Install linux packages
 RUN apt update && apt install --no-install-recommends -y zip htop screen libgl1-mesa-glx

@@ -26,29 +26,18 @@ if __name__ == "__main__":
             Path(opt.date).mkdir(exist_ok=True, parents=True)
 
         # download detections file from the storage account
-        input_file_path = f"{opt.date}/coco_instances_results.json"
         saClient.download_blob(
             cname="detections",
             blob_name=f"{opt.date}/coco_instances_results.json",
             local_file_path=f"{opt.date}/coco_instances_results.json",
         )
 
+        input_file_path = f"{opt.date}/empty_predictions.json"
         f = open(input_file_path)
         input_data = json.load(f)
 
-        # Get all images with detections (with duplicates)
-        images_w_det = [opt.date + "/" + item["pano_id"] for item in input_data]
+        images_to_remove = [opt.date + "/" + entry["pano_id"] for entry in input_data]
 
-        images_all = saClient.list_container_content(
-            cname="blurred",
-            blob_prefix=opt.date,
-        )
-
-        images_to_remove = list(set(images_all) - set(images_w_det))
-        saClient.delete_blobs(
-            cname="blurred",
-            blob_names=images_to_remove,
-        )
         print(
             f"Removed {len(images_to_remove)} images without a detection from the cloud."
         )

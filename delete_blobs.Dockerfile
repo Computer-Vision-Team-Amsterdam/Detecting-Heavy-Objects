@@ -1,5 +1,5 @@
 # az acr build -t delete_blobs:latest -f delete_blobs.Dockerfile -r cvtweuacrogidgmnhwma3zq .
-FROM python:3.7.15-bullseye
+FROM python:3.7
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
