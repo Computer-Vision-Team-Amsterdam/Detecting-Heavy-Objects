@@ -233,7 +233,7 @@ class PostProcessing:
             low score --> permit small, bridge big
             """
             if permit_distance >= 25:
-                return 1 + max([25 - bridge_distance, 0])
+                return 1 + max([(25 - bridge_distance) / 25, 0])
             else:
                 return 0
 
