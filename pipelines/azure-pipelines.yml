@@ -69,7 +69,7 @@ variables:
   containerRegistryName.dev: 'cvtweuacrogidgmnhwma3zq'
   containerRegistryName.test: 'cvtweuacrtwingwbb3xpfra'
   containerRegistryName.acc: 'cvtweuacraytg6p4gqriwb6'
-  containerRegistryName.prod: '<not-yet-deployed>'
+  containerRegistryName.prod: 'cvtweuacrpju7nekr55bcdo'
 
 stages :
   - stage: Build
@@ -224,7 +224,7 @@ stages :
     displayName: 'Deploy PROD (CD)'
     dependsOn:
     - Deploy_ACC
-    #- VulnerabilityScan
+    - VulnerabilityScan
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
@@ -245,7 +245,7 @@ stages :
                   scriptType: pscore
                   scriptLocation: inlineScript
                   inlineScript: |
-#                    az acr login --name $(containerRegistryName.prod)
-#                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
-#                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
-#                    docker push $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    az acr login --name $(containerRegistryName.prod)
+                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
