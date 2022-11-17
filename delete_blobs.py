@@ -58,4 +58,4 @@ if __name__ == "__main__":
                 )
                 print(f"Removed {len(all_data)} blobs from container {cname}.")
             else:
-                print(f"No blobs found in container {cname} for data {opt.date}.")
+                print(f"No blobs found in container {cname} for date {opt.date}.")
