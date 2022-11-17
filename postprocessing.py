@@ -268,7 +268,7 @@ class PostProcessing:
                     for bridge_location in bridge_locations_geom
                 ]
             )
-            bridges_distances.append(closest_bridge_distance)
+            bridges_distances.append(round(closest_bridge_distance, 2))
 
             closest_permit_distance = min(
                 [
@@ -278,7 +278,7 @@ class PostProcessing:
                     for permit_location in permit_locations_geom
                 ]
             )
-            permit_distances.append(closest_permit_distance)
+            permit_distances.append(round(closest_permit_distance, 2))
 
         scores = [
             calculate_score(bridges_distances[idx], permit_distances[idx])

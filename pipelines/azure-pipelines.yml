@@ -30,11 +30,35 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'blur'
       tag: 'latest'
+    - name: 'Detect' #No spaces or special chars
+      displayName: 'Detect'
+      dockerFileName: 'detection.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'detection'
+      tag: 'latest'
     - name: 'UploadToPostgres' #No spaces or special chars
       displayName: 'Upload to Postgres'
       dockerFileName: 'upload_to_postgres.Dockerfile'
       dockerFileRelativePath: ''
       imageRepository: 'upload_to_postgres'
+      tag: 'latest'
+    - name: 'Postprocessing' #No spaces or special chars
+      displayName: 'postprocessing'
+      dockerFileName: 'postprocessing.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'postprocessing'
+      tag: 'latest'
+    - name: 'SubmitToSia' #No spaces or special chars
+      displayName: 'Submit to SIA'
+      dockerFileName: 'submit_to_sia.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'submit_to_sia'
+      tag: 'latest'
+    - name: 'DeleteBlobs' #No spaces or special chars
+      displayName: 'Delete blobs'
+      dockerFileName: 'delete_blobs.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'delete_blobs'
       tag: 'latest'
 
 variables:

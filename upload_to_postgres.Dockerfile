@@ -1,5 +1,5 @@
 # az acr build -t upload_to_postgres:latest -f upload_to_postgres.Dockerfile -r cvtweuacrogidgmnhwma3zq .
-FROM python:3.7.15-bullseye
+FROM python:3.7
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV

@@ -1,6 +1,6 @@
 import os
 import socket
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any, Dict
 
 import requests
@@ -13,31 +13,32 @@ import pandas.io.sql as sqlio
 import upload_to_postgres
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
-BASE_URL = "https://acc.api.data.amsterdam.nl/signals/v1/private/signals"
+BASE_URL = "https://acc.api.meldingen.amsterdam.nl/signals/v1/private/signals"
 API_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB = 20*1024*1024
 
 TEXT = (
     "Dit is een automatisch gegenereerd signaal. Met behulp van beeldherkenning is een bouwcontainer of bouwkeet "
     "gedetecteerd op onderstaande locatie, waar mogelijk geen vergunning voor is. "
 )
-# TODO move to function and add arguments
-TEXT_NOTE = (
-    "Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n"
-    "Afstand tot kwetsbare kade: TODO meter\n"
-    "Afstand tot objectvergunning: TODO meter\n\n"
-    "Tijdstip scanfoto: dd/mm/yy hh:mm\n"
-    "Tijdstip signaal: dd/mm/yy hh:mm\n\n"
-    "Instructie ASC:\n"
-    "o Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een bouwcontainer of "
-    "bouwkeet op de foto staat. \n "
-    "o De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
-    "signaal herkennen in City Control onder 'Signalering'.\n\n"
-    "Instructie BOA’s:\n "
-    "o Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek ter "
-    "plaatse nodig is.\n"
-    "o Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n "
-    "o Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
-)
+MAX_SIGNALS_TO_SEND = 10
+
+
+def _get_description(permit_distance: str, bridge_distance: str) -> str:
+    return (
+        f"Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n"
+        f"Afstand tot kwetsbare kade: {bridge_distance} meter\n"
+        f"Afstand tot objectvergunning: {permit_distance} meter\n\n"
+        f"Instructie ASC:\n"
+        f"o Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een bouwcontainer of "
+        f"bouwkeet op de foto staat. \n "
+        f"o De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
+        f"signaal herkennen in City Control onder 'Signalering'.\n\n"
+        f"Instructie BOA’s:\n "
+        f"o Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek ter "
+        f"plaatse nodig is.\n"
+        f"o Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n "
+        f"o Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+    )
 
 
 def _to_signal(date_now: date, lat_lng: Dict[str, float]) -> Any:
@@ -50,7 +51,7 @@ def _to_signal(date_now: date, lat_lng: Dict[str, float]) -> Any:
             }
         },
         "category": {
-            "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/overig-openbare-ruimte"  # TODO hinderlijk-geplaatst-object
+            "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object"
         },
         "reporter": {"email": "cvt@amsterdam.nl"},
         "priority": {
@@ -95,8 +96,8 @@ def _post_signal(auth_headers: Dict[str, str], json_content: Any) -> Any:
         return response.raise_for_status()
 
 
-def _patch_signal(auth_headers: Dict[str, str], sig_id: str) -> Any:
-    json_content = {"notes": [{"text": TEXT_NOTE}]}
+def _patch_signal(auth_headers: Dict[str, str], sig_id: str, text_note: str) -> Any:
+    json_content = {"notes": [{"text": text_note}]}
 
     response = requests.patch(
         BASE_URL + f"/{sig_id}", json=json_content, headers=auth_headers
@@ -138,7 +139,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    add_notification = True  # TODO make this an argument
+    add_notification = False  # TODO make this an argument
 
     # Get API data
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
@@ -150,8 +151,10 @@ if __name__ == "__main__":
     # Make a connection to the database
     conn, cur = upload_to_postgres.connect()
 
-    # Get images with a detection
-    sql = f"SELECT * FROM containers;"
+    # Get images with a detection TODO check A.score <> 0
+    sql = f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name " \
+          f"WHERE date_trunc('day', B.taken_at) = '{args.date}'::date AND A.score <> 0 ORDER " \
+          f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
     query_df = sqlio.read_sql_query(sql, conn)
     if query_df.empty:
         print(
@@ -177,4 +180,8 @@ if __name__ == "__main__":
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
             # Add a description to the previously created signal
-            _patch_signal(headers, signal_id)
+            _patch_signal(
+                headers,
+                signal_id,
+                _get_description(row["permit_distance"], row["bridge_distance"]),
+            )

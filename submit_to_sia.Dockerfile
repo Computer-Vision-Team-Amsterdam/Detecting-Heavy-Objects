@@ -1,6 +1,6 @@
 # az acr build -t sia:latest -f submit_to_sia.Dockerfile -r cvtweuacrogidgmnhwma3zq .
 
-FROM python:3.7.15-bullseye
+FROM python:3.7
 
 RUN apt-get update && \
     apt-get -y install \
