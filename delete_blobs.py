@@ -9,8 +9,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--stage",
         type=str,
-        choices=["no_detections", "all_data"],
-        help="data to delete",
+        choices=["after_container_detections", "after_pipeline"],
+        help="the stage when to delete images",
     )
     parser.add_argument(
         "--date",
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    if opt.stage == "no_detections":
+    if opt.stage == "after_container_detections":
         if not Path(opt.date).exists():
             Path(opt.date).mkdir(exist_ok=True, parents=True)
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
             f"Removed {len(images_to_remove)} images without a detection from the cloud."
         )
 
-    if opt.stage == "all_data":
+    if opt.stage == "after_pipeline":
         # For a container, delete all content from a certain date.
         cnames = ["blurred", "detections", "postprocessing-output"]
 
