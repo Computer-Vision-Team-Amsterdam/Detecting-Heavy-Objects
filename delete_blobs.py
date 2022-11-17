@@ -47,15 +47,15 @@ if __name__ == "__main__":
         cnames = ["blurred", "detections", "postprocessing-output"]
 
         for cname in cnames:
-            # TODO what if empty?
             all_data = saClient.list_container_content(
                 cname=cname,
                 blob_prefix=opt.date,
             )
-
-            saClient.delete_blobs(
-                cname=cname,
-                blob_names=images_to_remove,
-            )
-
-            print(f"Removed {len(all_data)} blobs from container {cname}.")
+            if all_data:
+                saClient.delete_blobs(
+                    cname=cname,
+                    blob_names=images_to_remove,
+                )
+                print(f"Removed {len(all_data)} blobs from container {cname}.")
+            else:
+                print(f"No blobs found in container {cname} for data {opt.date}.")
