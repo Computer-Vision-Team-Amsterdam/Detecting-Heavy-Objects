@@ -127,6 +127,7 @@ stages :
                     docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
                     docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
                     docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af
 
   - stage: Deploy_TEST
     displayName: 'Deploy TEST (CD)'
@@ -156,6 +157,7 @@ stages :
                     docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
                     docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
                     docker push $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af
 
   - stage: Deploy_ACC
     displayName: 'Deploy ACC (CD)'
@@ -185,6 +187,7 @@ stages :
                     docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
                     docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.acc).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
                     docker push $(containerRegistryName.acc).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af
                       
   - stage: VulnerabilityScan
     displayName: 'Vulnerability Scan'
@@ -249,3 +252,4 @@ stages :
                     docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
                     docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
                     docker push $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af
