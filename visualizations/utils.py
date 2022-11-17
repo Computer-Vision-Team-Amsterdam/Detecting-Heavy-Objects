@@ -25,23 +25,6 @@ def get_permit_locations(
     Returns all the containers permits from an decos objects permit file.
     """
 
-    def is_form_valid(permit: xml.etree.ElementTree.Element) -> bool:
-        """
-        Check if a form has all the requirements
-        """
-        address = permit.find("TEXT6")
-        description = permit.find("TEXT8")
-        start_date = permit.find("DATE6")
-        end_date = permit.find("DATE7")
-        if (
-            address.text  # type:ignore
-            and description.text  # type:ignore
-            and start_date.text  # type:ignore
-            and end_date.text  # type:ignore
-        ):
-            return True
-        return False
-
     def is_permit_valid_on_day(permit: xml.etree.ElementTree.Element) -> bool:
         """
         Check whether container is valid on that day
@@ -58,18 +41,6 @@ def get_permit_locations(
         if end_date >= date_to_check >= start_date:  # type:ignore
             return True
         return False
-
-    def remove_postal_code(address: str) -> str:
-        """
-        geopy/Nominatim only recognize (Dutch) postal codes with a space in them between the digits and letters.
-        Postal codes may or may not be present in the Decos permit, and may or may not be formatted using a space. They
-        are, however, not required to retrieve the coordinates of an address: the combination of street name, house
-        number, and place name suffices.
-
-        This function removes the postal code, if present, from an address, and returns the cleaned up string.
-        """
-        postal_code_ex = r"\d{4}\s*?[A-z]{2}"  # 4 digits, any amount of whitespace, and 2 letters (case-insensitive)
-        return re.sub(postal_code_ex, "", address).strip()
 
     def split_dutch_street_address(address: str) -> List[str]:
         """
@@ -90,16 +61,11 @@ def get_permit_locations(
         """
         Check whether permit is for a container
         """
-        # TODO remove *container* -> "puinbak", "container", "keet",
         container_words = [
             "puinbak",
-            "puincontainer",
             "container",
-            "afvalcontainer",
-            "zeecontainer",
             "keet",
-            "schaftkeet",
-            "vuilcontainer",
+            "cabin",
         ]
         description = permit.find("TEXT8")
         if any(
@@ -119,25 +85,35 @@ def get_permit_locations(
     for item in tqdm(root, disable=running_in_k8s):
         # The permits seem to have a quite free format. Let's catch some exceptions
         if (
-            is_form_valid(item)
-            and is_container_permit(item)
+            is_container_permit(item)
             and is_permit_valid_on_day(item)
         ):
             try:
-                # todo: use split_dutch_street_address(item.find("TEXT6").text)
-                address = remove_postal_code(item.find("TEXT6").text).replace(
-                    " ", "%20"
-                )
+                if len(item.getchildren()[-1]) > 0:  # Check if c_object exists
+                    address = item.getchildren()[-1].getchildren()[0]
+                    address_format = address.find("TEXT8").text + " " + address.find("INITIALS").text
+                else:
+                    address_raw = item.find("TEXT6").text
+                    address = split_dutch_street_address(address_raw)
+                    address_format = address[0][0] + " " + address[0][1]
+            except Exception as ex:
+                print(f"XML scrape for item {item.find('ITEM_KEY').text} failed with error: {ex}.")
+                # Continue to next iteration
+                continue
 
-                with requests.get(bag_url + address) as response:
+            try:
+                with requests.get(bag_url + address_format) as response:
                     bag_data_location = json.loads(response.content)["results"][0][
                         "centroid"
                     ]
-
                 lonlat = [bag_data_location[1], bag_data_location[0]]
-                permit_locations.append(lonlat)
             except Exception as ex:
-                raise ex
+                print(f"BAG scrape failed with error: {ex}. Address is {address_format}")
+                # Continue to next iteration
+                continue
+
+            permit_locations.append(lonlat)
+
     return permit_locations
 
 
