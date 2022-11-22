@@ -93,10 +93,22 @@ class DataFormatConverter:
                 f'Image dimensions must be integers,' \
                 f'found {type(image["height"])} x {type(image["width"])} instead!'
 
+            """
             assert image["height"] == 2000 and image["width"] == 4000, (
                 f"Image resolution should be 2000x4000,"
                 f'found resolution {image["height"]} x {image["width"]} instead!'
             )
+            """
+
+    def _update_dims(self) -> None:
+        """
+        Update dimensions in the original json file from 2000x1000 to 4000x2000
+        """
+
+        for i, image in enumerate(self._input["images"]):
+            if image["width"] == 2000:
+                self._input["images"][i]["width"] = 4000
+                self._input["images"][i]["height"] = 2000
 
     def _dimensions_to_int(self) -> None:
         """
@@ -178,6 +190,18 @@ class DataFormatConverter:
             json.dump(data, f)
         f.close()
 
+    def _rename(self) -> None:
+        """
+        Rename image["file_name"] to Path stem, i.e.
+        "a/TMX7316010203-001660_pano_0000_001979.jpg" becomes TMX7316010203-001660_pano_0000_001979.jpg
+        "a/b/c/TMX7316010203-001666_pano_0000_000712.jpg" becomes TMX7316010203-001666_pano_0000_000712.jpg
+
+        This is because during training, the file_name is the path at which the model looks for the images.
+        """
+        for i, image in enumerate(self._input["images"]):
+            stem = image["file_name"].split("/")[-1]
+            self._input["images"][i]["file_name"] = stem
+
     def _split(self) -> None:
         """
         Splits input file in train, val and test json files.
@@ -225,10 +249,12 @@ class DataFormatConverter:
         Edit: Actually, splitting is an optional step. We can also train without separate train, val and test folders,
         as long as we have 3 separate annotation files.
         """
+        self._update_dims()
         self._dimensions_to_int()
         self._add_key(key="iscrowd", value=0)
         self._to_absolute()  # we must calculate area based on absolute values
         self._calculate_area()
+        self._rename()
         if do_split:
             self._split()
         else:
@@ -361,8 +387,8 @@ def register_dataset(expCfg: ExperimentConfig) -> None:
     """
 
     if expCfg.data_format == "coco":
-        ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
-        # ann_path = f"{expCfg.data_folder}/containers-annotated-COCO-{expCfg.subset}.json"
+        #ann_path = f"{expCfg.data_folder}/{expCfg.subset}/containers-annotated-COCO-{expCfg.subset}.json"
+        ann_path = f"{expCfg.data_folder}/containers-annotated-COCO-{expCfg.subset}.json"
         try:
             with open(ann_path) as f:
                 _ = json.load(f)

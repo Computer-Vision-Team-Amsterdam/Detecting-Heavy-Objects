@@ -28,6 +28,7 @@ RUN --mount=type=ssh \
         requests==2.28.0 \
         shapely==1.8.2 \
         tqdm==4.64.0 \
+        pillow==9.1.1 \
         git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@d88bea3fd9f26028a744700b225ef11c328bd3de \
         git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@98a92686a9ef92b3748f345b137123ea5915c8b1
 

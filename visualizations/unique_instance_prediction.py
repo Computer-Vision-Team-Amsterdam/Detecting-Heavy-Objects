@@ -140,21 +140,38 @@ def generate_map(
             )
 
             popup = folium.Popup(folium.Html(html, script=True), max_width=500)
-            folium.Marker(
-                location=[detections[i].coords[0], detections[i].coords[1]],
-                popup=popup,
-                icon=folium.Icon(
-                    color="lightgreen",
-                    icon_color=color(detections[i].cluster, colors)
-                    if colors
-                    else "darkgreen",
-                    icon="square",
-                    angle=0,
-                    prefix="fa",
-                ),
-                radius=15,
-            #).add_to(marker_cluster)
-            ).add_to(Map)
+            if detections[i].subset == "train":
+                folium.Marker(
+                    location=[detections[i].coords[0], detections[i].coords[1]],
+                    popup=popup,
+                    icon=folium.Icon(
+                        color="lightgreen",
+                        icon_color=color(detections[i].cluster, colors)
+                        if colors
+                        else "darkgreen",
+                        icon="square",
+                        angle=0,
+                        prefix="fa",
+                    ),
+                    radius=15,
+                #).add_to(marker_cluster)
+                ).add_to(Map)
+            if detections[i].subset == "val":
+                folium.Marker(
+                    location=[detections[i].coords[0], detections[i].coords[1]],
+                    popup=popup,
+                    icon=folium.Icon(
+                        color="blue",
+                        icon_color=color(detections[i].cluster, colors)
+                        if colors
+                        else "darkgreen",
+                        icon="square",
+                        angle=0,
+                        prefix="fa",
+                    ),
+                    radius=15,
+                    # ).add_to(marker_cluster)
+                ).add_to(Map)
 
     # add line with car trajectory on the map
     if trajectory:

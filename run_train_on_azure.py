@@ -1,5 +1,8 @@
 """
 This module contains functionality to run a training script on Azure.
+
+python run_train_on_azure.py --name test-on-as --version 1 --subset train -data_folder data_sample_2 --dataset data-sample-2
+
 """
 from typing import Any, Dict, List
 
@@ -11,7 +14,6 @@ azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 1000000000
 from azureml.core import (
     ComputeTarget,
     Dataset,
-    Datastore,
     Environment,
     Experiment,
     Model,
@@ -21,16 +23,16 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "map2"
+EXPERIMENT_NAME = "test_with_data_sample"
 
 
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
-default_ds: Datastore = ws.get_default_datastore()
-dataset = Dataset.get_by_name(ws, "blurred-container-data")
 
-mounted_dataset = dataset.as_mount(path_on_compute="data/")
-compute_target = ComputeTarget(ws, "quick-gpu")
+dataset = Dataset.get_by_name(ws, "container-project-dataset-2")
+
+mounted_dataset = dataset.as_mount(path_on_compute="container-project-dataset/")
+compute_target = ComputeTarget(ws, "container-model-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
 
 flags = arg_parser()
@@ -59,6 +61,7 @@ script_config = ScriptRunConfig(
 )
 run = experiment.submit(config=script_config)
 run.wait_for_completion(show_output=True)
+
 
 run.register_model(
     flags.name, f"outputs/TRAIN_{flags.name}_{flags.version}/model_final.pth"

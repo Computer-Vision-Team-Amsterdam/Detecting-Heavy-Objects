@@ -11,7 +11,7 @@ from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
 
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
+# from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset

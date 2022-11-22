@@ -367,14 +367,42 @@ with open("05-16-2022_111258_UTC/containers-annotated-COCO-train.json", 'w') as 
   
 val = {"images": val_images, "annotations": val_annotations, "categories": content["categories"]}  
 with open("05-16-2022_111258_UTC/containers-annotated-COCO-val.json", 'w') as f:  
-  json.dump(train, f)
+  json.dump(val, f)
 ```  
+---
+Next, we can filter the annotations files based on area, so we only keep the larger annotations. Let's look at some area statistics of the current split.
+
+#### Train
+```python
+from visualizations.stats import DataStatistics  
+from pathlib import Path  
   
+src = Path('05-16-2022_111258_UTC/containers-annotated-COCO-train.json')  
+dataStats = DataStatistics(json_file=src, output_dir="05-16-2022_111258_UTC")  
+  
+dataStats.plot_dimensions_distribution(plot_name="hw_train.jpg")  
+dataStats.plot_areas_distribution(plot_name="area_train.jpg")
+```
+
+| Height-width                               | Area                                         |
+|--------------------------------------------|----------------------------------------------|
+| ![](../05-16-2022_111258_UTC/hw_train.jpg) | ![](../05-16-2022_111258_UTC/area_train.jpg) |
+
+#### Validation 
+```python
+from visualizations.stats import DataStatistics  
+from pathlib import Path  
+  
+src = Path('05-16-2022_111258_UTC/containers-annotated-COCO-val.json')  
+dataStats = DataStatistics(json_file=src, output_dir="05-16-2022_111258_UTC")  
+  
+dataStats.plot_dimensions_distribution(plot_name="hw_val.jpg")  
+dataStats.plot_areas_distribution(plot_name="area_val.jpg")
+```
+
+| Height-width                               | Area                                         |
+|--------------------------------------------|----------------------------------------------|
+| ![](../05-16-2022_111258_UTC/hw_val.jpg)   | ![](../05-16-2022_111258_UTC/area_val.jpg)   |
 
 
-  
-
-  
-  
-  
-Next, we can filter the annotations files based on area, so we only keep the larger annotations
+We can remove the small objects, in the [0,12000) area.

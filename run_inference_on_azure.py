@@ -6,6 +6,7 @@ from typing import List
 
 import azureml._restclient.snapshots_client
 from azureml.exceptions import WebserviceException
+# python run_inference_on_azure.py --name retraining_batch_size_1 --version 1 --subset val
 
 azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 100000000000
 
@@ -43,9 +44,9 @@ def get_Azure_model() -> str:
 ws = Workspace.from_config()
 env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 default_ds: Datastore = ws.get_default_datastore()
-dataset = Dataset.get_by_name(ws, "blurred-container-data")
-mounted_dataset = dataset.as_mount(path_on_compute="data/")
-compute_target = ComputeTarget(ws, "quick-gpu")
+dataset = Dataset.get_by_name(ws, "container-project-dataset-2")
+mounted_dataset = dataset.as_mount(path_on_compute="container-project-dataset/")
+compute_target = ComputeTarget(ws, "container-model-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
 
 flags = arg_parser()

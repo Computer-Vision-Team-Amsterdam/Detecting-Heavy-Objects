@@ -9,3 +9,5 @@ class PointOfInterest(JSONListWizard, JSONFileWizard):
     coords: Tuple[float, float] = (-1, -1)
     geohash: str = ""
     cluster: int = 0
+    subset: str = ""
+    image_id: int = -1
