@@ -15,10 +15,6 @@ trigger:
 pr: none
 
 parameters:
-- name: BuildAndPush
-  displayName: "Build and push to ACR"
-  type: boolean
-  default: true
 - name: DockerFiles
   type: object
   default:
@@ -34,51 +30,169 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'blur'
       tag: 'latest'
+    - name: 'Detect' #No spaces or special chars
+      displayName: 'Detect'
+      dockerFileName: 'detection.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'detection'
+      tag: 'latest'
     - name: 'UploadToPostgres' #No spaces or special chars
       displayName: 'Upload to Postgres'
       dockerFileName: 'upload_to_postgres.Dockerfile'
       dockerFileRelativePath: ''
       imageRepository: 'upload_to_postgres'
       tag: 'latest'
+    - name: 'Postprocessing' #No spaces or special chars
+      displayName: 'postprocessing'
+      dockerFileName: 'postprocessing.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'postprocessing'
+      tag: 'latest'
+    - name: 'SubmitToSia' #No spaces or special chars
+      displayName: 'Submit to SIA'
+      dockerFileName: 'submit_to_sia.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'submit_to_sia'
+      tag: 'latest'
+    - name: 'DeleteBlobs' #No spaces or special chars
+      displayName: 'Delete blobs'
+      dockerFileName: 'delete_blobs.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'delete_blobs'
+      tag: 'latest'
 
 variables:
-  armServiceConnection: 'ARM-CCC-CVT-ont-01'
-  containerRegistryName: 'cvtweuacrogidgmnhwma3zq'
-  buildAndPush: ${{ parameters.BuildAndPush }}
+  armServiceConnection.dev: 'ARM-CCC-CVT-ont-01'
+  armServiceConnection.test: 'ARM-CCC-CVT-test-01'
+  armServiceConnection.acc: 'ARM-CCC-CVT-acc-01'
+  armServiceConnection.prod: 'ARM-CCC-CVT-prd-01'
+  containerRegistryName.dev: 'cvtweuacrogidgmnhwma3zq'
+  containerRegistryName.test: 'cvtweuacrtwingwbb3xpfra'
+  containerRegistryName.acc: 'cvtweuacraytg6p4gqriwb6'
+  containerRegistryName.prod: 'cvtweuacrpju7nekr55bcdo'
 
 stages :
-  - stage: BuildAndPush
-    displayName: 'Build and Push'
-    condition: eq(variables['buildAndPush'], true)
+  - stage: Build
+    displayName: 'Build (CI)'
     jobs:
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-        - deployment: Build_${{dockerFile.name}}
-          displayName: '${{ dockerFile.displayName }} - Build and push to ACR'
+        - job: Build_${{ dockerFile.Name }}
+          displayName: 'Build - ${{ dockerFile.displayName }}'
           pool:
             vmImage: ubuntu-latest
-          environment: development
-          strategy:
-            runOnce:
-              deploy:
-                steps:
-                - checkout: self
-            
-                - task: AzureCLI@2
-                  displayName: Azure CLI ACR Build
-                  inputs:
-                    azureSubscription: $(armServiceConnection)
-                    scriptType: pscore
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      az acr login --name $(containerRegistryName)
-                      cd .${{ dockerFile.dockerFileRelativePath }}
-                      az acr build --registry $(containerRegistryName) --file ${{ dockerFile.dockerFileName }} --image ${{ dockerFile.imageRepository }}:${{ dockerFile.tag }} .
+          steps:
+          - task: AzureCLI@2
+            displayName: Docker Build
+            inputs:
+              azureSubscription: $(armServiceConnection.dev)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az acr login --name $(containerRegistryName.dev)
+                cd .${{ dockerFile.dockerFileRelativePath }}
+                docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
+                docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
 
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publishing Image as Pipeline Artifact'
+            inputs:
+              path: $(Build.ArtifactStagingDirectory)
+              artifact: ContainerImage_${{ dockerFile.Name }}
+
+  - stage: Deploy_DEV
+    displayName: 'Deploy DEV (CD)'
+    dependsOn:
+    - Build
+    jobs:
+    - deployment: Deploy
+      displayName: 'Deployment'
+      pool:
+        vmImage: ubuntu-latest
+      environment: development
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+
+            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+              - task: AzureCLI@2
+                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+                inputs:
+                  azureSubscription: $(armServiceConnection.dev)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az acr login --name $(containerRegistryName.dev)
+                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af
+
+  - stage: Deploy_TEST
+    displayName: 'Deploy TEST (CD)'
+    dependsOn:
+    - Deploy_DEV
+    jobs:
+    - deployment: Deploy
+      displayName: 'Deployment'
+      pool:
+        vmImage: ubuntu-latest
+      environment: test
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+
+            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+              - task: AzureCLI@2
+                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+                inputs:
+                  azureSubscription: $(armServiceConnection.test)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az acr login --name $(containerRegistryName.test)
+                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af
+
+  - stage: Deploy_ACC
+    displayName: 'Deploy ACC (CD)'
+    dependsOn:
+    - Deploy_TEST
+    jobs:
+    - deployment: Deploy
+      displayName: 'Deployment'
+      pool:
+        vmImage: ubuntu-latest
+      environment: acceptance
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+
+            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+              - task: AzureCLI@2
+                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+                inputs:
+                  azureSubscription: $(armServiceConnection.acc)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az acr login --name $(containerRegistryName.acc)
+                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.acc).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName.acc).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af
+                      
   - stage: VulnerabilityScan
     displayName: 'Vulnerability Scan'
     dependsOn:
-    - BuildAndPush
-    condition: eq(variables['buildAndPush'], true)
+    - Deploy_TEST
     jobs:
       - job: WaitForScanResults
         displayName: Wait for Scan results
@@ -86,13 +200,13 @@ stages :
         steps:
         - task: Delay@1
           inputs:
-            delayForMinutes: 5
+            delayForMinutes: 10
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
           # Run Image scan gate - which extracts image scan results and assess whether 
           # to fail the pipeline based on severity threshold configuration.
           # Using the ImageScanSummaryAssessmentGate.ps1 script in same repo folder
-        - job: ImageScanGate_${{dockerFile.name}}
-          displayName: Image Scan security gate ${{dockerFile.displayName}}
+        - job: ImageScanGate_${{ dockerFile.name }}
+          displayName: 'Vulnerability Scan - ${{ dockerFile.displayName }}'
           pool:
             vmImage: ubuntu-latest
           dependsOn: 
@@ -102,10 +216,40 @@ stages :
           - task: AzureCLI@2
             displayName: Check for vulnerabilities
             inputs:
-              azureSubscription: $(armServiceConnection)
+              azureSubscription: $(armServiceConnection.dev)
               scriptType: 'pscore'
               scriptLocation: 'scriptPath'
               # Security Gate powershell script in same folder
               scriptPath: '$(Build.SourcesDirectory)/pipelines/scripts/ImageScanSummaryAssessmentGate.ps1'
-              arguments: '-registryName $(containerRegistryName) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
-                      
+              arguments: '-registryName $(containerRegistryName.dev) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
+  
+  - stage: Deploy_PROD
+    displayName: 'Deploy PROD (CD)'
+    dependsOn:
+    - Deploy_ACC
+    - VulnerabilityScan
+    jobs:
+    - deployment: Deploy
+      displayName: 'Deployment'
+      pool:
+        vmImage: ubuntu-latest
+      environment: production
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+
+            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+              - task: AzureCLI@2
+                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+                inputs:
+                  azureSubscription: $(armServiceConnection.prod)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az acr login --name $(containerRegistryName.prod)
+                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker push $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+                    docker system prune -af

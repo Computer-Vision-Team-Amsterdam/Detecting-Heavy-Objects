@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import psycopg2
-from panorama.client import PanoramaClient
 from psycopg2._psycopg import connection  # pylint: disable-msg=E0611
 from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
@@ -20,10 +19,10 @@ from azure_storage_utils import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
 USERNAME = azClient.get_secret_value("postgresUsername")
-USERNAME = f"{USERNAME}@cvt-weu-psql-o-01-silnc2achvsfi"
-PASSWORD = azClient.get_secret_value("postgresPassword-short")
+PASSWORD = azClient.get_secret_value("postgresPassword")
 HOST = azClient.get_secret_value("postgresHostname")
 PORT = "5432"
+DATABASE = "container-detection-database"
 
 
 def connect() -> Tuple[connection, cursor]:
@@ -36,9 +35,9 @@ def connect() -> Tuple[connection, cursor]:
     try:
         # Connect to an existing database
         conn = psycopg2.connect(
-            user=USERNAME,
+            user=f"{USERNAME}@{HOST}",
             password=PASSWORD,
-            host=HOST,
+            host=f"{HOST}.postgres.database.azure.com",
             port=PORT,
             database=DATABASE,
         )
@@ -114,10 +113,12 @@ def row_to_upload_from_panorama(
 
     :return: object with ordered row-content to be inserted into table
     """
+    from panorama.client import PanoramaClient
+
     pano_object = PanoramaClient.get_panorama(panorama_id)
     row: Dict[str, Union[str, float, datetime]] = {key: "" for key in table_columns}
 
-    row["file_name"] = pano_object.id
+    row["file_name"] = pano_object.id + ".jpg"
     row["camera_location_lat"] = pano_object.geometry.coordinates[1]
     row["camera_location_lon"] = pano_object.geometry.coordinates[0]
     row["heading"] = pano_object.heading
@@ -188,9 +189,6 @@ def upload_input(
 
 
 if __name__ == "__main__":
-
-    DATABASE = "container-detection-database"
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--table",
@@ -211,6 +209,10 @@ if __name__ == "__main__":
             "TMX7315120208-000020_pano_0000_000000",
             "TMX7315120208-000020_pano_0000_000001",
             "TMX7315120208-000020_pano_0000_000002",
+            "TMX7316010203-001697_pano_0000_000220",
+            "TMX7316010203-001697_pano_0000_000215",
+            "TMX7316010203-001697_pano_0000_000216",
+            "TMX7316010203-001697_pano_0000_000217",
         ]
         object_fields_to_select = []
 

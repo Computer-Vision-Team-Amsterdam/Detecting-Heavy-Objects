@@ -14,6 +14,23 @@ pr:
     - pipelines/*
     - README.md
 
+parameters:
+- name: BanditBaselineFile
+  displayName: "Bandit baseline file"
+  type: string
+  default: bandit-relaxed.json
+  values:
+  - bandit-relaxed.json
+  - bandit-strict.json
+- name: ContinueAfterBanditFail
+  displayName: "Continue pipeline if Bandit scan fails"
+  type: boolean
+  default: true
+
+variables:
+  banditBaselineFile: ${{ parameters.BanditBaselineFile }}
+  continueAfterBanditFail: ${{ parameters.ContinueAfterBanditFail }}
+
 stages :
   - stage: Tests
     displayName: 'Run pre-deployment tests'
@@ -51,9 +68,37 @@ stages :
               pylint --jobs=0 --rcfile=.pylintrc *.py --disable=W,C,R evaluation.py
             displayName: 'pylint'
 
+      - job: Bandit
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          matrix:
+            Python3.7:
+              python.version: '3.7'
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(python.version)'
+            displayName: 'Use Python $(python.version)'
+
+          - script: |
+              pip install bandit
+            displayName: 'Install Bandit'
+
+          - ${{ if eq(variables.continueAfterBanditFail, 'true') }}:
+            - script: |
+                bandit -c bandit.yaml -b $(banditBaselineFile) -r .
+                exit 0
+              displayName: 'Bandit scan - ALWAYS PASS!'
+          - ${{ else }}:
+            - script: |
+                bandit -c bandit.yaml -b $(banditBaselineFile) -r .
+              displayName: 'Bandit scan'
+
       - job: Linux
         dependsOn:
         - Style
+        - Bandit
         pool:
           vmImage: ubuntu-latest
         strategy:
@@ -88,6 +133,7 @@ stages :
       - job: OSX
         dependsOn:
         - Style
+        - Bandit
         pool:
           vmImage: macOS-latest
         strategy:
