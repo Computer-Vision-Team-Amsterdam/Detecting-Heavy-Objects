@@ -8,7 +8,6 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN pip install \
     requests==2.26.0 \
-    azure-cli==2.39.0 \
     azure-identity==1.10.0 \
     azure-keyvault-secrets==4.5.1 \
     azure-storage-blob==12.13.1

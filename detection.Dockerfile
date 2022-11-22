@@ -1,5 +1,8 @@
 # az acr build -t detection:latest -f detection.Dockerfile -r cvtweuacrogidgmnhwma3zq .
 
+# pull the model directly from aml env
+# download the model temporarily from AS during pipeline + copy it when building this dockerfile
+# smth like COPY A/model_final.pth .
 FROM python:3.7.15-bullseye
 
 # Install project dependencies
