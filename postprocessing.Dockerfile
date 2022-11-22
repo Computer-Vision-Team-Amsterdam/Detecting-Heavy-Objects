@@ -34,8 +34,8 @@ RUN pip install --no-cache \
         azure-identity==1.10.0 \
         azure-keyvault-secrets==4.5.1 \
         azure-storage-blob==12.13.1 \
-        git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@d88bea3fd9f26028a744700b225ef11c328bd3de \
-        git+ssh://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@98a92686a9ef92b3748f345b137123ea5915c8b1
+        git+https://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@faba8f6f4a94e545135dd24aea398defe2c69f97 \
+        git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@98a92686a9ef92b3748f345b137123ea5915c8b1
 
 WORKDIR /app
 COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
