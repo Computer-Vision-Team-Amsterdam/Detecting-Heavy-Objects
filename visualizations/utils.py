@@ -79,6 +79,7 @@ def get_permit_locations(
     xmlparse = Xet.parse(file)
     root = xmlparse.getroot()
     permit_locations = []
+    permit_locations_failed = []
     print("Parsing the permits information")
     running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
     bag_url = f"https://api.data.amsterdam.nl/atlas/search/adres/?q="
@@ -98,6 +99,7 @@ def get_permit_locations(
                     address_format = address[0][0] + " " + address[0][1]
             except Exception as ex:
                 print(f"XML scrape for item {item.find('ITEM_KEY').text} failed with error: {ex}.")
+                permit_locations_failed.append(item.find('ITEM_KEY').text)
                 # Continue to next iteration
                 continue
 
@@ -109,12 +111,13 @@ def get_permit_locations(
                 lonlat = [bag_data_location[1], bag_data_location[0]]
             except Exception as ex:
                 print(f"BAG scrape failed with error: {ex}. Address is {address_format}")
+                permit_locations_failed.append(item.find('ITEM_KEY').text)
                 # Continue to next iteration
                 continue
 
             permit_locations.append(lonlat)
 
-    return permit_locations
+    return permit_locations, permit_locations_failed
 
 
 def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
