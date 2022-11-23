@@ -204,23 +204,35 @@ if __name__ == "__main__":
     opt = parser.parse_args()
 
     object_fields_to_select: List[Optional[str]] = []
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
+
     if opt.table == "images":
-        input_data = [
-            "TMX7315120208-000020_pano_0000_000000",
-            "TMX7315120208-000020_pano_0000_000001",
-            "TMX7315120208-000020_pano_0000_000002",
-            "TMX7316010203-001697_pano_0000_000220",
-            "TMX7316010203-001697_pano_0000_000215",
-            "TMX7316010203-001697_pano_0000_000216",
-            "TMX7316010203-001697_pano_0000_000217",
-        ]
+        # TODO move to retrieve images?
+
+        # Download from Cloud
+        cname_input = "retrieve-images-input"
+        input_files = saClient.list_container_content(
+            cname="retrieve-images-input",
+            blob_prefix=opt.date,
+        )
+        print(f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}.")
+
+        input_data = []
+        for input_file in input_files:
+            saClient.download_blob(
+                cname="retrieve-images-input",
+                blob_name=f"{opt.date}/{input_file}.txt",
+                local_file_path=f"{opt.date}.txt",
+            )
+            with open(f"{input_file}.txt", "r") as filestream:
+                for line in filestream:
+                    current_line = line.split(",")
+                    input_data.append(current_line)
+
         object_fields_to_select = []
 
     if opt.table == "detections":
-
         # download detections file from the storage account
-        saClient = StorageAzureClient(secret_key="data-storage-account-url")
-
         if not Path(opt.date).exists():
             Path(opt.date).mkdir(exist_ok=True, parents=True)
 

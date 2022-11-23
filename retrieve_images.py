@@ -27,13 +27,13 @@ def split_pano_id(panorama_id: str) -> Tuple[str, str]:
     """
     id_name = panorama_id.split("_")[0]
     index = panorama_id.index("_")
-    img_name = panorama_id[index + 1 :]
+    img_name = panorama_id[index + 1:]
 
     return id_name, img_name
 
 
 def download_panorama_from_cloudvps(
-    date: datetime, panorama_id: str, output_dir: Path = Path("retrieved_images")
+        date: datetime, panorama_id: str, output_dir: Path = Path("retrieved_images")
 ) -> None:
     """
     Downloads panorama from cloudvps to local folder.
@@ -46,10 +46,10 @@ def download_panorama_from_cloudvps(
 
     try:
         url = (
-            BASE_URL + f"{date.year}/"
-            f"{str(date.month).zfill(2)}/"
-            f"{str(date.day).zfill(2)}/"
-            f"{id_name}/{img_name}.jpg"
+                BASE_URL + f"{date.year}/"
+                           f"{str(date.month).zfill(2)}/"
+                           f"{str(date.day).zfill(2)}/"
+                           f"{id_name}/{img_name}.jpg"
         )
 
         response = requests.get(
@@ -77,30 +77,35 @@ if __name__ == "__main__":
     parser.add_argument("--date", type=str, help="date to retrieve images")
     opt = parser.parse_args()
 
-    pano_dates = [
-        datetime(2016, 3, 17),
-        datetime(2016, 3, 17),
-        datetime(2016, 3, 17),
-        datetime(2020, 5, 8),
-        datetime(2020, 5, 8),
-        datetime(2020, 5, 8),
-        datetime(2020, 5, 8),
-    ]
-    pano_ids = [
-        "TMX7315120208-000020_pano_0000_000000",
-        "TMX7315120208-000020_pano_0000_000001",
-        "TMX7315120208-000020_pano_0000_000002",
-        "TMX7316010203-001697_pano_0000_000220",
-        "TMX7316010203-001697_pano_0000_000215",
-        "TMX7316010203-001697_pano_0000_000216",
-        "TMX7316010203-001697_pano_0000_000217",
-    ]
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    for pano_date, pano_id in zip(pano_dates, pano_ids):
+    # Download from Cloud
+    cname_input = "retrieve-images-input"
+    input_files = saClient.list_container_content(
+        cname="retrieve-images-input",
+        blob_prefix=opt.date,
+    )
+    print(f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}.")
+
+    pano_ids = []
+    for input_file in input_files:
+        saClient.download_blob(
+            cname="retrieve-images-input",
+            blob_name=f"{opt.date}/{input_file}.txt",
+            local_file_path=f"{opt.date}.txt",
+        )
+        with open(f"{input_file}.txt", "r") as filestream:
+            for line in filestream:
+                current_line = line.split(",")
+                pano_ids.append(current_line)
+
+    pano_date = datetime.strptime(opt.date, "%Y-%m-%d").date()
+
+    for pano_id in pano_ids:
         download_panorama_from_cloudvps(pano_date, pano_id)
 
+    # Upload to Cloud
     local_file_path = "retrieved_images"
-    saClient = StorageAzureClient(secret_key="data-storage-account-url")
     for file in os.listdir(local_file_path):
         saClient.upload_blob(
             cname="unblurred",
