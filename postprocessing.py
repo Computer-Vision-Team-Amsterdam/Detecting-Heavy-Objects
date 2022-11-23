@@ -359,7 +359,7 @@ if __name__ == "__main__":
         "--permits_file",
         type=str,
         help="Full path to permits file",
-        default="930651BCFAD14D26A3CC96C751CD208E_small.xml",
+        default="decos_dump.xml",
     )
     # TODO remove default args
     parser.add_argument(
