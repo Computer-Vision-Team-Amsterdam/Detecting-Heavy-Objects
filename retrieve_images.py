@@ -89,15 +89,14 @@ if __name__ == "__main__":
 
     pano_ids = []
     for input_file in input_files:
+        local_file = input_file.split("/")[1]
         saClient.download_blob(
             cname="retrieve-images-input",
-            blob_name=f"{opt.date}/{input_file}.txt",
-            local_file_path=f"{opt.date}.txt",
+            blob_name=input_file,
+            local_file_path=local_file,
         )
-        with open(f"{input_file}.txt", "r") as filestream:
-            for line in filestream:
-                current_line = line.split(",")
-                pano_ids.append(current_line)
+        with open(local_file, "r") as f:
+            pano_ids = [line.rstrip("\n") for line in f]
 
     pano_date = datetime.strptime(opt.date, "%Y-%m-%d").date()
 

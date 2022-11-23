@@ -207,8 +207,6 @@ if __name__ == "__main__":
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
     if opt.table == "images":
-        # TODO move to retrieve images?
-
         # Download from Cloud
         cname_input = "retrieve-images-input"
         input_files = saClient.list_container_content(
@@ -219,15 +217,16 @@ if __name__ == "__main__":
 
         input_data = []
         for input_file in input_files:
+            local_file = input_file.split("/")[1]
             saClient.download_blob(
                 cname="retrieve-images-input",
-                blob_name=f"{opt.date}/{input_file}.txt",
-                local_file_path=f"{opt.date}.txt",
+                blob_name=input_file,
+                local_file_path=local_file,
             )
-            with open(f"{input_file}.txt", "r") as filestream:
-                for line in filestream:
-                    current_line = line.split(",")
-                    input_data.append(current_line)
+            with open(local_file, "r") as f:
+                input_data = [line.rstrip("\n") for line in f]
+
+        print(input_data)
 
         object_fields_to_select = []
 
