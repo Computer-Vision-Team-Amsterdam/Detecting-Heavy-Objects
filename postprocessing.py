@@ -414,7 +414,7 @@ if __name__ == "__main__":
         )
     else:
         # Get columns
-        sql = f"SELECT * FROM {table_name}"
+        sql = f"SELECT * FROM {table_name} LIMIT 0"
         cur.execute(sql)
         table_columns = [desc[0] for desc in cur.description]
         table_columns.pop(0)  # Remove the id column
