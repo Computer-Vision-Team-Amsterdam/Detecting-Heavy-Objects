@@ -20,6 +20,18 @@ TEXT = (
     "Dit is een automatisch gegenereerd signaal. Met behulp van beeldherkenning is een bouwcontainer of bouwkeet "
     "gedetecteerd op onderstaande locatie, waar mogelijk geen vergunning voor is. "
 )
+DESCRIPTION_ASC = "Instructie ASC:\n" \
+                  "(i) Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een " \
+                  "bouwcontainer of bouwkeet op de foto staat. \n " \
+                  "(ii) De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit " \
+                  "signaal herkennen in City Control onder 'Signalering'."
+DESCRIPTION_BOA = "Instructie BOA’s:\n " \
+                  "(i) Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek " \
+                  "ter plaatse nodig is.\n" \
+                  "(ii) Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij " \
+                  "containereigenaar.\n " \
+                  "(iii) Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+
 MAX_SIGNALS_TO_SEND = 10
 
 
@@ -27,17 +39,7 @@ def _get_description(permit_distance: str, bridge_distance: str) -> str:
     return (
         f"Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n"
         f"Afstand tot kwetsbare kade: {bridge_distance} meter\n"
-        f"Afstand tot objectvergunning: {permit_distance} meter\n\n"
-        f"Instructie ASC:\n"
-        f"o Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een bouwcontainer of "
-        f"bouwkeet op de foto staat. \n "
-        f"o De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
-        f"signaal herkennen in City Control onder 'Signalering'.\n\n"
-        f"Instructie BOA’s:\n "
-        f"o Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek ter "
-        f"plaatse nodig is.\n"
-        f"o Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n "
-        f"o Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+        f"Afstand tot objectvergunning: {permit_distance} meter"
     )
 
 
@@ -182,7 +184,21 @@ if __name__ == "__main__":
             signal_id = _post_signal(headers, _to_signal(start_date_dag, lat_lng))
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
+
             # Add a description to the previously created signal
+            # Description 3
+            _patch_signal(
+                headers,
+                signal_id,
+                DESCRIPTION_BOA,
+            )
+            # Description 2
+            _patch_signal(
+                headers,
+                signal_id,
+                DESCRIPTION_ASC,
+            )
+            # Description 1
             _patch_signal(
                 headers,
                 signal_id,
