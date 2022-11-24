@@ -28,8 +28,8 @@ if __name__ == "__main__":
         # download detections file from the storage account
         saClient.download_blob(
             cname="detections",
-            blob_name=f"{opt.date}/coco_instances_results.json",
-            local_file_path=f"{opt.date}/coco_instances_results.json",
+            blob_name=f"{opt.date}/empty_predictions.json",
+            local_file_path=f"{opt.date}/empty_predictions.json",
         )
 
         input_file_path = f"{opt.date}/empty_predictions.json"
