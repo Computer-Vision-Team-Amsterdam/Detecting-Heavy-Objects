@@ -90,14 +90,12 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 
 
 if __name__ == "__main__":
-
     flags = arg_parser()
 
     input_path = Path(flags.data_folder, flags.subset)
     if not input_path.exists():
         input_path.mkdir(exist_ok=True, parents=True)
 
-    print(os.listdir(Path(os.getcwd())))
 
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
@@ -105,11 +103,10 @@ if __name__ == "__main__":
     for blob in blobs:
         saClient.download_blob(
             cname="blurred",
-            blob_name=f"{flags.subset}/{blob}",
-            local_file_path=f"{flags.subset}/{blob}",
+            blob_name=blob,
+            local_file_path=f"{flags.data_folder}/{blob}", # blurred   date/images
         )
-
-    print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
+    # print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
 
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
@@ -117,7 +114,6 @@ if __name__ == "__main__":
         data_format=flags.data_format,
         data_folder=flags.data_folder,
     )
-
     evaluate_model(flags, experimentConfig)
 
     # upload detection files to postgres
