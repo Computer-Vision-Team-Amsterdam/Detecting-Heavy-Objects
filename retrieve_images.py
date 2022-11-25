@@ -100,7 +100,7 @@ if __name__ == "__main__":
         with open(local_file, "r") as f:
             pano_ids = [line.rstrip("\n") for line in f]
 
-    pano_date = datetime.strptime(opt.date, "%Y-%m-%d").date()
+    pano_date = datetime.strptime(opt.date, "%Y-%m-%d")
 
     for pano_id in pano_ids:
         download_panorama_from_cloudvps(pano_date, pano_id)
