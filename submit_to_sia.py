@@ -93,7 +93,8 @@ def _get_bag_address_in_range(location_point) -> Any:
               f"?format=json&locatie={location_point[0]},{location_point[1]},{MAX_BUILDING_SEARCH_RADIUS}&detailed=!"
     bag_data = []
 
-    with requests.get(bag_url) as response:
+    response = requests.get(bag_url)
+    if response.ok:
         response_content = json.loads(response.content)
         if response_content['count'] > 0:
             # Get first element
@@ -101,9 +102,11 @@ def _get_bag_address_in_range(location_point) -> Any:
             huisnummer = json.loads(response.content)['results'][0]['huisnummer']
             postcode = json.loads(response.content)['results'][0]['postcode']
             return [openbare_ruimte, huisnummer, postcode]
-
         else:
             return bag_data
+    else:
+        print(response.raise_for_status())
+        return bag_data # TODO or raise
 
 
 def _get_access_token(client_id: str, client_secret: str) -> Any:
