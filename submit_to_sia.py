@@ -17,7 +17,7 @@ BASE_URL = "https://acc.api.meldingen.amsterdam.nl/signals/v1/private/signals"
 API_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB = 20*1024*1024
 
 TEXT = (
-    "Dit is een automatisch gegenereerd signaal. Met behulp van beeldherkenning is een bouwcontainer of bouwkeet "
+    "Dit is een automatisch gegenereerd signaal: Met behulp van beeldherkenning is een bouwcontainer of bouwkeet "
     "gedetecteerd op onderstaande locatie, waar waarschijnlijk geen vergunning voor is. N.B. Het adres betreft een "
     "schatting van het dichtstbijzijnde adres bij de containerlocatie, er is geen informatie bekend in hoeverre dit "
     "het adres is van de containereigenaar."
