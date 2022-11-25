@@ -6,9 +6,9 @@ import requests
 
 socket.setdefaulttimeout(100)
 import argparse
+import json
 
 import pandas.io.sql as sqlio
-import json
 
 import upload_to_postgres
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
@@ -23,17 +23,21 @@ TEXT = (
     "schatting van het dichtstbijzijnde adres bij de containerlocatie, er is geen informatie bekend in hoeverre dit "
     "het adres is van de containereigenaar."
 )
-DESCRIPTION_ASC = "Instructie ASC:\n" \
-                  "(i) Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een " \
-                  "bouwcontainer of bouwkeet op de foto staat. \n " \
-                  "(ii) De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit " \
-                  "signaal herkennen in City Control onder 'Signalering'."
-DESCRIPTION_BOA = "Instructie BOA’s:\n " \
-                  "(i) Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek " \
-                  "ter plaatse nodig is.\n" \
-                  "(ii) Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij " \
-                  "containereigenaar.\n " \
-                  "(iii) Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+DESCRIPTION_ASC = (
+    "Instructie ASC:\n"
+    "(i) Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een "
+    "bouwcontainer of bouwkeet op de foto staat. \n "
+    "(ii) De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
+    "signaal herkennen in City Control onder 'Signalering'."
+)
+DESCRIPTION_BOA = (
+    "Instructie BOA’s:\n "
+    "(i) Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek "
+    "ter plaatse nodig is.\n"
+    "(ii) Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij "
+    "containereigenaar.\n "
+    "(iii) Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+)
 
 MAX_SIGNALS_TO_SEND = 10
 MAX_BUILDING_SEARCH_RADIUS = 50
@@ -58,7 +62,7 @@ def _to_signal(start_date_dag: str, lat_lng: Dict[str, float], bag_data: List[An
         },
         "category": {
             "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/"
-                            "sub_categories/hinderlijk-geplaatst-object"
+            "sub_categories/hinderlijk-geplaatst-object"
         },
         "reporter": {"email": "cvt@amsterdam.nl"},
         "priority": {
@@ -68,45 +72,49 @@ def _to_signal(start_date_dag: str, lat_lng: Dict[str, float], bag_data: List[An
     }
 
     if bag_data:
-        location_json = {"location": {
-            "geometrie": {
-                "type": "Point",
-                "coordinates": [lat_lng["lng"], lat_lng["lat"]],
-            },
-            "address":
-                {
+        location_json = {
+            "location": {
+                "geometrie": {
+                    "type": "Point",
+                    "coordinates": [lat_lng["lng"], lat_lng["lat"]],
+                },
+                "address": {
                     "openbare_ruimte": bag_data[0],
                     "huisnummer": bag_data[1],
                     "postcode": bag_data[2],
-                    "woonplaats": "Amsterdam"
-                }
-        }}
+                    "woonplaats": "Amsterdam",
+                },
+            }
+        }
 
         json_to_send.update(location_json)
 
 
-def _get_bag_address_in_range(location_point) -> Any:
+def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
     """
     For a location point, get the nearest building information.
     """
-    bag_url = f"https://api.data.amsterdam.nl/bag/v1.1/nummeraanduiding/" \
-              f"?format=json&locatie={location_point[0]},{location_point[1]},{MAX_BUILDING_SEARCH_RADIUS}&detailed=!"
-    bag_data = []
+    bag_url = (
+        f"https://api.data.amsterdam.nl/bag/v1.1/nummeraanduiding/"
+        f"?format=json&locatie={location_point['lng']},{location_point['lat']},{MAX_BUILDING_SEARCH_RADIUS}&detailed=!"  # TODO of lat lng??
+    )
 
     response = requests.get(bag_url)
     if response.ok:
         response_content = json.loads(response.content)
-        if response_content['count'] > 0:
+        if response_content["count"] > 0:
             # Get first element
-            openbare_ruimte = json.loads(response.content)['results'][0]['openbare_ruimte']['_display']
-            huisnummer = json.loads(response.content)['results'][0]['huisnummer']
-            postcode = json.loads(response.content)['results'][0]['postcode']
+            openbare_ruimte = json.loads(response.content)["results"][0][
+                "openbare_ruimte"
+            ]["_display"]
+            huisnummer = json.loads(response.content)["results"][0]["huisnummer"]
+            postcode = json.loads(response.content)["results"][0]["postcode"]
             return [openbare_ruimte, huisnummer, postcode]
         else:
-            return bag_data
+            return []
     else:
         print(response.raise_for_status())
-        return bag_data # TODO or raise
+        return []  # TODO or raise
 
 
 def _get_access_token(client_id: str, client_secret: str) -> Any:
@@ -227,9 +235,11 @@ if __name__ == "__main__":
 
         if add_notification:
             # Get closest building
-            bag_data = _get_bag_address_in_range(lat_lng)
+            address_data = _get_bag_address_in_range(lat_lng)
             # Add a new signal to meldingen.amsterdam.nl
-            signal_id = _post_signal(headers, _to_signal(date_now, lat_lng, bag_data))
+            signal_id = _post_signal(
+                headers, _to_signal(date_now, lat_lng, address_data)
+            )
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
 
