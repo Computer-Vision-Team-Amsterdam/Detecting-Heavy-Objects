@@ -104,12 +104,9 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
         response_content = json.loads(response.content)
         if response_content["count"] > 0:
             # Get first element
-            openbare_ruimte = json.loads(response.content)["results"][0][
-                "openbare_ruimte"
-            ]["_display"]
-            huisnummer = json.loads(response.content)["results"][0]["huisnummer"]
-            postcode = json.loads(response.content)["results"][0]["postcode"]
-            return [openbare_ruimte, huisnummer, postcode]
+            first_element = json.loads(response.content)["results"][0]
+            return [first_element["openbare_ruimte"]["_display"], first_element["huisnummer"],
+                    first_element["postcode"]]
         else:
             return []
     else:
