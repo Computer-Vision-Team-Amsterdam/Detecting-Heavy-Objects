@@ -27,13 +27,13 @@ def split_pano_id(panorama_id: str) -> Tuple[str, str]:
     """
     id_name = panorama_id.split("_")[0]
     index = panorama_id.index("_")
-    img_name = panorama_id[index + 1:]
+    img_name = panorama_id[index + 1 :]
 
     return id_name, img_name
 
 
 def download_panorama_from_cloudvps(
-        date: datetime, panorama_id: str, output_dir: Path = Path("retrieved_images")
+    date: datetime, panorama_id: str, output_dir: Path = Path("retrieved_images")
 ) -> None:
     """
     Downloads panorama from cloudvps to local folder.
@@ -46,10 +46,10 @@ def download_panorama_from_cloudvps(
 
     try:
         url = (
-                BASE_URL + f"{date.year}/"
-                           f"{str(date.month).zfill(2)}/"
-                           f"{str(date.day).zfill(2)}/"
-                           f"{id_name}/{img_name}.jpg"
+            BASE_URL + f"{date.year}/"
+            f"{str(date.month).zfill(2)}/"
+            f"{str(date.day).zfill(2)}/"
+            f"{id_name}/{img_name}.jpg"
         )
 
         response = requests.get(
@@ -85,7 +85,9 @@ if __name__ == "__main__":
         cname="retrieve-images-input",
         blob_prefix=opt.date,
     )
-    print(f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}.")
+    print(
+        f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}."
+    )
 
     pano_ids = []
     for input_file in input_files:

@@ -135,7 +135,7 @@ def run(
 
     # ======== CREATE LIST OF PERMIT LOCATIONS ============
     date_to_check = datetime(2021, 3, 17)
-    permit_locations = get_permit_locations(permits_file, date_to_check)
+    permit_locations, _ = get_permit_locations(permits_file, date_to_check)
 
     # ========== CREATE MAP =================
     generate_map(

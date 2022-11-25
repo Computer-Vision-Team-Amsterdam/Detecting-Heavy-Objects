@@ -237,7 +237,9 @@ class PostProcessing:
             else:
                 return 0
 
-        permit_locations, permit_locations_failed = get_permit_locations(self.permits_file, self.date_to_check)
+        permit_locations, permit_locations_failed = get_permit_locations(
+            self.permits_file, self.date_to_check
+        )
         permit_locations_geom = [
             Point(permit_location) for permit_location in permit_locations
         ]

@@ -213,7 +213,9 @@ if __name__ == "__main__":
             cname="retrieve-images-input",
             blob_prefix=opt.date,
         )
-        print(f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}.")
+        print(
+            f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}."
+        )
 
         input_data = []
         for input_file in input_files:
