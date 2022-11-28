@@ -237,7 +237,9 @@ class PostProcessing:
             else:
                 return 0
 
-        permit_locations = get_permit_locations(self.permits_file, self.date_to_check)
+        permit_locations, permit_locations_failed = get_permit_locations(
+            self.permits_file, self.date_to_check
+        )
         permit_locations_geom = [
             Point(permit_location) for permit_location in permit_locations
         ]
@@ -247,6 +249,16 @@ class PostProcessing:
             for bridge_location in bridge_locations
             if bridge_location
         ]
+
+        # Failed to parse some items in the permits file
+        np.savetxt(
+            "permit_locations_failed.csv",
+            permit_locations_failed,
+            header="DECOS_ITEM_KEY",
+            fmt="%s",
+            delimiter=",",
+            comments="",
+        )
 
         container_locations = get_container_locations(
             self.output_folder / self.objects_file
@@ -349,7 +361,7 @@ if __name__ == "__main__":
         "--permits_file",
         type=str,
         help="Full path to permits file",
-        default="930651BCFAD14D26A3CC96C751CD208E_small.xml",
+        default="decos_dump.xml",
     )
     # TODO remove default args
     parser.add_argument(
@@ -414,7 +426,7 @@ if __name__ == "__main__":
         )
     else:
         # Get columns
-        sql = f"SELECT * FROM {table_name}"
+        sql = f"SELECT * FROM {table_name} LIMIT 0"
         cur.execute(sql)
         table_columns = [desc[0] for desc in cur.description]
         table_columns.pop(0)  # Remove the id column
@@ -429,11 +441,12 @@ if __name__ == "__main__":
         conn.commit()
 
         # Upload the file with found containers to the Azure Blob Storage # TODO define prioritized_objects.csv
-        azure_connection.upload_blob(
-            "postprocessing-output",
-            os.path.join(args.date, "prioritized_objects.csv"),
-            "prioritized_objects.csv",
-        )
+        for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:
+            azure_connection.upload_blob(
+                "postprocessing-output",
+                os.path.join(args.date, csv_file),
+                csv_file,
+            )
 
     if conn:
         cur.close()

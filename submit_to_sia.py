@@ -152,9 +152,11 @@ if __name__ == "__main__":
     conn, cur = upload_to_postgres.connect()
 
     # Get images with a detection TODO check A.score <> 0
-    sql = f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name " \
-          f"WHERE date_trunc('day', B.taken_at) = '{args.date}'::date AND A.score <> 0 ORDER " \
-          f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
+    sql = (
+        f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
+        f"WHERE date_trunc('day', B.taken_at) = '{args.date}'::date AND A.score <> 0 ORDER "
+        f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
+    )
     query_df = sqlio.read_sql_query(sql, conn)
     if query_df.empty:
         print(

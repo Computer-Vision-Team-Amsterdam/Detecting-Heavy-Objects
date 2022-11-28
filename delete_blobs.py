@@ -28,8 +28,8 @@ if __name__ == "__main__":
         # download detections file from the storage account
         saClient.download_blob(
             cname="detections",
-            blob_name=f"{opt.date}/coco_instances_results.json",
-            local_file_path=f"{opt.date}/coco_instances_results.json",
+            blob_name=f"{opt.date}/empty_predictions.json",
+            local_file_path=f"{opt.date}/empty_predictions.json",
         )
 
         input_file_path = f"{opt.date}/empty_predictions.json"
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             if all_data:
                 saClient.delete_blobs(
                     cname=cname,
-                    blob_names=images_to_remove,
+                    blob_names=all_data,
                 )
                 print(f"Removed {len(all_data)} blobs from container {cname}.")
             else:

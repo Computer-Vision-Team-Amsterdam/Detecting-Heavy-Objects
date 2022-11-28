@@ -77,30 +77,36 @@ if __name__ == "__main__":
     parser.add_argument("--date", type=str, help="date to retrieve images")
     opt = parser.parse_args()
 
-    pano_dates = [
-        datetime(2016, 3, 17),
-        datetime(2016, 3, 17),
-        datetime(2016, 3, 17),
-        datetime(2020, 5, 8),
-        datetime(2020, 5, 8),
-        datetime(2020, 5, 8),
-        datetime(2020, 5, 8),
-    ]
-    pano_ids = [
-        "TMX7315120208-000020_pano_0000_000000",
-        "TMX7315120208-000020_pano_0000_000001",
-        "TMX7315120208-000020_pano_0000_000002",
-        "TMX7316010203-001697_pano_0000_000220",
-        "TMX7316010203-001697_pano_0000_000215",
-        "TMX7316010203-001697_pano_0000_000216",
-        "TMX7316010203-001697_pano_0000_000217",
-    ]
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    for pano_date, pano_id in zip(pano_dates, pano_ids):
+    # Download from Cloud
+    cname_input = "retrieve-images-input"
+    input_files = saClient.list_container_content(
+        cname="retrieve-images-input",
+        blob_prefix=opt.date,
+    )
+    print(
+        f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}."
+    )
+
+    pano_ids = []
+    for input_file in input_files:
+        local_file = input_file.split("/")[1]
+        saClient.download_blob(
+            cname="retrieve-images-input",
+            blob_name=input_file,
+            local_file_path=local_file,
+        )
+        with open(local_file, "r") as f:
+            pano_ids = [line.rstrip("\n") for line in f]
+
+    pano_date = datetime.strptime(opt.date, "%Y-%m-%d")
+
+    for pano_id in pano_ids:
         download_panorama_from_cloudvps(pano_date, pano_id)
 
+    # Upload to Cloud
     local_file_path = "retrieved_images"
-    saClient = StorageAzureClient(secret_key="data-storage-account-url")
     for file in os.listdir(local_file_path):
         saClient.upload_blob(
             cname="unblurred",

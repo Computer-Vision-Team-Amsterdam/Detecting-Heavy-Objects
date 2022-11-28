@@ -28,7 +28,7 @@ RUN python -m pip install -e detectron2
 
 WORKDIR /app
 COPY configs/* /app/configs/
-COPY inference.py evaluation.py utils.py /app/
+COPY inference.py evaluation.py utils.py azure_storage_utils.py /app/
 # copy weights
 # COPY model_final.pth /app/
 

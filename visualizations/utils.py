@@ -10,7 +10,7 @@ import xml.etree.ElementTree as Xet
 from datetime import datetime
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, List, Tuple, Union
 
 import geojson
 import requests
@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 def get_permit_locations(
     file: Union[Path, str], date_to_check: datetime
-) -> List[List[float]]:
+) -> Tuple[List[List[float]], List[float]]:
     """
     Returns all the containers permits from an decos objects permit file.
     """
@@ -79,25 +79,28 @@ def get_permit_locations(
     xmlparse = Xet.parse(file)
     root = xmlparse.getroot()
     permit_locations = []
+    permit_locations_failed = []
     print("Parsing the permits information")
     running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
     bag_url = f"https://api.data.amsterdam.nl/atlas/search/adres/?q="
     for item in tqdm(root, disable=running_in_k8s):
         # The permits seem to have a quite free format. Let's catch some exceptions
-        if (
-            is_container_permit(item)
-            and is_permit_valid_on_day(item)
-        ):
+        if is_container_permit(item) and is_permit_valid_on_day(item):
             try:
                 if len(item.getchildren()[-1]) > 0:  # Check if c_object exists
                     address = item.getchildren()[-1].getchildren()[0]
-                    address_format = address.find("TEXT8").text + " " + address.find("INITIALS").text
+                    address_format = (
+                        address.find("TEXT8").text + " " + address.find("INITIALS").text
+                    )
                 else:
                     address_raw = item.find("TEXT6").text
                     address = split_dutch_street_address(address_raw)
                     address_format = address[0][0] + " " + address[0][1]
             except Exception as ex:
-                print(f"XML scrape for item {item.find('ITEM_KEY').text} failed with error: {ex}.")
+                print(
+                    f"XML scrape for item {item.find('ITEM_KEY').text} failed with error: {ex}."
+                )
+                permit_locations_failed.append(item.find("ITEM_KEY").text)
                 # Continue to next iteration
                 continue
 
@@ -108,13 +111,16 @@ def get_permit_locations(
                     ]
                 lonlat = [bag_data_location[1], bag_data_location[0]]
             except Exception as ex:
-                print(f"BAG scrape failed with error: {ex}. Address is {address_format}")
+                print(
+                    f"BAG scrape failed with error: {ex}. Address is {address_format}"
+                )
+                permit_locations_failed.append(item.find("ITEM_KEY").text)
                 # Continue to next iteration
                 continue
 
             permit_locations.append(lonlat)
 
-    return permit_locations
+    return permit_locations, permit_locations_failed
 
 
 def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
