@@ -110,8 +110,8 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
         else:
             return []
     else:
-        print(response.raise_for_status())
-        return []  # TODO or raise
+        print(f"HTTPError {response.raise_for_status()}")
+        return []
 
 
 def _get_access_token(client_id: str, client_secret: str) -> Any:
