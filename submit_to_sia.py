@@ -89,6 +89,8 @@ def _to_signal(start_date_dag: str, lat_lng: Dict[str, float], bag_data: List[An
 
         json_to_send.update(location_json)
 
+    return json_to_send
+
 
 def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
     """
