@@ -54,7 +54,7 @@ if __name__ == "__main__":
             if all_data:
                 saClient.delete_blobs(
                     cname=cname,
-                    blob_names=images_to_remove,
+                    blob_names=all_data,
                 )
                 print(f"Removed {len(all_data)} blobs from container {cname}.")
             else:
