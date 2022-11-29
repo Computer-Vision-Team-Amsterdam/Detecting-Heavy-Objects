@@ -22,7 +22,7 @@ RUN pip install --no-cache \
         gdal==3.2.2 \
         geojson==2.5.0 \
         geopy==2.2.0 \
-        numpy==1.21.6 \
+        numpy==1.23.5 \
         pycocotools==2.0.4 \
         requests==2.28.0 \
         pandas==1.3.5 \
@@ -30,12 +30,12 @@ RUN pip install --no-cache \
         scipy==1.7.3 \
         shapely==1.8.2 \
         tqdm==4.64.0 \
-        azure-cli==2.39.0 \
+        azure-cli==2.42.0 \
         azure-identity==1.10.0 \
         azure-keyvault-secrets==4.5.1 \
         azure-storage-blob==12.13.1 \
-        git+https://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@faba8f6f4a94e545135dd24aea398defe2c69f97 \
-        git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
+        git+https://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@17d2945ed46d40bd770ac43e0cf9f5e74f36e9ef \
+            git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
 
 WORKDIR /app
 COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
