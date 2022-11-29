@@ -122,7 +122,7 @@ stages :
 
           - script: |
               source activate det2
-              pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
+              pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
             displayName: 'Install panorama'
           - script: |
               conda env create -f det2.yml
@@ -167,7 +167,7 @@ stages :
 
           - script: |
               source activate det2
-              pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.2
+              pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
             displayName: 'Install panorama'
 
           - script: |
