@@ -34,7 +34,7 @@ RUN pip install --no-cache \
         azure-identity==1.10.0 \
         azure-keyvault-secrets==4.5.1 \
         azure-storage-blob==12.13.1 \
-        git+https://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@17d2945ed46d40bd770ac43e0cf9f5e74f36e9ef \
+        git+https://git@github.com/Computer-Vision-Team-Amsterdam/Geolocalization_of_Street_Objects.git@0.1 \
             git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
 
 WORKDIR /app
