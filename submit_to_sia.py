@@ -57,7 +57,7 @@ def _to_signal(start_date_dag: str, lat_lng: Dict[str, float], bag_data: List[An
         "location": {
             "geometrie": {
                 "type": "Point",
-                "coordinates": [lat_lng["lng"], lat_lng["lat"]],
+                "coordinates": [lat_lon["lon"], lat_lon["lat"]],
             },
         },
         "category": {
@@ -76,7 +76,7 @@ def _to_signal(start_date_dag: str, lat_lng: Dict[str, float], bag_data: List[An
             "location": {
                 "geometrie": {
                     "type": "Point",
-                    "coordinates": [lat_lng["lng"], lat_lng["lat"]],
+                    "coordinates": [lat_lon["lon"], lat_lon["lat"]],
                 },
                 "address": {
                     "openbare_ruimte": bag_data[0],
@@ -98,11 +98,12 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
     """
     bag_url = (
         f"https://api.data.amsterdam.nl/bag/v1.1/nummeraanduiding/"
-        f"?format=json&locatie={location_point['lng']},{location_point['lat']},{MAX_BUILDING_SEARCH_RADIUS}&detailed=!"  # TODO of lat lng??
+        f"?format=json&locatie={location_point['lat']},{location_point['lon']},"
+        f"{MAX_BUILDING_SEARCH_RADIUS}&srid=4326&detailed=!"
     )
 
     response = requests.get(bag_url)
-    if response.ok:
+    if response.status_code == 200:
         response_content = json.loads(response.content)
         if response_content["count"] > 0:
             # Get first element
@@ -112,7 +113,7 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
         else:
             return []
     else:
-        print(f"HTTPError {response.raise_for_status()}")
+        print(f"Failed to get address from BAG: {response.raise_for_status()}")
         return []
 
 
@@ -208,7 +209,7 @@ if __name__ == "__main__":
     # Make a connection to the database
     conn, cur = upload_to_postgres.connect()
 
-    # Get images with a detection TODO check A.score <> 0
+    # Get images with a detection
     sql = (
         f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
         f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
@@ -230,14 +231,18 @@ if __name__ == "__main__":
             local_file_path=closest_image,
         )
 
-        lat_lng = {"lat": row["lat"], "lng": row["lon"]}
+        # Check if location is in Amsterdam
+        if (4.5 < row["lon"] < 5.1) and (52.2 < row["lat"] < 52.5):
+            lat_lon = {"lat": row["lat"], "lon": row["lon"]}
+        else:
+            sys.exit("Container location not inside borders of Amsterdam. Aborting...")
 
         if add_notification:
             # Get closest building
-            address_data = _get_bag_address_in_range(lat_lng)
+            address_data = _get_bag_address_in_range(lat_lon)
             # Add a new signal to meldingen.amsterdam.nl
             signal_id = _post_signal(
-                headers, _to_signal(date_now, lat_lng, address_data)
+                headers, _to_signal(date_now, lat_lon, address_data)
             )
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
