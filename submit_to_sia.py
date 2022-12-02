@@ -113,7 +113,7 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
         else:
             return []
     else:
-        print(f"Failed to get address from BAG: {response.raise_for_status()}")
+        print(f"Failed to get address from BAG, status code {response.status_code}.")
         return []
 
 
