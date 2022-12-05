@@ -163,6 +163,7 @@ def upload_input(
     table_name: str,
     data: Union[List[str], List[Dict[str, Union[str, float, datetime]]]],
     object_fields: List[Union[None, str]],
+    primary_key: str,
 ) -> None:
     """
     Uploads rows to table in postgres.
@@ -173,6 +174,7 @@ def upload_input(
     :param data: input data; either a list of panoramas ids
                 OR list of dicts with predictions
     :param object_fields: fields from the data object to be considered for upload
+    :param primary_key: primary key of the database table
 
     """
 
@@ -181,7 +183,7 @@ def upload_input(
         Dict[str, Union[str, float, datetime]]
     ] = combine_rows_to_upload(data, object_fields, table_columns=keys)
 
-    query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
+    query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s ON CONFLICT ({primary_key}) DO NOTHING;"
     values = [list(item.values()) for item in to_upload_data]
 
     execute_values(cur, query, values)
@@ -231,6 +233,7 @@ if __name__ == "__main__":
         print(input_data)
 
         object_fields_to_select = []
+        primary_key = "file_name"
 
     if opt.table == "detections":
         # download detections file from the storage account
@@ -247,9 +250,10 @@ if __name__ == "__main__":
         f = open(input_file_path)
         input_data = json.load(f)
         object_fields_to_select = ["pano_id", "score", "bbox"]
+        primary_key = "id"
 
     connection, cursor = connect()
-    upload_input(connection, cursor, opt.table, input_data, object_fields_to_select)
+    upload_input(connection, cursor, opt.table, input_data, object_fields_to_select, primary_key)
 
     if connection:
         cursor.close()
