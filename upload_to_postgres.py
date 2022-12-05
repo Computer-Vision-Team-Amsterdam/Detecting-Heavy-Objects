@@ -194,54 +194,59 @@ if __name__ == "__main__":
         "--table",
         type=str,
         choices=["images", "detections"],
-        help="table in postgres where to upload data",
+        help="Table in postgres where to upload data",
     )
     parser.add_argument(
         "--date",
         type=str,
-        help="date when pipeline is run",
+        help="Processing date in the format %Y-%m-%d %H:%M:%S.%f",
     )
     opt = parser.parse_args()
 
     object_fields_to_select: List[Optional[str]] = []
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
+    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
+    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
+    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    start_date_dag = start_date.strftime(my_format)
+    my_format_ymd = "%Y-%m-%d"
+    start_date_dag_ymd = start_date.strftime(my_format_ymd)
+
     if opt.table == "images":
-        # Download from Cloud
+        # Download txt file(s) with pano ids that we want to download from CloudVPS
         cname_input = "retrieve-images-input"
         input_files = saClient.list_container_content(
-            cname="retrieve-images-input",
-            blob_prefix=opt.date,
+            cname=cname_input,
+            blob_prefix=start_date_dag_ymd,
         )
         print(
-            f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}."
+            f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
         )
 
+        print(input_files)  # TODO remove
+
+        # Download files from CloudVPS
         input_data = []
         for input_file in input_files:
-            local_file = input_file.split("/")[1]
+            local_file = input_file.split("/")[1]  # only get file name, without prefix
             saClient.download_blob(
-                cname="retrieve-images-input",
+                cname=cname_input,
                 blob_name=input_file,
                 local_file_path=local_file,
             )
             with open(local_file, "r") as f:
                 input_data = [line.rstrip("\n") for line in f]
 
-        print(input_data)
-
         object_fields_to_select = []
 
     if opt.table == "detections":
         # download detections file from the storage account
-        if not Path(opt.date).exists():
-            Path(opt.date).mkdir(exist_ok=True, parents=True)
-
-        input_file_path = f"{opt.date}/coco_instances_results.json"
+        input_file_path = "coco_instances_results.json"
         saClient.download_blob(
             cname="detections",
-            blob_name=f"{opt.date}/coco_instances_results.json",
-            local_file_path=f"{opt.date}/coco_instances_results.json",
+            blob_name=f"{start_date_dag}/coco_instances_results.json",
+            local_file_path=input_file_path,
         )
 
         f = open(input_file_path)

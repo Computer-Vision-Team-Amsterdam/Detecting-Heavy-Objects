@@ -342,7 +342,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--date",
         type=str,
-        help="Processing date in the format YYYY-MM-DD",
+        help="Processing date in the format %Y-%m-%d %H:%M:%S.%f",
     )
     parser.add_argument(
         "--bucket_ref_files",
@@ -356,14 +356,12 @@ if __name__ == "__main__":
         help="Azure Blob Storage with predictions file.",
         default="detections",
     )
-    # TODO remove default args
     parser.add_argument(
         "--permits_file",
         type=str,
         help="Full path to permits file",
         default="decos_dump.xml",
     )
-    # TODO remove default args
     parser.add_argument(
         "--bridges_file",
         type=str,
@@ -372,40 +370,55 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
+    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
+    start_date = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S.%f")
+    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    start_date_dag = start_date.strftime(my_format)
+    my_format_ymd = "%Y-%m-%d"
+    start_date_dag_ymd = start_date.strftime(my_format_ymd)
+
     # Update output folder inside the WORKDIR of the docker container
-    output_folder = Path(args.date)
+    output_folder = Path(start_date_dag_ymd)
     if not output_folder.exists():
         output_folder.mkdir(exist_ok=True, parents=True)
 
-    permits_file = f"{args.date}/{args.permits_file}"
-    predictions_file = f"{args.date}/coco_instances_results.json"
+    permits_file = f"{start_date_dag_ymd}/{args.permits_file}"
+    predictions_file = f"{start_date_dag_ymd}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
 
     # Download files to the WORKDIR of the Docker container.
-    azure_connection.download_blob(args.bucket_ref_files, permits_file, permits_file)
     azure_connection.download_blob(
-        args.bucket_ref_files, args.bridges_file, args.bridges_file
+        cname=args.bucket_ref_files,
+        blob_name=permits_file,
+        local_file_path=permits_file
     )
     azure_connection.download_blob(
-        args.bucket_detections, predictions_file, predictions_file
+        cname=args.bucket_ref_files,
+        blob_name=args.bridges_file,
+        local_file_path=args.bridges_file
     )
-
-    postprocess = PostProcessing(
-        Path(predictions_file),  # TODO why use Path
-        output_folder=output_folder,
-        date_to_check=datetime(2021, 3, 17),
-        permits_file=permits_file,
-        bridges_file=args.bridges_file,
+    azure_connection.download_blob(
+        cname=args.bucket_detections,
+        blob_name=f"{start_date_dag}/coco_instances_results.json",
+        local_file_path=predictions_file
     )
 
     # Find possible object intersections from detections in panoramic images.
+    postprocess = PostProcessing(
+        Path(predictions_file),  # TODO why use Path
+        output_folder=output_folder,
+        date_to_check=datetime(2021, 3, 17), # TODO
+        permits_file=permits_file,
+        bridges_file=args.bridges_file,
+    )
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
     postprocess.write_output(
-        os.path.join(args.date, "points_of_interest.csv"), clustered_intersections
+        os.path.join(my_format_ymd, "points_of_interest.csv"), clustered_intersections
     )
 
     # Make a connection to the database
@@ -415,7 +428,7 @@ if __name__ == "__main__":
     # Get images with a detection
     sql = (
         f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
-        f"date_trunc('day', taken_at) = '{args.date}'::date;"
+        f"date_trunc('day', taken_at) = '{date_folder_ymd}'::date;"
     )
     query_df = sqlio.read_sql_query(sql, conn)
     query_df = pd.DataFrame(query_df)
@@ -440,11 +453,11 @@ if __name__ == "__main__":
         execute_values(cur, sql, pano_match_prioritized)
         conn.commit()
 
-        # Upload the file with found containers to the Azure Blob Storage # TODO define prioritized_objects.csv
+        # Upload the file with found containers to the Azure Blob Storage
         for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:
             azure_connection.upload_blob(
                 "postprocessing-output",
-                os.path.join(args.date, csv_file),
+                os.path.join(start_date_dag, csv_file),
                 csv_file,
             )
 

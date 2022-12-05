@@ -1,6 +1,6 @@
 import os
 import socket
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any, Dict
 
 import requests
@@ -41,7 +41,7 @@ def _get_description(permit_distance: str, bridge_distance: str) -> str:
     )
 
 
-def _to_signal(date_now: date, lat_lng: Dict[str, float]) -> Any:
+def _to_signal(start_date_dag: str, lat_lng: Dict[str, float]) -> Any:
     return {
         "text": TEXT,
         "location": {
@@ -57,7 +57,7 @@ def _to_signal(date_now: date, lat_lng: Dict[str, float]) -> Any:
         "priority": {
             "priority": "low",
         },
-        "incident_date_start": date_now.strftime("%Y-%m-%d %H:%M"),
+        "incident_date_start": start_date_dag,
     }
 
 
@@ -135,9 +135,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--date",
         type=str,
-        help="Processing date in the format YYYY-MM-DD",
+        help="Processing date in the format %Y-%m-%d %H:%M:%S.%f",
     )
     args = parser.parse_args()
+
+    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
+    start_date = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S.%f")
+    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    start_date_dag = start_date.strftime(my_format)
+    my_format_ymd = "%Y-%m-%d"
+    start_date_dag_ymd = start_date.strftime(my_format_ymd)
 
     add_notification = False  # TODO make this an argument
 
@@ -154,7 +161,7 @@ if __name__ == "__main__":
     # Get images with a detection TODO check A.score <> 0
     sql = (
         f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
-        f"WHERE date_trunc('day', B.taken_at) = '{args.date}'::date AND A.score <> 0 ORDER "
+        f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
         f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
     )
     query_df = sqlio.read_sql_query(sql, conn)
@@ -164,21 +171,20 @@ if __name__ == "__main__":
         )
 
     for index, row in query_df.iterrows():
-        # Convert string to datetime object
-        date_now = datetime.strptime(args.date, "%Y-%m-%d").date()
-
         # Get panoramic image closest to the found container
         closest_image = row["closest_image"]
         # Download files to the WORKDIR of the Docker container
         azure_connection.download_blob(
-            "blurred", os.path.join(args.date, closest_image), closest_image
+            cname="blurred",
+            blob_name=f"{start_date_dag_ymd}/{closest_image}",
+            local_file_path=closest_image
         )
 
         lat_lng = {"lat": row["lat"], "lng": row["lon"]}
 
         if add_notification:
             # Add a new signal to meldingen.amsterdam.nl
-            signal_id = _post_signal(headers, _to_signal(date_now, lat_lng))
+            signal_id = _post_signal(headers, _to_signal(start_date_dag, lat_lng))
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
             # Add a description to the previously created signal

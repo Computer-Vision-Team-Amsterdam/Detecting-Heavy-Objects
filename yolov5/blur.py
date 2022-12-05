@@ -6,6 +6,7 @@ import torch
 from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
+from datetime import datetime
 
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from utils.datasets import create_dataloader
@@ -124,31 +125,36 @@ if __name__ == "__main__":
     opt.data = check_file(opt.data)  # check file
     print(opt)
 
+    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
+    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
+    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    start_date_dag = start_date.strftime(my_format)
+
     # update input folder
-    opt.folder = Path(opt.folder, opt.date)
+    opt.folder = Path(opt.folder, start_date_dag)
     if not opt.folder.exists():
         opt.folder.mkdir(exist_ok=True, parents=True)
 
     # update output folder
-    opt.output_folder = Path(opt.output_folder, opt.date)
+    opt.output_folder = Path(opt.output_folder, start_date_dag)
     if not opt.output_folder.exists():
         opt.output_folder.mkdir(exist_ok=True, parents=True)
 
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
-    blobs = saClient.list_container_content(cname="unblurred", blob_prefix=opt.date)
+    blobs = saClient.list_container_content(cname="unblurred", blob_prefix=start_date_dag)
     for blob in blobs:
         blob = blob.split("/")[-1]  # only get file name, without prefix
         saClient.download_blob(
             cname="unblurred",
-            blob_name=f"{opt.date}/{blob}",
+            blob_name=f"{start_date_dag}/{blob}",
             local_file_path=f"{opt.folder}/{blob}",
         )
 
     print("downloaded files are")
     print(f"cwd is {os.getcwd()}")
     print(f"ls of files {os.listdir(os.getcwd())}")
-    print(os.listdir(Path(os.getcwd(), "unblurred", f"{opt.date}")))
+    print(os.listdir(Path(os.getcwd(), "unblurred", f"{start_date_dag}")))
 
     blur_imagery(
         opt.weights,
@@ -162,6 +168,6 @@ if __name__ == "__main__":
     for file in os.listdir(f"{opt.output_folder}"):
         saClient.upload_blob(
             cname="blurred",
-            blob_name=f"{opt.date}/{file}",
+            blob_name=f"{date_folder_ymd}/{file}",
             local_file_path=f"{opt.output_folder}/{file}",
         )
