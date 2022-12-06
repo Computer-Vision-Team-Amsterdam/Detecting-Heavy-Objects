@@ -1,6 +1,7 @@
 import os
 import socket
-from typing import Any, Dict
+from typing import Any, Dict, List
+import sys
 
 import requests
 
@@ -242,7 +243,7 @@ if __name__ == "__main__":
             address_data = _get_bag_address_in_range(lat_lon)
             # Add a new signal to meldingen.amsterdam.nl
             signal_id = _post_signal(
-                headers, _to_signal(date_now, lat_lon, address_data)
+                headers, _to_signal(start_date_dag, lat_lon, address_data)
             )
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
