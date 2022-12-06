@@ -176,7 +176,7 @@ if __name__ == "__main__":
         # Download files to the WORKDIR of the Docker container
         azure_connection.download_blob(
             cname="blurred",
-            blob_name=f"{start_date_dag_ymd}/{closest_image}",
+            blob_name=f"{start_date_dag}/{closest_image}",
             local_file_path=closest_image,
         )
 
