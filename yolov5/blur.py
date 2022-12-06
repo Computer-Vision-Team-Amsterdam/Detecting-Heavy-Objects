@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
 
 from utils.datasets import create_dataloader
+from utils.date import get_start_date
 from utils.general import (
     check_file,
     check_img_size,
@@ -19,7 +20,6 @@ from utils.general import (
     set_logging,
 )
 from utils.torch_utils import select_device
-from utils.date import get_start_date
 
 module_path = os.path.abspath(os.path.join("../utils"))
 if module_path not in sys.path:
