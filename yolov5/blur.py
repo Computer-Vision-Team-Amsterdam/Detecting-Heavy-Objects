@@ -1,5 +1,8 @@
 import argparse
 import os
+
+# TODO kan dit mooier?
+import sys
 from pathlib import Path
 
 import torch
@@ -7,8 +10,8 @@ from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
 
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from utils.datasets import create_dataloader
+from utils.date import get_start_date
 from utils.general import (
     check_file,
     check_img_size,
@@ -17,6 +20,11 @@ from utils.general import (
     set_logging,
 )
 from utils.torch_utils import select_device
+
+module_path = os.path.abspath(os.path.join("../utils"))
+if module_path not in sys.path:
+    sys.path.insert(0, module_path)
+from utils.azure_storage import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
 
@@ -124,31 +132,35 @@ if __name__ == "__main__":
     opt.data = check_file(opt.data)  # check file
     print(opt)
 
+    start_date_dag, _ = get_start_date(flags.subset)
+
     # update input folder
-    opt.folder = Path(opt.folder, opt.date)
+    opt.folder = Path(opt.folder, start_date_dag)
     if not opt.folder.exists():
         opt.folder.mkdir(exist_ok=True, parents=True)
 
     # update output folder
-    opt.output_folder = Path(opt.output_folder, opt.date)
+    opt.output_folder = Path(opt.output_folder, start_date_dag)
     if not opt.output_folder.exists():
         opt.output_folder.mkdir(exist_ok=True, parents=True)
 
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
-    blobs = saClient.list_container_content(cname="unblurred", blob_prefix=opt.date)
+    blobs = saClient.list_container_content(
+        cname="unblurred", blob_prefix=start_date_dag
+    )
     for blob in blobs:
         blob = blob.split("/")[-1]  # only get file name, without prefix
         saClient.download_blob(
             cname="unblurred",
-            blob_name=f"{opt.date}/{blob}",
+            blob_name=f"{start_date_dag}/{blob}",
             local_file_path=f"{opt.folder}/{blob}",
         )
 
     print("downloaded files are")
     print(f"cwd is {os.getcwd()}")
     print(f"ls of files {os.listdir(os.getcwd())}")
-    print(os.listdir(Path(os.getcwd(), "unblurred", f"{opt.date}")))
+    print(os.listdir(Path(os.getcwd(), "unblurred", f"{start_date_dag}")))
 
     blur_imagery(
         opt.weights,
@@ -162,6 +174,6 @@ if __name__ == "__main__":
     for file in os.listdir(f"{opt.output_folder}"):
         saClient.upload_blob(
             cname="blurred",
-            blob_name=f"{opt.date}/{file}",
+            blob_name=f"{start_date_dag}/{file}",
             local_file_path=f"{opt.output_folder}/{file}",
         )

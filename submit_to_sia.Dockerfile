@@ -27,7 +27,7 @@ RUN pip install --no-cache \
 
 WORKDIR /app
 COPY submit_to_sia.py /app
-COPY azure_storage_utils.py /app
+COPY utils /app/utils
 COPY upload_to_postgres.py /app
 
 RUN useradd appuser

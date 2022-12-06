@@ -8,7 +8,7 @@ from detectron2.engine import DefaultTrainer
 
 from configs.config_parser import arg_parser
 from inference import setup_cfg
-from utils import ExperimentConfig, register_dataset
+from utils_coco import ExperimentConfig, register_dataset
 
 
 def init_train(flags: argparse.Namespace) -> None:

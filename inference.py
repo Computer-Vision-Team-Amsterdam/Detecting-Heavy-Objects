@@ -11,10 +11,11 @@ from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
 
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
-from utils import ExperimentConfig, register_dataset
+from utils.azure_storage import BaseAzureClient, StorageAzureClient
+from utils.date import get_start_date
+from utils_coco import ExperimentConfig, register_dataset
 
 azClient = BaseAzureClient()
 
@@ -79,12 +80,12 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     evaluator = CustomCOCOEvaluator(
-        f"{expCfg.dataset_name}_{expCfg.subset}",
+        f"{expCfg.dataset_name}_{flags.subset}",
         output_dir=output_dir,
         tasks=("bbox", "segm"),
     )
     loader = build_detection_test_loader(
-        cfg, f"{expCfg.dataset_name}_{expCfg.subset}", mapper=None
+        cfg, f"{expCfg.dataset_name}_{flags.subset}", mapper=None
     )
     print(inference_on_dataset(predictor.model, loader, evaluator))
 
@@ -92,22 +93,24 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 if __name__ == "__main__":
     flags = arg_parser()
 
-    input_path = Path(flags.data_folder, flags.subset)
+    start_date_dag, start_date_dag_ymd = get_start_date(flags.subset)
+
+    input_path = Path(flags.data_folder, start_date_dag_ymd)
     if not input_path.exists():
         input_path.mkdir(exist_ok=True, parents=True)
 
-
-    # download images from storage account
+    # Download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
-    blobs = saClient.list_container_content(cname="blurred", blob_prefix=flags.subset)
+    blobs = saClient.list_container_content(cname="blurred", blob_prefix=start_date_dag)
     for blob in blobs:
+        filename = blob.split("/")[-1]  # only get file name, without prefix
         saClient.download_blob(
             cname="blurred",
             blob_name=blob,
-            local_file_path=f"{flags.data_folder}/{blob}", # blurred   date/images
+            local_file_path=f"{input_path}/{filename}",
         )
-    # print(os.listdir(Path(os.getcwd(), "blurred", f"{flags.subset}")))
 
+    flags.subset = start_date_dag_ymd
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
@@ -116,10 +119,10 @@ if __name__ == "__main__":
     )
     evaluate_model(flags, experimentConfig)
 
-    # upload detection files to postgres
-    for file in os.listdir(f"{flags.output_path}"):
+    # Upload detection files to postgres
+    for file in os.listdir(flags.output_path):
         saClient.upload_blob(
             cname="detections",
-            blob_name=f"{flags.subset}/{file}",
+            blob_name=f"{start_date_dag}/{file}",
             local_file_path=f"{flags.output_path}/{file}",
         )

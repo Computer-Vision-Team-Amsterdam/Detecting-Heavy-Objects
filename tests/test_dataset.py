@@ -7,7 +7,7 @@ from detectron2.data import MetadataCatalog
 
 pytest.importorskip("osr")
 
-from utils import ExperimentConfig, register_dataset
+from utils_coco import ExperimentConfig, register_dataset
 
 ROOT = Path(__file__).parent.parent
 

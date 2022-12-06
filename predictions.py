@@ -25,7 +25,7 @@ from tqdm import tqdm
 
 from configs import config_parser
 from inference import init_inference
-from utils import ExperimentConfig, get_container_dicts, register_dataset
+from utils_coco import ExperimentConfig, get_container_dicts, register_dataset
 
 
 def plot_instance_segm(

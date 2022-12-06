@@ -20,7 +20,7 @@ WORKDIR /app
 
 # Copy contents (NOTE: dont copy weights file in docker image in the future)
 COPY yolov5  /app
-COPY azure_storage_utils.py /app
+COPY utils /app/utils
 
 # Installation as root, non-root user when executing the container
 

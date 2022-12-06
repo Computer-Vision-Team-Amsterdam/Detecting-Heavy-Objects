@@ -13,7 +13,8 @@ from typing import Tuple
 import requests
 from requests.auth import HTTPBasicAuth
 
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
+from utils.azure_storage import BaseAzureClient, StorageAzureClient
+from utils.date import get_start_date
 
 azClient = BaseAzureClient()
 BASE_URL = "https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
@@ -33,7 +34,7 @@ def split_pano_id(panorama_id: str) -> Tuple[str, str]:
 
 
 def download_panorama_from_cloudvps(
-    date: datetime, panorama_id: str, output_dir: Path = Path("retrieved_images")
+    date: datetime, panorama_id: str, output_dir: str
 ) -> None:
     """
     Downloads panorama from cloudvps to local folder.
@@ -74,42 +75,48 @@ def download_panorama_from_cloudvps(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--date", type=str, help="date to retrieve images")
+    parser.add_argument(
+        "--date", type=str, help="Processing date in the format %Y-%m-%d %H:%M:%S.%f"
+    )
     opt = parser.parse_args()
+
+    start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # Download from Cloud
+    # List contents of Blob Container
     cname_input = "retrieve-images-input"
     input_files = saClient.list_container_content(
-        cname="retrieve-images-input",
-        blob_prefix=opt.date,
+        cname=cname_input,
+        blob_prefix=start_date_dag_ymd,
     )
     print(
-        f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}."
+        f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
     )
 
+    # Download txt file(s) with pano ids that we want to download from CloudVPS
     pano_ids = []
     for input_file in input_files:
-        local_file = input_file.split("/")[1]
+        local_file = input_file.split("/")[1]  # only get file name, without prefix
         saClient.download_blob(
-            cname="retrieve-images-input",
+            cname=cname_input,
             blob_name=input_file,
             local_file_path=local_file,
         )
         with open(local_file, "r") as f:
             pano_ids = [line.rstrip("\n") for line in f]
 
-    pano_date = datetime.strptime(opt.date, "%Y-%m-%d")
-
-    for pano_id in pano_ids:
-        download_panorama_from_cloudvps(pano_date, pano_id)
-
-    # Upload to Cloud
+    # Download files from CloudVPS
     local_file_path = "retrieved_images"
+    for pano_id in pano_ids:
+        download_panorama_from_cloudvps(
+            datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"), pano_id, local_file_path
+        )
+
+    # Upload images to Cloud
     for file in os.listdir(local_file_path):
         saClient.upload_blob(
             cname="unblurred",
-            blob_name=f"{opt.date}/{file}",
-            local_file_path=f"retrieved_images/{file}",
+            blob_name=f"{start_date_dag}/{file}",
+            local_file_path=f"{local_file_path}/{file}",
         )

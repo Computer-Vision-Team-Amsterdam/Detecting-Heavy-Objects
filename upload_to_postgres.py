@@ -6,7 +6,6 @@ as well as predictions of the container detection model.
 import argparse
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import psycopg2
@@ -15,7 +14,8 @@ from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values
 
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
+from utils.azure_storage import BaseAzureClient, StorageAzureClient
+from utils.date import get_start_date
 
 azClient = BaseAzureClient()
 USERNAME = azClient.get_secret_value("postgresUsername")
@@ -194,54 +194,54 @@ if __name__ == "__main__":
         "--table",
         type=str,
         choices=["images", "detections"],
-        help="table in postgres where to upload data",
+        help="Table in postgres where to upload data",
     )
     parser.add_argument(
         "--date",
         type=str,
-        help="date when pipeline is run",
+        help="Processing date in the format %Y-%m-%d %H:%M:%S.%f",
     )
     opt = parser.parse_args()
 
     object_fields_to_select: List[Optional[str]] = []
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
+    start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
+
     if opt.table == "images":
-        # Download from Cloud
+        # Download txt file(s) with pano ids that we want to download from CloudVPS
         cname_input = "retrieve-images-input"
         input_files = saClient.list_container_content(
-            cname="retrieve-images-input",
-            blob_prefix=opt.date,
+            cname=cname_input,
+            blob_prefix=start_date_dag_ymd,
         )
         print(
-            f"Found {len(input_files)} file(s) in container {cname_input} on date {opt.date}."
+            f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
         )
 
+        print(input_files)  # TODO remove
+
+        # Download files from CloudVPS
         input_data = []
         for input_file in input_files:
-            local_file = input_file.split("/")[1]
+            local_file = input_file.split("/")[1]  # only get file name, without prefix
             saClient.download_blob(
-                cname="retrieve-images-input",
+                cname=cname_input,
                 blob_name=input_file,
                 local_file_path=local_file,
             )
             with open(local_file, "r") as f:
                 input_data = [line.rstrip("\n") for line in f]
 
-        print(input_data)
-
         object_fields_to_select = []
 
     if opt.table == "detections":
         # download detections file from the storage account
-        if not Path(opt.date).exists():
-            Path(opt.date).mkdir(exist_ok=True, parents=True)
-
-        input_file_path = f"{opt.date}/coco_instances_results.json"
+        input_file_path = "coco_instances_results.json"
         saClient.download_blob(
             cname="detections",
-            blob_name=f"{opt.date}/coco_instances_results.json",
-            local_file_path=f"{opt.date}/coco_instances_results.json",
+            blob_name=f"{start_date_dag}/coco_instances_results.json",
+            local_file_path=input_file_path,
         )
 
         f = open(input_file_path)
