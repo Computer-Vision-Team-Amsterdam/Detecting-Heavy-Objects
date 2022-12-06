@@ -8,7 +8,7 @@ from unittest.mock import Mock, call
 import pytest
 
 pytest.importorskip("osr")
-from utils import DataFormatConverter  # pragma: no cover
+from utils_coco import DataFormatConverter  # pragma: no cover
 
 
 class Test(TestCase):

@@ -9,7 +9,7 @@ from detectron2.data import MetadataCatalog
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
 pytest.importorskip("osr")
-from utils import ExperimentConfig, get_container_dicts, register_dataset
+from utils_coco import ExperimentConfig, get_container_dicts, register_dataset
 
 
 @pytest.mark.skip(reason="this is plotting images for sanity checks")

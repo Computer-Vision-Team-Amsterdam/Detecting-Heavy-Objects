@@ -14,7 +14,7 @@ from detectron2.evaluation import inference_on_dataset
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
-from utils import ExperimentConfig, register_dataset
+from utils_coco import ExperimentConfig, register_dataset
 from utils.date import get_start_date
 
 azClient = BaseAzureClient()
