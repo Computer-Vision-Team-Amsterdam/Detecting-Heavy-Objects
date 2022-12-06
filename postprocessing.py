@@ -373,7 +373,7 @@ if __name__ == "__main__":
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     start_date = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
     start_date_dag = start_date.strftime(my_format)
     my_format_ymd = "%Y-%m-%d"
     start_date_dag_ymd = start_date.strftime(my_format_ymd)
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
     postprocess.write_output(
-        os.path.join(my_format_ymd, "points_of_interest.csv"), clustered_intersections
+        os.path.join(start_date_dag_ymd, "points_of_interest.csv"), clustered_intersections
     )
 
     # Make a connection to the database
@@ -428,7 +428,7 @@ if __name__ == "__main__":
     # Get images with a detection
     sql = (
         f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
-        f"date_trunc('day', taken_at) = '{date_folder_ymd}'::date;"
+        f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
     )
     query_df = sqlio.read_sql_query(sql, conn)
     query_df = pd.DataFrame(query_df)

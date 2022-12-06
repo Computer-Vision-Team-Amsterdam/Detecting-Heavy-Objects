@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H:%M:%S"
+    my_format = "%Y-%m-%d_%H-%M-%S"
     date_folder = start_date.strftime(my_format)
     my_format_ymd = "%Y-%m-%d"
     date_folder_ymd = start_date.strftime(my_format_ymd)

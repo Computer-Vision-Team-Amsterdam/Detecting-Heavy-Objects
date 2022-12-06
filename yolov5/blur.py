@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
     start_date_dag = start_date.strftime(my_format)
 
     # update input folder
@@ -168,6 +168,6 @@ if __name__ == "__main__":
     for file in os.listdir(f"{opt.output_folder}"):
         saClient.upload_blob(
             cname="blurred",
-            blob_name=f"{date_folder_ymd}/{file}",
+            blob_name=f"{start_date_dag}/{file}",
             local_file_path=f"{opt.output_folder}/{file}",
         )

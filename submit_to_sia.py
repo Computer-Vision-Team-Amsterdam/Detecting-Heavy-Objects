@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     start_date = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
     start_date_dag = start_date.strftime(my_format)
     my_format_ymd = "%Y-%m-%d"
     start_date_dag_ymd = start_date.strftime(my_format_ymd)

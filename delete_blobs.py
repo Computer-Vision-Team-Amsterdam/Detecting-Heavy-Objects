@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H:%M:%S"
+    my_format = "%Y-%m-%d_%H-%M-%S"
     date_folder = start_date.strftime(my_format)
     my_format_ymd = "%Y-%m-%d"
     date_folder_ymd = start_date.strftime(my_format_ymd)
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         # download detections file from the storage account
         saClient.download_blob(
             cname="detections",
-            blob_name=f"{date_folder_ymd}/empty_predictions.json",
+            blob_name=f"{date_folder}/empty_predictions.json",
             local_file_path=input_file_path,
         )
 
@@ -45,7 +45,6 @@ if __name__ == "__main__":
         images_to_remove = [date_folder + "/" + entry["pano_id"] for entry in input_data]
 
         # TODO remove, validate that images are also in blob container
-
 
         print(
             f"Removed {len(images_to_remove)} images without a detection from the cloud."

@@ -6,7 +6,6 @@ as well as predictions of the container detection model.
 import argparse
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import psycopg2
@@ -208,7 +207,7 @@ if __name__ == "__main__":
 
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H:%M:%S"  # Only use year month day format
+    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
     start_date_dag = start_date.strftime(my_format)
     my_format_ymd = "%Y-%m-%d"
     start_date_dag_ymd = start_date.strftime(my_format_ymd)
@@ -241,6 +240,8 @@ if __name__ == "__main__":
         object_fields_to_select = []
 
     if opt.table == "detections":
+        print("HIERRRR")
+        print(f"{start_date_dag}/coco_instances_results.json")
         # download detections file from the storage account
         input_file_path = "coco_instances_results.json"
         saClient.download_blob(

@@ -5,6 +5,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Union
+from datetime import datetime
 
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader
@@ -79,12 +80,12 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     evaluator = CustomCOCOEvaluator(
-        f"{expCfg.dataset_name}_{expCfg.subset}",
+        f"{expCfg.dataset_name}_{flags.subset}",
         output_dir=output_dir,
         tasks=("bbox", "segm"),
     )
     loader = build_detection_test_loader(
-        cfg, f"{expCfg.dataset_name}_{expCfg.subset}", mapper=None
+        cfg, f"{expCfg.dataset_name}_{flags.subset}", mapper=None
     )
     print(inference_on_dataset(predictor.model, loader, evaluator))
 
@@ -92,22 +93,29 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 if __name__ == "__main__":
     flags = arg_parser()
 
-    input_path = Path(flags.data_folder, flags.subset)
+    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
+    start_date = datetime.strptime(flags.subset, "%Y-%m-%d %H:%M:%S.%f")
+    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
+    start_date_dag = start_date.strftime(my_format)
+    my_format = "%Y-%m-%d"  # Only use year month day format
+    start_date_dag_ymd = start_date.strftime(my_format)
+
+    input_path = Path(flags.data_folder, start_date_dag_ymd)
     if not input_path.exists():
         input_path.mkdir(exist_ok=True, parents=True)
 
-    print(flags.subset)  # TODO
-
     # Download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
-    blobs = saClient.list_container_content(cname="blurred", blob_prefix=flags.subset)
+    blobs = saClient.list_container_content(cname="blurred", blob_prefix=start_date_dag)
     for blob in blobs:
+        filename = blob.split("/")[-1]  # TODO
         saClient.download_blob(
             cname="blurred",
             blob_name=blob,
-            local_file_path=f"{flags.data_folder}/{blob}",
+            local_file_path=f"{input_path}/{filename}",
         )
 
+    flags.subset = start_date_dag_ymd  # TODO
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
@@ -120,6 +128,6 @@ if __name__ == "__main__":
     for file in os.listdir(flags.output_path):
         saClient.upload_blob(
             cname="detections",
-            blob_name=f"{flags.subset}/{file}",
+            blob_name=f"{start_date_dag}/{file}",
             local_file_path=f"{flags.output_path}/{file}",
         )
