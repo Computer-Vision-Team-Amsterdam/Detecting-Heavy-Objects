@@ -27,6 +27,7 @@ from triangulation.triangulate import triangulate
 
 import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
+from utils.date import get_start_date
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
 
@@ -370,12 +371,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    start_date = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
-    start_date_dag = start_date.strftime(my_format)
-    my_format_ymd = "%Y-%m-%d"
-    start_date_dag_ymd = start_date.strftime(my_format_ymd)
+    start_date_dag, start_date_dag_ymd = get_start_date(args.date)
 
     # Update output folder inside the WORKDIR of the docker container
     output_folder = Path(start_date_dag_ymd)
@@ -409,7 +405,7 @@ if __name__ == "__main__":
     postprocess = PostProcessing(
         Path(predictions_file),  # TODO why use Path
         output_folder=output_folder,
-        date_to_check=start_date,
+        date_to_check=datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
         permits_file=permits_file,
         bridges_file=args.bridges_file,
     )

@@ -1,8 +1,8 @@
 import argparse
 import json
-from datetime import datetime
 
 from utils.azure_storage import StorageAzureClient
+from utils.date import get_start_date
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -21,12 +21,7 @@ if __name__ == "__main__":
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H-%M-%S"
-    date_folder = start_date.strftime(my_format)
-    my_format_ymd = "%Y-%m-%d"
-    date_folder_ymd = start_date.strftime(my_format_ymd)
+    start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
 
     if opt.stage == "after_container_detections":
         input_file_path = "empty_predictions.json"
@@ -34,7 +29,7 @@ if __name__ == "__main__":
         # download detections file from the storage account
         saClient.download_blob(
             cname="detections",
-            blob_name=f"{date_folder}/empty_predictions.json",
+            blob_name=f"{start_date_dag}/empty_predictions.json",
             local_file_path=input_file_path,
         )
 
@@ -42,7 +37,7 @@ if __name__ == "__main__":
         input_data = json.load(f)
 
         images_to_remove = [
-            date_folder + "/" + entry["pano_id"] for entry in input_data
+            start_date_dag + "/" + entry["pano_id"] for entry in input_data
         ]
 
         # TODO remove, validate that images are also in blob container
@@ -58,7 +53,7 @@ if __name__ == "__main__":
         for cname in cnames:
             all_data = saClient.list_container_content(
                 cname=cname,
-                blob_prefix=date_folder,
+                blob_prefix=start_date_dag,
             )
             if all_data:
                 saClient.delete_blobs(
@@ -68,5 +63,5 @@ if __name__ == "__main__":
                 print(f"Removed {len(all_data)} blobs from container {cname}.")
             else:
                 print(
-                    f"No blobs found in container {cname} for date {date_folder_ymd}."
+                    f"No blobs found in container {cname} for date {start_date_dag_ymd}."
                 )

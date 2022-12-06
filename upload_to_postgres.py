@@ -14,6 +14,7 @@ from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values
 
+from utils.date import get_start_date
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
@@ -205,12 +206,7 @@ if __name__ == "__main__":
     object_fields_to_select: List[Optional[str]] = []
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
-    start_date_dag = start_date.strftime(my_format)
-    my_format_ymd = "%Y-%m-%d"
-    start_date_dag_ymd = start_date.strftime(my_format_ymd)
+    start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
 
     if opt.table == "images":
         # Download txt file(s) with pano ids that we want to download from CloudVPS

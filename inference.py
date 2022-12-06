@@ -3,7 +3,6 @@ incorporated into the Azure batch processing pipeline"""
 import argparse
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Union
 
@@ -16,6 +15,7 @@ from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
 from utils import ExperimentConfig, register_dataset
+from utils.date import get_start_date
 
 azClient = BaseAzureClient()
 
@@ -93,12 +93,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 if __name__ == "__main__":
     flags = arg_parser()
 
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    start_date = datetime.strptime(flags.subset, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
-    start_date_dag = start_date.strftime(my_format)
-    my_format = "%Y-%m-%d"  # Only use year month day format
-    start_date_dag_ymd = start_date.strftime(my_format)
+    start_date_dag, start_date_dag_ymd = get_start_date(flags.subset)
 
     input_path = Path(flags.data_folder, start_date_dag_ymd)
     if not input_path.exists():

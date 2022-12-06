@@ -13,6 +13,7 @@ from typing import Tuple
 import requests
 from requests.auth import HTTPBasicAuth
 
+from utils.date import get_start_date
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
@@ -79,12 +80,7 @@ if __name__ == "__main__":
     )
     opt = parser.parse_args()
 
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H-%M-%S"
-    date_folder = start_date.strftime(my_format)
-    my_format_ymd = "%Y-%m-%d"
-    date_folder_ymd = start_date.strftime(my_format_ymd)
+    start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 

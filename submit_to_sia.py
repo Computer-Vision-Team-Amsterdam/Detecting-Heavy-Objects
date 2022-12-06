@@ -1,6 +1,5 @@
 import os
 import socket
-from datetime import datetime
 from typing import Any, Dict
 
 import requests
@@ -12,6 +11,7 @@ import pandas.io.sql as sqlio
 
 import upload_to_postgres
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
+from utils.date import get_start_date
 
 BASE_URL = "https://acc.api.meldingen.amsterdam.nl/signals/v1/private/signals"
 API_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB = 20*1024*1024
@@ -139,12 +139,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    start_date = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
-    start_date_dag = start_date.strftime(my_format)
-    my_format_ymd = "%Y-%m-%d"
-    start_date_dag_ymd = start_date.strftime(my_format_ymd)
+    start_date_dag, start_date_dag_ymd = get_start_date(args.date)
 
     add_notification = False  # TODO make this an argument
 
