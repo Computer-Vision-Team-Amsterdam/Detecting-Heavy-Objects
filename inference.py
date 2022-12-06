@@ -108,14 +108,14 @@ if __name__ == "__main__":
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
     blobs = saClient.list_container_content(cname="blurred", blob_prefix=start_date_dag)
     for blob in blobs:
-        filename = blob.split("/")[-1]  # TODO
+        filename = blob.split("/")[-1]  # only get file name, without prefix
         saClient.download_blob(
             cname="blurred",
             blob_name=blob,
             local_file_path=f"{input_path}/{filename}",
         )
 
-    flags.subset = start_date_dag_ymd  # TODO
+    flags.subset = start_date_dag_ymd
     experimentConfig = ExperimentConfig(
         dataset_name=flags.dataset_name,
         subset=flags.subset,
