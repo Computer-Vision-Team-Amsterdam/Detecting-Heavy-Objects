@@ -371,7 +371,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
     start_date = datetime.strptime(args.date, "%Y-%m-%d %H:%M:%S.%f")
     my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
     start_date_dag = start_date.strftime(my_format)
@@ -410,7 +409,7 @@ if __name__ == "__main__":
     postprocess = PostProcessing(
         Path(predictions_file),  # TODO why use Path
         output_folder=output_folder,
-        date_to_check=datetime(2021, 3, 17),  # TODO
+        date_to_check=start_date,
         permits_file=permits_file,
         bridges_file=args.bridges_file,
     )
