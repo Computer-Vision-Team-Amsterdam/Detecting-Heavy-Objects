@@ -52,7 +52,7 @@ def _get_description(permit_distance: str, bridge_distance: str) -> str:
     )
 
 
-def _to_signal(start_date_dag: str, lat_lng: Dict[str, float], bag_data: List[Any]) -> Any:
+def _to_signal(start_date_dag: str, lat_lon: Dict[str, float], bag_data: List[Any]) -> Any:
     json_to_send = {
         "text": TEXT,
         "location": {
