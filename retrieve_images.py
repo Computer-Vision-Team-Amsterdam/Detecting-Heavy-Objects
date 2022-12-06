@@ -33,7 +33,8 @@ def split_pano_id(panorama_id: str) -> Tuple[str, str]:
 
 
 def download_panorama_from_cloudvps(
-    date: datetime, panorama_id: str, output_dir: Path) -> None:
+    date: datetime, panorama_id: str, output_dir: str
+) -> None:
     """
     Downloads panorama from cloudvps to local folder.
     """
@@ -73,9 +74,9 @@ def download_panorama_from_cloudvps(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--date",
-                        type=str,
-                        help="Processing date in the format %Y-%m-%d %H:%M:%S.%f")
+    parser.add_argument(
+        "--date", type=str, help="Processing date in the format %Y-%m-%d %H:%M:%S.%f"
+    )
     opt = parser.parse_args()
 
     # Start date, string of form %Y-%m-%d %H:%M:%S.%f

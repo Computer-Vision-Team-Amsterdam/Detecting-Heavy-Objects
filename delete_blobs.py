@@ -1,7 +1,7 @@
 import argparse
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 from azure_storage_utils import StorageAzureClient
 
@@ -42,7 +42,9 @@ if __name__ == "__main__":
         f = open(input_file_path)
         input_data = json.load(f)
 
-        images_to_remove = [date_folder + "/" + entry["pano_id"] for entry in input_data]
+        images_to_remove = [
+            date_folder + "/" + entry["pano_id"] for entry in input_data
+        ]
 
         # TODO remove, validate that images are also in blob container
 
@@ -66,4 +68,6 @@ if __name__ == "__main__":
                 )
                 print(f"Removed {len(all_data)} blobs from container {cname}.")
             else:
-                print(f"No blobs found in container {cname} for date {date_folder_ymd}.")
+                print(
+                    f"No blobs found in container {cname} for date {date_folder_ymd}."
+                )

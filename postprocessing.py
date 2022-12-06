@@ -393,24 +393,24 @@ if __name__ == "__main__":
     azure_connection.download_blob(
         cname=args.bucket_ref_files,
         blob_name=permits_file,
-        local_file_path=permits_file
+        local_file_path=permits_file,
     )
     azure_connection.download_blob(
         cname=args.bucket_ref_files,
         blob_name=args.bridges_file,
-        local_file_path=args.bridges_file
+        local_file_path=args.bridges_file,
     )
     azure_connection.download_blob(
         cname=args.bucket_detections,
         blob_name=f"{start_date_dag}/coco_instances_results.json",
-        local_file_path=predictions_file
+        local_file_path=predictions_file,
     )
 
     # Find possible object intersections from detections in panoramic images.
     postprocess = PostProcessing(
         Path(predictions_file),  # TODO why use Path
         output_folder=output_folder,
-        date_to_check=datetime(2021, 3, 17), # TODO
+        date_to_check=datetime(2021, 3, 17),  # TODO
         permits_file=permits_file,
         bridges_file=args.bridges_file,
     )
@@ -418,7 +418,8 @@ if __name__ == "__main__":
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
     postprocess.write_output(
-        os.path.join(start_date_dag_ymd, "points_of_interest.csv"), clustered_intersections
+        os.path.join(start_date_dag_ymd, "points_of_interest.csv"),
+        clustered_intersections,
     )
 
     # Make a connection to the database

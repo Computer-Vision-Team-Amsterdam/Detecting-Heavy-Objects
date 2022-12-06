@@ -3,9 +3,9 @@ incorporated into the Azure batch processing pipeline"""
 import argparse
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Union
-from datetime import datetime
 
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data import build_detection_test_loader

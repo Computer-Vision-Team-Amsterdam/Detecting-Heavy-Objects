@@ -1,12 +1,12 @@
 import argparse
 import os
+from datetime import datetime
 from pathlib import Path
 
 import torch
 from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
-from datetime import datetime
 
 from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from utils.datasets import create_dataloader
@@ -142,7 +142,9 @@ if __name__ == "__main__":
 
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
-    blobs = saClient.list_container_content(cname="unblurred", blob_prefix=start_date_dag)
+    blobs = saClient.list_container_content(
+        cname="unblurred", blob_prefix=start_date_dag
+    )
     for blob in blobs:
         blob = blob.split("/")[-1]  # only get file name, without prefix
         saClient.download_blob(
