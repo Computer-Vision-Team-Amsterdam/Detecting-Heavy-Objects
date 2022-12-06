@@ -240,8 +240,6 @@ if __name__ == "__main__":
         object_fields_to_select = []
 
     if opt.table == "detections":
-        print("HIERRRR")
-        print(f"{start_date_dag}/coco_instances_results.json")
         # download detections file from the storage account
         input_file_path = "coco_instances_results.json"
         saClient.download_blob(
