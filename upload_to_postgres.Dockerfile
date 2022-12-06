@@ -14,7 +14,7 @@ RUN pip install \
 
 WORKDIR /opt
 COPY upload_to_postgres.py /opt
-COPY utils/azure_storage.py /opt/utils
+COPY utils /opt/utils
 
 
 RUN useradd appuser

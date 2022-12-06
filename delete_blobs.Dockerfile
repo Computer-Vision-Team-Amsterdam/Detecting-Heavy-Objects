@@ -12,7 +12,7 @@ RUN pip install \
 
 WORKDIR /app
 COPY delete_blobs.py /app
-COPY utils/azure_storage.py /app/utils
+COPY utils /app/utils
 
 RUN useradd appuser
 RUN chown -R appuser /app

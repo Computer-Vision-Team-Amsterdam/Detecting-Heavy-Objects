@@ -16,7 +16,7 @@ RUN pip install \
 RUN mkdir -p /opt/retrieved_images
 WORKDIR /opt
 COPY retrieve_images.py /opt
-COPY utils/azure_storage.py /opt/utils
+COPY utils /opt/utils
 
 RUN useradd appuser
 # needed in this case to get access look through the folders
