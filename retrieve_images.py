@@ -13,8 +13,8 @@ from typing import Tuple
 import requests
 from requests.auth import HTTPBasicAuth
 
-from utils.date import get_start_date
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
+from utils.date import get_start_date
 
 azClient = BaseAzureClient()
 BASE_URL = "https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
@@ -109,7 +109,9 @@ if __name__ == "__main__":
     # Download files from CloudVPS
     local_file_path = "retrieved_images"
     for pano_id in pano_ids:
-        download_panorama_from_cloudvps(datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"), pano_id, local_file_path)
+        download_panorama_from_cloudvps(
+            datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"), pano_id, local_file_path
+        )
 
     # Upload images to Cloud
     for file in os.listdir(local_file_path):

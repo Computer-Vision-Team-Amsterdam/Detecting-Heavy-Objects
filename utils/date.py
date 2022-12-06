@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-def get_start_date(arg_date: str):
+def get_start_date(arg_date: str) -> (str, str):
     """Start date of the Airflow DAG in different formats
     Args:
         arg_date: Start date, string of form %Y-%m-%d %H:%M:%S.%f

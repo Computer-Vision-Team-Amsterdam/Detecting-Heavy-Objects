@@ -4,7 +4,7 @@ from typing import NamedTuple
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import register_coco_instances
 
-from utils import add_images_to_coco, load_via_json
+from utils_coco import add_images_to_coco, load_via_json
 
 
 class ExperimentConfig(NamedTuple):

@@ -1,5 +1,8 @@
 import argparse
 import os
+
+# TODO kan dit mooier?
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -18,13 +21,11 @@ from utils.general import (
 )
 from utils.torch_utils import select_device
 
-# TODO kan dit mooier?
-import sys
-import os
 module_path = os.path.abspath(os.path.join("../utils"))
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
+
 azClient = BaseAzureClient()
 
 

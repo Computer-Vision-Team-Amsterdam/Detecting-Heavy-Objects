@@ -14,8 +14,8 @@ from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values
 
-from utils.date import get_start_date
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
+from utils.date import get_start_date
 
 azClient = BaseAzureClient()
 USERNAME = azClient.get_secret_value("postgresUsername")

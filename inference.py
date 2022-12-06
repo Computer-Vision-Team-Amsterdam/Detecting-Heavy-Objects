@@ -11,11 +11,11 @@ from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
 
-from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from configs.config_parser import arg_parser
 from evaluation import CustomCOCOEvaluator  # type:ignore
-from utils_coco import ExperimentConfig, register_dataset
+from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from utils.date import get_start_date
+from utils_coco import ExperimentConfig, register_dataset
 
 azClient = BaseAzureClient()
 
