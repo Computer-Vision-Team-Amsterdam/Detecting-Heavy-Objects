@@ -26,7 +26,7 @@ from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
 import upload_to_postgres
-from azure_storage_utils import StorageAzureClient
+from utils.azure_storage import StorageAzureClient
 from visualizations.stats import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
 

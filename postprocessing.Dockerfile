@@ -40,7 +40,7 @@ RUN pip install --no-cache \
 WORKDIR /app
 COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
 COPY postprocessing.py /app
-COPY azure_storage_utils.py /app
+COPY utils/azure_storage.py /app/utils
 COPY upload_to_postgres.py /app
 
 RUN useradd appuser

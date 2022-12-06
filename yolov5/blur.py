@@ -8,7 +8,6 @@ from models.experimental import attempt_load
 from PIL import Image, ImageDraw, ImageFilter
 from tqdm import tqdm
 
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
 from utils.datasets import create_dataloader
 from utils.general import (
     check_file,
@@ -19,6 +18,13 @@ from utils.general import (
 )
 from utils.torch_utils import select_device
 
+import sys
+import os
+
+module_path = os.path.abspath(os.path.join('../utils'))
+if module_path not in sys.path:
+    sys.path.insert(0, module_path)
+from utils.azure_storage_utils import BaseAzureClient, StorageAzureClient
 azClient = BaseAzureClient()
 
 

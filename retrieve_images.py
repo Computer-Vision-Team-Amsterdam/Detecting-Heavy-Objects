@@ -13,7 +13,7 @@ from typing import Tuple
 import requests
 from requests.auth import HTTPBasicAuth
 
-from azure_storage_utils import BaseAzureClient, StorageAzureClient
+from utils.azure_storage import BaseAzureClient, StorageAzureClient
 
 azClient = BaseAzureClient()
 BASE_URL = "https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"

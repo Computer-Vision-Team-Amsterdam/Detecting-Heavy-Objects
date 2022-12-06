@@ -1,9 +1,8 @@
 import argparse
 import json
 from datetime import datetime
-from pathlib import Path
 
-from azure_storage_utils import StorageAzureClient
+from utils.azure_storage import StorageAzureClient
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
