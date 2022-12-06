@@ -1,11 +1,13 @@
 import os
 import socket
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
+import sys
 
 import requests
 
 socket.setdefaulttimeout(100)
 import argparse
+import json
 
 import pandas.io.sql as sqlio
 
@@ -17,41 +19,51 @@ BASE_URL = "https://acc.api.meldingen.amsterdam.nl/signals/v1/private/signals"
 API_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB = 20*1024*1024
 
 TEXT = (
-    "Dit is een automatisch gegenereerd signaal. Met behulp van beeldherkenning is een bouwcontainer of bouwkeet "
-    "gedetecteerd op onderstaande locatie, waar mogelijk geen vergunning voor is. "
+    "Dit is een automatisch gegenereerd signaal: Met behulp van beeldherkenning is een bouwcontainer of bouwkeet "
+    "gedetecteerd op onderstaande locatie, waar waarschijnlijk geen vergunning voor is. N.B. Het adres betreft een "
+    "schatting van het dichtstbijzijnde adres bij de containerlocatie, er is geen informatie bekend in hoeverre dit "
+    "het adres is van de containereigenaar."
 )
+DESCRIPTION_ASC = (
+    "Instructie ASC:\n"
+    "(i) Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een "
+    "bouwcontainer of bouwkeet op de foto staat. \n "
+    "(ii) De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
+    "signaal herkennen in City Control onder 'Signalering'."
+)
+DESCRIPTION_BOA = (
+    "Instructie BOA’s:\n "
+    "(i) Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek "
+    "ter plaatse nodig is.\n"
+    "(ii) Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij "
+    "containereigenaar.\n "
+    "(iii) Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+)
+
 MAX_SIGNALS_TO_SEND = 10
+MAX_BUILDING_SEARCH_RADIUS = 50
 
 
 def _get_description(permit_distance: str, bridge_distance: str) -> str:
     return (
         f"Categorie Rood: 'mogelijk illegaal object op kwetsbare kade'\n"
         f"Afstand tot kwetsbare kade: {bridge_distance} meter\n"
-        f"Afstand tot objectvergunning: {permit_distance} meter\n\n"
-        f"Instructie ASC:\n"
-        f"o Foto bekijken en alleen signalen doorzetten naar THOR indien er inderdaad een bouwcontainer of "
-        f"bouwkeet op de foto staat. \n "
-        f"o De urgentie voor dit signaal moet 'laag' blijven, zodat BOA's dit "
-        f"signaal herkennen in City Control onder 'Signalering'.\n\n"
-        f"Instructie BOA’s:\n "
-        f"o Foto bekijken en beoordelen of dit een bouwcontainer of bouwkeet is waar vergunningsonderzoek ter "
-        f"plaatse nodig is.\n"
-        f"o Check Decos op aanwezige vergunning voor deze locatie of vraag de vergunning op bij containereigenaar.\n "
-        f"o Indien geen geldige vergunning, volg dan het reguliere handhavingsproces."
+        f"Afstand tot objectvergunning: {permit_distance} meter"
     )
 
 
-def _to_signal(start_date_dag: str, lat_lng: Dict[str, float]) -> Any:
-    return {
+def _to_signal(start_date_dag: str, lat_lon: Dict[str, float], bag_data: List[Any]) -> Any:
+    json_to_send = {
         "text": TEXT,
         "location": {
             "geometrie": {
                 "type": "Point",
-                "coordinates": [lat_lng["lng"], lat_lng["lat"]],
-            }
+                "coordinates": [lat_lon["lon"], lat_lon["lat"]],
+            },
         },
         "category": {
-            "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/sub_categories/hinderlijk-geplaatst-object"
+            "sub_category": "/signals/v1/public/terms/categories/overlast-in-de-openbare-ruimte/"
+            "sub_categories/hinderlijk-geplaatst-object"
         },
         "reporter": {"email": "cvt@amsterdam.nl"},
         "priority": {
@@ -59,6 +71,52 @@ def _to_signal(start_date_dag: str, lat_lng: Dict[str, float]) -> Any:
         },
         "incident_date_start": start_date_dag,
     }
+
+    if bag_data:
+        location_json = {
+            "location": {
+                "geometrie": {
+                    "type": "Point",
+                    "coordinates": [lat_lon["lon"], lat_lon["lat"]],
+                },
+                "address": {
+                    "openbare_ruimte": bag_data[0],
+                    "huisnummer": bag_data[1],
+                    "postcode": bag_data[2],
+                    "woonplaats": "Amsterdam",
+                },
+            }
+        }
+
+        json_to_send.update(location_json)
+
+    return json_to_send
+
+
+def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Optional[str]]:
+    """
+    For a location point, get the nearest building information.
+    """
+    bag_url = (
+        f"https://api.data.amsterdam.nl/bag/v1.1/nummeraanduiding/"
+        f"?format=json&locatie={location_point['lat']},{location_point['lon']},"
+        f"{MAX_BUILDING_SEARCH_RADIUS}&srid=4326&detailed=1"
+    )
+
+    response = requests.get(bag_url)
+    if response.status_code == 200:
+        response_content = json.loads(response.content)
+        if response_content["count"] > 0:
+            # Get first element
+            first_element = json.loads(response.content)["results"][0]
+            return [first_element["openbare_ruimte"]["_display"], first_element["huisnummer"],
+                    first_element["postcode"]]
+        else:
+            print(f"No BAG address in the range of {MAX_BUILDING_SEARCH_RADIUS} found.")
+            return []
+    else:
+        print(f"Failed to get address from BAG, status code {response.status_code}.")
+        return []
 
 
 def _get_access_token(client_id: str, client_secret: str) -> Any:
@@ -153,7 +211,7 @@ if __name__ == "__main__":
     # Make a connection to the database
     conn, cur = upload_to_postgres.connect()
 
-    # Get images with a detection TODO check A.score <> 0
+    # Get images with a detection
     sql = (
         f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
         f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
@@ -175,14 +233,32 @@ if __name__ == "__main__":
             local_file_path=closest_image,
         )
 
-        lat_lng = {"lat": row["lat"], "lng": row["lon"]}
+        lat_lon = {"lat": row["lat"], "lon": row["lon"]}
 
         if add_notification:
+            # Get closest building
+            address_data = _get_bag_address_in_range(lat_lon)
             # Add a new signal to meldingen.amsterdam.nl
-            signal_id = _post_signal(headers, _to_signal(start_date_dag, lat_lng))
+            signal_id = _post_signal(
+                headers, _to_signal(start_date_dag, lat_lon, address_data)
+            )
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
+
             # Add a description to the previously created signal
+            # Description 3
+            _patch_signal(
+                headers,
+                signal_id,
+                DESCRIPTION_BOA,
+            )
+            # Description 2
+            _patch_signal(
+                headers,
+                signal_id,
+                DESCRIPTION_ASC,
+            )
+            # Description 1
             _patch_signal(
                 headers,
                 signal_id,
