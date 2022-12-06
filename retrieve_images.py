@@ -88,10 +88,10 @@ if __name__ == "__main__":
     cname_input = "retrieve-images-input"
     input_files = saClient.list_container_content(
         cname=cname_input,
-        blob_prefix=date_folder_ymd,
+        blob_prefix=start_date_dag_ymd,
     )
     print(
-        f"Found {len(input_files)} file(s) in container {cname_input} on date {date_folder_ymd}."
+        f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
     )
 
     # Download txt file(s) with pano ids that we want to download from CloudVPS
@@ -109,12 +109,12 @@ if __name__ == "__main__":
     # Download files from CloudVPS
     local_file_path = "retrieved_images"
     for pano_id in pano_ids:
-        download_panorama_from_cloudvps(start_date, pano_id, local_file_path)
+        download_panorama_from_cloudvps(datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"), pano_id, local_file_path)
 
     # Upload images to Cloud
     for file in os.listdir(local_file_path):
         saClient.upload_blob(
             cname="unblurred",
-            blob_name=f"{date_folder}/{file}",
+            blob_name=f"{start_date_dag}/{file}",
             local_file_path=f"{local_file_path}/{file}",
         )
