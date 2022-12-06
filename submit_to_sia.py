@@ -1,6 +1,6 @@
 import os
 import socket
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import sys
 
 import requests
@@ -93,14 +93,14 @@ def _to_signal(start_date_dag: str, lat_lon: Dict[str, float], bag_data: List[An
     return json_to_send
 
 
-def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Any]:
+def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Optional[str]]:
     """
     For a location point, get the nearest building information.
     """
     bag_url = (
         f"https://api.data.amsterdam.nl/bag/v1.1/nummeraanduiding/"
         f"?format=json&locatie={location_point['lat']},{location_point['lon']},"
-        f"{MAX_BUILDING_SEARCH_RADIUS}&srid=4326&detailed=!"
+        f"{MAX_BUILDING_SEARCH_RADIUS}&srid=4326&detailed=1"
     )
 
     response = requests.get(bag_url)
@@ -232,11 +232,7 @@ if __name__ == "__main__":
             local_file_path=closest_image,
         )
 
-        # Check if location is in Amsterdam
-        if (4.5 < row["lon"] < 5.1) and (52.2 < row["lat"] < 52.5):
-            lat_lon = {"lat": row["lat"], "lon": row["lon"]}
-        else:
-            sys.exit("Container location not inside borders of Amsterdam. Aborting...")
+        lat_lon = {"lat": row["lat"], "lon": row["lon"]}
 
         if add_notification:
             # Get closest building
