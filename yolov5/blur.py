@@ -3,7 +3,6 @@ import os
 
 # TODO kan dit mooier?
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -20,6 +19,7 @@ from utils.general import (
     set_logging,
 )
 from utils.torch_utils import select_device
+from utils.date import get_start_date
 
 module_path = os.path.abspath(os.path.join("../utils"))
 if module_path not in sys.path:
@@ -132,10 +132,7 @@ if __name__ == "__main__":
     opt.data = check_file(opt.data)  # check file
     print(opt)
 
-    # Start date, string of form %Y-%m-%d %H:%M:%S.%f
-    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    my_format = "%Y-%m-%d_%H-%M-%S"  # Only use year month day format
-    start_date_dag = start_date.strftime(my_format)
+    start_date_dag, _ = get_start_date(flags.subset)
 
     # update input folder
     opt.folder = Path(opt.folder, start_date_dag)
