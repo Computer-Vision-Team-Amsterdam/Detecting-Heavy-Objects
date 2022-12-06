@@ -112,6 +112,7 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Optional
             return [first_element["openbare_ruimte"]["_display"], first_element["huisnummer"],
                     first_element["postcode"]]
         else:
+            print(f"No BAG address in the range of {MAX_BUILDING_SEARCH_RADIUS} found.")
             return []
     else:
         print(f"Failed to get address from BAG, status code {response.status_code}.")
