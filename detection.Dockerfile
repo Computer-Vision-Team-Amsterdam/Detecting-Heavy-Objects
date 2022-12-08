@@ -31,7 +31,7 @@ COPY configs/* /app/configs/
 COPY inference.py evaluation.py utils_coco.py /app/
 COPY utils /app/utils
 # copy weights
-COPY MLModels/model_final.pth /app/
+COPY model_final.pth /app/
 
 RUN useradd appuser
 RUN chown -R appuser /app
