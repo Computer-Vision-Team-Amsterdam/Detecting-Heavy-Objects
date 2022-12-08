@@ -110,6 +110,8 @@ stages :
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - job: Build_${{ dockerFile.Name }}
           displayName: 'Build - ${{ dockerFile.displayName }}'
+          dependsOn:
+          - DownloadModels
           pool:
             vmImage: ubuntu-latest
           steps:
