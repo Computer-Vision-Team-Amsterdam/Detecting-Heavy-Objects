@@ -30,12 +30,12 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'blur'
       tag: 'latest'
-#    - name: 'Detect' #No spaces or special chars
-#      displayName: 'Detect'
-#      dockerFileName: 'detection.Dockerfile'
-#      dockerFileRelativePath: ''
-#      imageRepository: 'detection'
-#      tag: 'latest'
+   - name: 'Detect' #No spaces or special chars
+     displayName: 'Detect'
+     dockerFileName: 'detection.Dockerfile'
+     dockerFileRelativePath: ''
+     imageRepository: 'detection'
+     tag: 'latest'
     - name: 'UploadToPostgres' #No spaces or special chars
       displayName: 'Upload to Postgres'
       dockerFileName: 'upload_to_postgres.Dockerfile'
@@ -100,7 +100,7 @@ stages :
               inlineScript: |
                 az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
-                if (${{ dockerFile.Name}} -eq 'Detect') {
+                if ('${{ dockerFile.Name }}' -eq 'Detect') {
                   az ml model download --subscription ${{ parameters.MLModelConfig.detection.subscriptionId }} --resource-group ${{ parameters.MLModelConfig.detection.resourceGroupName }} --workspace-name ${{ parameters.MLModelConfig.detection.workspaceName }} --name ${{ parameters.MLModelConfig.detection.modelName }} --version ${{ parameters.MLModelConfig.detection.version }}
                   mv ./${{ parameters.MLModelConfig.detection.modelName }}/*.* ./
                 }
