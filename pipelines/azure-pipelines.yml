@@ -89,8 +89,7 @@ stages :
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - job: Build_${{ dockerFile.Name }}
           displayName: 'Build - ${{ dockerFile.displayName }}'
-          pool:
-            vmImage: ubuntu-latest
+          pool: Computer-Vision-Team-Amsterdam
           steps:
           - task: AzureCLI@2
             displayName: Docker Build
