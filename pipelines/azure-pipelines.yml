@@ -103,6 +103,7 @@ stages :
     displayName: 'Deploy DEV (CD)'
     dependsOn:
     - Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/development'))
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
@@ -132,7 +133,8 @@ stages :
   - stage: Deploy_TEST
     displayName: 'Deploy TEST (CD)'
     dependsOn:
-    - Deploy_DEV
+    - Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
@@ -163,6 +165,7 @@ stages :
     displayName: 'Deploy ACC (CD)'
     dependsOn:
     - Deploy_TEST
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
@@ -228,6 +231,7 @@ stages :
     dependsOn:
     - Deploy_ACC
     - VulnerabilityScan
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
