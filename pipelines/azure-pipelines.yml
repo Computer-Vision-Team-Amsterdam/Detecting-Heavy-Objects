@@ -30,12 +30,12 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'blur'
       tag: 'latest'
-   - name: 'Detect' #No spaces or special chars
-     displayName: 'Detect'
-     dockerFileName: 'detection.Dockerfile'
-     dockerFileRelativePath: ''
-     imageRepository: 'detection'
-     tag: 'latest'
+    - name: 'Detect' #No spaces or special chars
+      displayName: 'Detect'
+      dockerFileName: 'detection.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'detection'
+      tag: 'latest'
     - name: 'UploadToPostgres' #No spaces or special chars
       displayName: 'Upload to Postgres'
       dockerFileName: 'upload_to_postgres.Dockerfile'
