@@ -28,10 +28,10 @@ RUN python -m pip install -e detectron2
 
 WORKDIR /app
 COPY configs/* /app/configs/
-COPY inference.py evaluation.py utils.py /app/
+COPY inference.py evaluation.py utils_coco.py /app/
 COPY utils /app/utils
 # copy weights
-# COPY model_final.pth /app/
+COPY model_final.pth /app/
 
 RUN useradd appuser
 RUN chown -R appuser /app
