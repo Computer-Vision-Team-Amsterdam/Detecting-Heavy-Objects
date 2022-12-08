@@ -124,6 +124,7 @@ stages :
               scriptType: pscore
               scriptLocation: inlineScript
               inlineScript: |
+                ls
                 az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
                 docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
