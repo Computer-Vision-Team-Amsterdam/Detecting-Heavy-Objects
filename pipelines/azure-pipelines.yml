@@ -61,6 +61,16 @@ parameters:
       imageRepository: 'delete_blobs'
       tag: 'latest'
 
+- name: MLModelConfig # information about machine learning models
+  type: object
+  default:
+    detection:
+      subscriptionId: 'b5d1b0e0-1ce4-40f9-87d5-cf3fde7a7b14'
+      resourceGroupName: 'cvo-aml-p-rg'
+      workspaceName: 'cvo-weu-aml-p-xnjyjutinwfyu'
+      modelName: 'retraining_batch_size_1'
+      version: 1
+
 variables:
   armServiceConnection.dev: 'ARM-CCC-CVT-ont-01'
   armServiceConnection.test: 'ARM-CCC-CVT-test-01'
@@ -90,6 +100,10 @@ stages :
               inlineScript: |
                 az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
+                if (${{ dockerFile.Name}} -eq 'Detect') {
+                  az ml model download --subscription ${{ parameters.MLModelConfig.detection.subscriptionId }} --resource-group ${{ parameters.MLModelConfig.detection.resourceGroupName }} --workspace-name ${{ parameters.MLModelConfig.detection.workspaceName }} --name ${{ parameters.MLModelConfig.detection.modelName }} --version ${{ parameters.MLModelConfig.detection.version }}
+                  mv ./${{ parameters.MLModelConfig.detection.modelName }}/*.* ./
+                }
                 docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
                 docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
 
