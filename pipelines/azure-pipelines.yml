@@ -124,12 +124,9 @@ stages :
               scriptType: pscore
               scriptLocation: inlineScript
               inlineScript: |
-                ls
-                ls $(Pipeline.Workspace) 
-                cp $(Pipeline.Workspace)/MLModels/*.* ./
                 az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
-                ls
+                cp $(Pipeline.Workspace)/MLModels/*.* ./
                 docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
                 docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
 
