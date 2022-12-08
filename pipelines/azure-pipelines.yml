@@ -125,6 +125,7 @@ stages :
               scriptLocation: inlineScript
               inlineScript: |
                 ls
+                ls $(Pipeline.Workspace) 
                 cp $(Pipeline.Workspace)/MLModels/*.* ./
                 az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
