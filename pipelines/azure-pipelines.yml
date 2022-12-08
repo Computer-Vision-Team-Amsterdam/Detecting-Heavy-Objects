@@ -31,12 +31,12 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'blur'
       tag: 'latest'
-#    - name: 'Detect' #No spaces or special chars
-#      displayName: 'Detect'
-#      dockerFileName: 'detection.Dockerfile'
-#      dockerFileRelativePath: ''
-#      imageRepository: 'detection'
-#      tag: 'latest'
+    - name: 'Detect' #No spaces or special chars
+      displayName: 'Detect'
+      dockerFileName: 'detection.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'detection'
+      tag: 'latest'
     - name: 'UploadToPostgres' #No spaces or special chars
       displayName: 'Upload to Postgres'
       dockerFileName: 'upload_to_postgres.Dockerfile'
@@ -62,6 +62,16 @@ parameters:
       imageRepository: 'delete_blobs'
       tag: 'latest'
 
+- name: MLModelConfig # information about machine learning models
+  type: object
+  default:
+    detection:
+      subscriptionId: 'b5d1b0e0-1ce4-40f9-87d5-cf3fde7a7b14'
+      resourceGroupName: 'cvo-aml-p-rg'
+      workspaceName: 'cvo-weu-aml-p-xnjyjutinwfyu'
+      modelName: 'retraining_batch_size_1'
+      version: 1
+
 variables:
   armServiceConnection.dev: 'ARM-CCC-CVT-ont-01'
   armServiceConnection.test: 'ARM-CCC-CVT-test-01'
@@ -76,12 +86,37 @@ stages :
   - stage: Build
     displayName: 'Build (CI)'
     jobs:
+      - job: DownloadModels
+        displayName: 'Download ML Models'
+        pool: Computer-Vision-Team-Amsterdam
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Detection Model Download'
+            inputs:
+              azureSubscription: $(armServiceConnection.dev)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az extension add --name ml
+                az ml model download --subscription ${{ parameters.MLModelConfig.detection.subscriptionId }} --resource-group ${{ parameters.MLModelConfig.detection.resourceGroupName }} --workspace-name ${{ parameters.MLModelConfig.detection.workspaceName }} --name ${{ parameters.MLModelConfig.detection.modelName }} --version ${{ parameters.MLModelConfig.detection.version }}
+                mv ./${{ parameters.MLModelConfig.detection.modelName }}/*.* $(Build.ArtifactStagingDirectory)
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publishing ML Models as Pipeline Artifacts'
+            inputs:
+              path: $(Build.ArtifactStagingDirectory)
+              artifact: MLModels
+
       - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
         - job: Build_${{ dockerFile.Name }}
           displayName: 'Build - ${{ dockerFile.displayName }}'
+          dependsOn:
+          - DownloadModels
           pool:
             vmImage: ubuntu-latest
           steps:
+          - download: current
+            artifact: MLModels
           - task: AzureCLI@2
             displayName: Docker Build
             inputs:
@@ -91,6 +126,7 @@ stages :
               inlineScript: |
                 az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
+                cp $(Pipeline.Workspace)/MLModels/*.* ./
                 docker build -t ${{ dockerFile.imageRepository }}:$(Build.BuildId) -f ${{ dockerFile.dockerFileName }} .
                 docker save ${{ dockerFile.imageRepository }}:$(Build.BuildId) -o $(Build.ArtifactStagingDirectory)/${{ dockerFile.imageRepository }}.image.tar
 
