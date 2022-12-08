@@ -215,7 +215,7 @@ The converter on the output of the correct_faulty_panoramas()
 These output files we can rename and upload to Azure.
 
 ## Azure DevOps Pipeline
-Triggered automatically by commit/push to main branch.
+Triggered automatically by commit/push to develop and main branch.
 
 ### Parameters:
 Automatically triggered pipeline runs can use these parameters only in its default values. Intended only for manual runs for pipeline or build test reasons.
