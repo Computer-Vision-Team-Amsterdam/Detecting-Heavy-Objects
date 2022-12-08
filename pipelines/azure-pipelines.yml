@@ -101,7 +101,7 @@ stages :
                 az acr login --name $(containerRegistryName.dev)
                 cd .${{ dockerFile.dockerFileRelativePath }}
                 if ('${{ dockerFile.Name }}' -eq 'Detect') {
-                  az extension add --ml
+                  az extension add --name ml
                   az ml model download --subscription ${{ parameters.MLModelConfig.detection.subscriptionId }} --resource-group ${{ parameters.MLModelConfig.detection.resourceGroupName }} --workspace-name ${{ parameters.MLModelConfig.detection.workspaceName }} --name ${{ parameters.MLModelConfig.detection.modelName }} --version ${{ parameters.MLModelConfig.detection.version }}
                   mv ./${{ parameters.MLModelConfig.detection.modelName }}/*.* ./
                 }
