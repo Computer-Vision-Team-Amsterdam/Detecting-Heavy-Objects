@@ -132,7 +132,7 @@ if __name__ == "__main__":
     opt.data = check_file(opt.data)  # check file
     print(opt)
 
-    start_date_dag, _ = get_start_date(flags.subset)
+    start_date_dag, _ = get_start_date(opt.date)
 
     # update input folder
     opt.folder = Path(opt.folder, start_date_dag)
