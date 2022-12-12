@@ -51,6 +51,12 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 
+module_path = os.path.abspath(os.path.join("../utils"))
+if module_path not in sys.path:
+    sys.path.insert(0, module_path)
+from utils_cvteam.azure_storage import BaseAzureClient, StorageAzureClient
+from utils_cvteam.date import get_start_date
+azClient = BaseAzureClient()
 
 @smart_inference_mode()
 def run(
@@ -65,22 +71,19 @@ def run(
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         save_txt=False,  # save results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
-        save_blur_img=False,
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms=False,  # class-agnostic NMS
         augment=False,  # augmented inference
         update=False,  # update all models
-        name='exp',  # save results to project/name
-        exist_ok=False,  # existing project/name ok, do not increment
-        line_thickness=3,  # bounding box thickness (pixels)
-        hide_labels=False,  # hide labels
-        hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
+        date=''  # TODO
 ):
     source = str(source)
     # Directories
     (output_folder / 'labels' if save_txt else output_folder).mkdir(parents=True, exist_ok=True)  # make dir
+
+    save_blur_img = True # TODO Make arg
 
     # Load model
     device = select_device(device)
@@ -163,8 +166,8 @@ def run(
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
     if save_txt or save_blur_img:
-        s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-        LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
+        s = f"\n{len(list(output_folder.glob('labels/*.txt')))} labels saved to {output_folder / 'labels'}" if save_txt else ''
+        LOGGER.info(f"Results saved to {colorstr('bold', output_folder)}{s}")
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
@@ -180,20 +183,16 @@ def parse_opt():
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[2048, 1024], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.6, help='NMS IoU threshold')
+    parser.add_argument('--date', type=str, help='date for images to be blurred')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-    parser.add_argument('--save-blur-img', action='store_true', help='TODO')
+    # parser.add_argument('--save-blur-img', action='store_true', help='TODO')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
-    parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
-    parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     opt = parser.parse_args()
@@ -209,4 +208,38 @@ def main(opt):
 
 if __name__ == "__main__":
     opt = parse_opt()
+
+    start_date_dag, _ = get_start_date(opt.date)
+
+    # update input folder
+    opt.source = Path(opt.source, start_date_dag)
+    if not opt.source.exists():
+        opt.source.mkdir(exist_ok=True, parents=True)
+
+    # update output folder
+    opt.output_folder = Path(opt.output_folder, start_date_dag)
+    if not opt.output_folder.exists():
+        opt.output_folder.mkdir(exist_ok=True, parents=True)
+
+    # download images from storage account
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
+    blobs = saClient.list_container_content(
+        cname="unblurred", blob_prefix=start_date_dag
+    )
+    for blob in blobs:
+        blob = blob.split("/")[-1]  # only get file name, without prefix
+        saClient.download_blob(
+            cname="unblurred",
+            blob_name=f"{start_date_dag}/{blob}",
+            local_file_path=f"{opt.source}/{blob}",
+        )
+
     main(opt)
+
+    # upload blurred images to storage account
+    for file in os.listdir(f"{opt.output_folder}"):
+        saClient.upload_blob(
+            cname="blurred",
+            blob_name=f"{start_date_dag}/{file}",
+            local_file_path=f"{opt.output_folder}/{file}",
+        )

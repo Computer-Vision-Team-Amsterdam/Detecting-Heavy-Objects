@@ -1,4 +1,4 @@
-This repository is a clone of YOLOv5, but applied for blurring panoramic imagery. The model is trained on two classes: pedestrians and license plates. 
+This repository is a clone of YOLOv5 (commit 454dae1301abb3fbf4fd1f54d5dc706cc69f8e7e), but applied for blurring panoramic imagery. The model is trained on two classes: pedestrians and license plates. 
 
 To use blurring algorithm, install dependencies
 ```shell
