@@ -32,7 +32,6 @@ Usage - formats:
 
 import argparse
 import os
-import platform
 import sys
 from pathlib import Path
 import time
@@ -46,8 +45,8 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import LoadImages
-from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
-                           increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
+from utils.general import (LOGGER, Profile, check_img_size, check_requirements, colorstr, cv2,
+                           non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
 from utils.torch_utils import select_device, smart_inference_mode
 
 # In the dockerfile we copy a folder from root to this dir and rename it to utils_cvteam
@@ -68,6 +67,7 @@ def run(
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         save_txt=False,  # save results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
+        no_save_img=True,  # dont save blurred images
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms=False,  # class-agnostic NMS
         augment=False,  # augmented inference
@@ -79,8 +79,6 @@ def run(
     source = str(source)
     # Directories
     (output_folder / 'labels' if save_txt else output_folder).mkdir(parents=True, exist_ok=True)  # make dir
-
-    save_blur_img = True # TODO Make arg
 
     # Load model
     device = select_device(device)
@@ -143,7 +141,7 @@ def run(
                         with open(f'{txt_path}.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
-                    if save_blur_img:
+                    if no_save_img:
                         x1 = int(xyxy[0].item())
                         y1 = int(xyxy[1].item())
                         x2 = int(xyxy[2].item())
@@ -153,7 +151,7 @@ def run(
                         im0[y1:y2, x1:x2] = blurred
 
             # Save results (image with blurs)
-            if save_blur_img:
+            if no_save_img:
                 cv2.imwrite(save_path, im0)
 
         # Print time (inference-only)
@@ -162,7 +160,7 @@ def run(
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
-    if save_txt or save_blur_img:
+    if save_txt or no_save_img:
         s = f"\n{len(list(output_folder.glob('labels/*.txt')))} labels saved to {output_folder / 'labels'}" if save_txt else ''
         LOGGER.info(f"Results saved to {colorstr('bold', output_folder)}{s}")
     if update:
@@ -185,7 +183,7 @@ def parse_opt():
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-    # parser.add_argument('--save-blur-img', action='store_true', help='TODO')
+    parser.add_argument('--no-save-img', action='store_false', help='don"t save the blurred images')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
