@@ -14,6 +14,10 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY yolov5/requirements.txt .
 RUN python -m pip install --upgrade pip
 RUN pip install --no-cache -r requirements.txt 
+RUN pip install \
+    azure-identity==1.10.0 \
+    azure-keyvault-secrets==4.5.1 \
+    azure-storage-blob==12.13.1
 
 # Create working directory
 WORKDIR /app
