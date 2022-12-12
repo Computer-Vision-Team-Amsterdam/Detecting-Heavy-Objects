@@ -115,12 +115,13 @@ class StorageAzureClient(BaseAzureClient):
             print("Delete blobs operation failed")
             raise ex
 
-    def upload_blob(self, cname: str, blob_name: str, local_file_path: str) -> None:
+    def upload_blob(self, cname: str, blob_name: str, local_file_path: str, print_debug: bool = False) -> None:
         """Upload a file to a container in the cloud.
         Args:
             cname: Name of the Azure Storage Container.
             blob_name: Name of the blob in the container.
             local_file_path: Name given to the file saved locally.
+            print_debug: Boolean to enable or disable logging.
         """
 
         try:
@@ -129,17 +130,19 @@ class StorageAzureClient(BaseAzureClient):
             )
             with open(local_file_path, "rb") as data:
                 blob_client.upload_blob(data)
-            print("upload_blob: {} -> {} {}".format(local_file_path, cname, blob_name))
+            if print_debug:
+                print("upload_blob: {} -> {} {}".format(local_file_path, cname, blob_name))
         except ResourceNotFoundError as ex:
             print("Failed to upload blob.")
             raise ex
 
-    def download_blob(self, cname: str, blob_name: str, local_file_path: str) -> None:
+    def download_blob(self, cname: str, blob_name: str, local_file_path: str, print_debug: bool = False) -> None:
         """Download a blob from a container.
         Args:
             cname: Name of the Azure Storage Container.
             blob_name: Name of the blob in the container.
             local_file_path: Name given to the file saved locally.
+            print_debug: Boolean to enable or disable logging.
         """
 
         try:
@@ -148,9 +151,10 @@ class StorageAzureClient(BaseAzureClient):
             )
             with open(local_file_path, "wb") as download_file:
                 download_file.write(blob_client.download_blob().readall())
-            print(
-                "download_blob: {} {} -> {}".format(cname, blob_name, local_file_path)
-            )
+            if print_debug:
+                print(
+                    "download_blob: {} {} -> {}".format(cname, blob_name, local_file_path)
+                )
         except ResourceNotFoundError as ex:
             print("Failed to download blob.")
             raise ex
