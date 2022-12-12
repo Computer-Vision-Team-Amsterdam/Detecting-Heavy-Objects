@@ -88,7 +88,7 @@ def run(
 
     start_time = time.time()
 
-    # Dataloader
+    # Dataloader TODO make batch inference implementation
     bs = 1  # batch_size
     dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
 
