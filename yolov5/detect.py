@@ -45,15 +45,12 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
-from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages
+from utils.dataloaders import LoadImages
 from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
                            increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
-from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 
-module_path = os.path.abspath(os.path.join("../utils"))
-if module_path not in sys.path:
-    sys.path.insert(0, module_path)
+# In the dockerfile we copy a folder from root to this dir and rename it to utils_cvteam
 from utils_cvteam.azure_storage import BaseAzureClient, StorageAzureClient
 from utils_cvteam.date import get_start_date
 azClient = BaseAzureClient()
