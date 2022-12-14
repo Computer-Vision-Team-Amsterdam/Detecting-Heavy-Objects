@@ -1,25 +1,26 @@
-import os
-import cv2
+import argparse
 import csv
 import glob
-from detectron2.config import get_cfg
-from detectron2.modeling import build_model
-from detectron2.checkpoint import DetectionCheckpointer
-import detectron2.data.transforms as T
-from detectron2.data import MetadataCatalog
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-import torch
+import os
 from pathlib import Path
-import argparse
+
+import cv2
+import detectron2.data.transforms as T
+import torch
+from detectron2.checkpoint import DetectionCheckpointer
+from detectron2.config import get_cfg
+from detectron2.data import MetadataCatalog
+from detectron2.modeling import build_model
+from psycopg2.extras import execute_values
+from torch.utils.data import DataLoader, Dataset
+
+import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
 from utils.date import get_start_date
-import upload_to_postgres
-from psycopg2.extras import execute_values
 
 
 class ContainerDataset(Dataset):
-    def __init__(self,img_names,cfg=None):
+    def __init__(self, img_names, cfg=None):
         self.img_names = img_names
         if len(cfg.DATASETS.TEST):
             self.metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
@@ -50,12 +51,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--date", type=str, help="Processing date in the format %Y-%m-%d %H:%M:%S.%f"
     )
-    parser.add_argument(
-        "--device", type=str, help="Processing on CPU or GPU?"
-    )
-    parser.add_argument(
-        "--weights", type=str, help="Trained weights filename"
-    )
+    parser.add_argument("--device", type=str, help="Processing on CPU or GPU?")
+    parser.add_argument("--weights", type=str, help="Trained weights filename")
     opt = parser.parse_args()
 
     start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
@@ -91,10 +88,9 @@ if __name__ == "__main__":
     image_names = [file_name for file_name in glob.glob(f"{input_path}/*.jpg")]
     dataset = ContainerDataset(img_names=image_names, cfg=cfg)
 
-    data_loader = DataLoader(dataset=dataset,
-                             batch_size=BATCH_SIZE,
-                             shuffle=False,
-                             pin_memory=True)
+    data_loader = DataLoader(
+        dataset=dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True
+    )
 
     num = 0
     all_rows = []
@@ -102,7 +98,9 @@ if __name__ == "__main__":
         for (imgs, img_names, shapes) in data_loader:
             inputs = []
             for i, img_tensor in enumerate(imgs):
-                inputs.append({"image": img_tensor, "height": shapes[0][i], "width": shapes[1][i]})
+                inputs.append(
+                    {"image": img_tensor, "height": shapes[0][i], "width": shapes[1][i]}
+                )
 
             all_outputs = model(inputs)
 
@@ -123,19 +121,19 @@ if __name__ == "__main__":
 
                 num += 1
 
-    print("Detect %d frames with objects in haul %s"%(num, input_path))
+    print("Detect %d frames with objects in haul %s" % (num, input_path))
 
     if all_rows:
         print("Inserting data into database...")
         table_name = "detections"
+
         # Get columns
         sql = f"SELECT * FROM {table_name} LIMIT 0"
         cur.execute(sql)
         table_columns = [desc[0] for desc in cur.description]
         table_columns.pop(0)  # Remove the id column
+
+        # Inserting data into database
         query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-
-        print(all_rows)
-
         execute_values(cur, query, all_rows)
         conn.commit()
