@@ -1,3 +1,4 @@
+import os
 import cv2
 from tqdm import tqdm
 import csv
@@ -40,9 +41,9 @@ class ContainerDataset(Dataset):
 
 
 def create_csv(result_save_dir):
-    f = open(result_save_dir+'/detection_result_batch.csv', 'w', newline='')
-    csv_writer = csv.writer(f)
-    csv_writer.writerow(["file_name", "xmin", "ymin", "xmax", "ymax", "confidence"])
+    f = open(result_save_dir+"/detection_result_batch.csv", "w", newline="")
+    csv_writer = csv.writer(f, delimiter=";")
+    csv_writer.writerow(["file_name", "bbox", "score"])
 
     return f, csv_writer
 
@@ -88,21 +89,19 @@ if __name__ == "__main__":
                     continue
 
                 for k in range(len(outputs["instances"])):
-                    xmin = outputs["instances"].pred_boxes.tensor[k][0]
-                    ymin = outputs["instances"].pred_boxes.tensor[k][1]
-                    xmax = outputs["instances"].pred_boxes.tensor[k][2]
-                    ymax = outputs["instances"].pred_boxes.tensor[k][3]
+                    xmin = round(outputs["instances"].pred_boxes.tensor[k][0].item(), 1)
+                    ymin = round(outputs["instances"].pred_boxes.tensor[k][1].item(), 1)
+                    xmax = round(outputs["instances"].pred_boxes.tensor[k][2].item(), 1)
+                    ymax = round(outputs["instances"].pred_boxes.tensor[k][3].item(), 1)
+                    bbox = {xmin, ymin, xmax, ymax}
 
-                    score = outputs["instances"].scores[k]
-                    # object_class = outputs["instances"].pred_classes[k]
+                    score = round(outputs["instances"].scores[k].item(), 3)
 
-                    all_rows.append([img_names[j], xmin, ymin, xmax, ymax, score])
+                    all_rows.append([os.path.basename(img_names[j]), bbox, score])
 
                 num += 1
 
     for row in all_rows:
-        if '' not in row: # need convert from tensor to number
-            row=[row[0], row[1].item(), row[2].item(), row[3].item(), row[4].item(), row[5].item()]
         csv_writer.writerow(row)
 
     f.close()
