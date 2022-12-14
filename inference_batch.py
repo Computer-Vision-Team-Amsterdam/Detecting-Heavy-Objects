@@ -25,7 +25,7 @@ class ContainerDataset(Dataset):
             self.metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
         self.aug = T.ResizeShortestEdge(
             [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
-        ) # TODO validate the input dims
+        )  # TODO validate the input dims
         self.input_format = cfg.INPUT.FORMAT
         assert self.input_format in ["RGB", "BGR"], self.input_format
 
@@ -59,9 +59,6 @@ if __name__ == "__main__":
     opt = parser.parse_args()
 
     start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
-
-    # result_save_dir = "jm"
-    # f, csv_writer = create_csv(result_save_dir)
 
     input_path = Path("images", start_date_dag_ymd)
     if not input_path.exists():
@@ -111,7 +108,6 @@ if __name__ == "__main__":
 
             for j, outputs in enumerate(all_outputs):
                 if len(outputs["instances"]) == 0:  ### no predicted objects ###
-                    #all_rows.append([img_names[j], '', '', '', '', 0])
                     continue
 
                 for k in range(len(outputs["instances"])):
@@ -119,7 +115,7 @@ if __name__ == "__main__":
                     ymin = round(outputs["instances"].pred_boxes.tensor[k][1].item(), 1)
                     xmax = round(outputs["instances"].pred_boxes.tensor[k][2].item(), 1)
                     ymax = round(outputs["instances"].pred_boxes.tensor[k][3].item(), 1)
-                    bbox = {xmin, ymin, xmax, ymax}
+                    bbox = [xmin, ymin, xmax, ymax]
 
                     score = round(outputs["instances"].scores[k].item(), 3)
 
@@ -132,8 +128,12 @@ if __name__ == "__main__":
     if all_rows:
         print("Inserting data into database...")
         table_name = "detections"
-        keys = ["pano_id", "score", "bbox"]
-        query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
+        # Get columns
+        sql = f"SELECT * FROM {table_name} LIMIT 0"
+        cur.execute(sql)
+        table_columns = [desc[0] for desc in cur.description]
+        table_columns.pop(0)  # Remove the id column
+        query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
 
         print(all_rows)
 
