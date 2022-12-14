@@ -9,6 +9,7 @@ from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, List
+import sys
 
 import geopy.distance
 import numpy as np
@@ -28,7 +29,7 @@ from triangulation.triangulate import triangulate
 import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
 from utils.date import get_start_date
-from visualizations.stats import DataStatistics
+from visualizations.stats_db import DataStatistics
 from visualizations.utils import get_bridge_information, get_permit_locations
 
 
@@ -113,7 +114,7 @@ class PostProcessing:
 
     def __init__(
         self,
-        json_predictions: Path,
+        detections_in_database,
         date_to_check: datetime,
         permits_file: str,
         bridges_file: str,
@@ -123,13 +124,13 @@ class PostProcessing:
     ) -> None:
         """
         Args:
-            :param json_predictions: path to ouput file with predictions from detectron2
+            :param detectron2_predictions: output with predictions from detectron2
             :param threshold: objects with a bbox smaller and equal to this arg are discarded. value is in pixels
             :param mask_degrees: Area from side of the car, eg 90 means that on both sides of the 90 degrees is kept
             :param output_folder: where the filtered json with predictions is stored
             :
         """
-        self.stats = DataStatistics(json_file=json_predictions)
+        self.stats = DataStatistics(df=detections_in_database) # TODO!
         self.non_filtered_stats = deepcopy(self.stats)
         self.threshold = threshold
         self.mask_degrees = mask_degrees
@@ -401,9 +402,26 @@ if __name__ == "__main__":
         local_file_path=predictions_file,
     )
 
+    # Make a connection to the database
+    conn, cur = upload_to_postgres.connect()
+    table_name = "containers"
+
+    # Get images with a detection
+    sql = (
+        f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
+        f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
+    )
+    query_df = sqlio.read_sql_query(sql, conn)
+    query_df = pd.DataFrame(query_df)
+    if query_df.empty:
+        print(
+            "No images with a detection are found for the provided date. Aborting..."
+        )
+        sys.exit()
+
     # Find possible object intersections from detections in panoramic images.
     postprocess = PostProcessing(
-        Path(predictions_file),  # TODO why use Path
+        detections_in_database=query_df,
         output_folder=output_folder,
         date_to_check=datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
         permits_file=permits_file,
@@ -417,45 +435,28 @@ if __name__ == "__main__":
         clustered_intersections,
     )
 
-    # Make a connection to the database
-    conn, cur = upload_to_postgres.connect()
-    table_name = "containers"
+    # Get columns
+    sql = f"SELECT * FROM {table_name} LIMIT 0"
+    cur.execute(sql)
+    table_columns = [desc[0] for desc in cur.description]
+    table_columns.pop(0)  # Remove the id column
 
-    # Get images with a detection
-    sql = (
-        f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
-        f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
-    )
-    query_df = sqlio.read_sql_query(sql, conn)
-    query_df = pd.DataFrame(query_df)
+    # Find a panorama closest to an intersection
+    pano_match = get_closest_pano(query_df, clustered_intersections)
+    pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
 
-    if query_df.empty:
-        print(
-            "DataFrame is empty! No images with a detection are found for the provided date."
+    # Insert the values in the database
+    sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+    execute_values(cur, sql, pano_match_prioritized)
+    conn.commit()
+
+    # Upload the file with found containers to the Azure Blob Storage
+    for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:
+        azure_connection.upload_blob(
+            "postprocessing-output",
+            os.path.join(start_date_dag, csv_file),
+            csv_file,
         )
-    else:
-        # Get columns
-        sql = f"SELECT * FROM {table_name} LIMIT 0"
-        cur.execute(sql)
-        table_columns = [desc[0] for desc in cur.description]
-        table_columns.pop(0)  # Remove the id column
-
-        # Find a panorama closest to an intersection
-        pano_match = get_closest_pano(query_df, clustered_intersections)
-        pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
-
-        # Insert the values in the database
-        sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-        execute_values(cur, sql, pano_match_prioritized)
-        conn.commit()
-
-        # Upload the file with found containers to the Azure Blob Storage
-        for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:
-            azure_connection.upload_blob(
-                "postprocessing-output",
-                os.path.join(start_date_dag, csv_file),
-                csv_file,
-            )
 
     if conn:
         cur.close()
