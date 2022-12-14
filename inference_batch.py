@@ -85,7 +85,7 @@ if __name__ == "__main__":
     BATCH_SIZE = 1
 
     model = build_model(cfg)
-    DetectionCheckpointer(model).load(f"weights/{opt.weights}")
+    DetectionCheckpointer(model).load(opt.weights)
     model.train(False)
 
     image_names = [file_name for file_name in glob.glob(f"{input_path}/*.jpg")]
