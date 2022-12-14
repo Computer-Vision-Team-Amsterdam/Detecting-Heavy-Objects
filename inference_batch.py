@@ -1,6 +1,5 @@
 import os
 import cv2
-from tqdm import tqdm
 import csv
 import glob
 from detectron2.config import get_cfg
@@ -11,6 +10,12 @@ from detectron2.data import MetadataCatalog
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch
+from pathlib import Path
+import argparse
+from utils.azure_storage import StorageAzureClient
+from utils.date import get_start_date
+import upload_to_postgres
+from psycopg2.extras import execute_values
 
 
 class ContainerDataset(Dataset):
@@ -40,30 +45,53 @@ class ContainerDataset(Dataset):
         return len(self.img_names)
 
 
-def create_csv(result_save_dir):
-    f = open(result_save_dir+"/detection_result_batch.csv", "w", newline="")
-    csv_writer = csv.writer(f, delimiter=";")
-    csv_writer.writerow(["file_name", "bbox", "score"])
-
-    return f, csv_writer
-
-
 if __name__ == "__main__":
-    result_save_dir = "jm"
-    data_path = "data_sample/test/"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--date", type=str, help="Processing date in the format %Y-%m-%d %H:%M:%S.%f"
+    )
+    parser.add_argument(
+        "--device", type=str, help="Processing on CPU or GPU?"
+    )
+    parser.add_argument(
+        "--weights", type=str, help="Trained weights filename"
+    )
+    opt = parser.parse_args()
 
-    f, csv_writer = create_csv(result_save_dir)
+    start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
+
+    # result_save_dir = "jm"
+    # f, csv_writer = create_csv(result_save_dir)
+
+    input_path = Path("images", start_date_dag_ymd)
+    if not input_path.exists():
+        input_path.mkdir(exist_ok=True, parents=True)
+
+    # Download images from storage account
+    saClient = StorageAzureClient(secret_key="data-storage-account-url")
+    blobs = saClient.list_container_content(cname="blurred", blob_prefix=start_date_dag)
+    for blob in blobs:
+        filename = blob.split("/")[-1]  # only get file name, without prefix
+        saClient.download_blob(
+            cname="blurred",
+            blob_name=blob,
+            local_file_path=f"{input_path}/{filename}",
+        )
+
+    # Make a connection to the database
+    conn, cur = upload_to_postgres.connect()
 
     cfg = get_cfg()
     cfg.merge_from_file("configs/container_detection.yaml")
     cfg.DATALOADER.NUM_WORKERS = 1
+    cfg.MODEL.DEVICE = opt.device
     BATCH_SIZE = 1
 
     model = build_model(cfg)
-    DetectionCheckpointer(model).load("weights/model_final2.pth")
+    DetectionCheckpointer(model).load(f"weights/{opt.weights}")
     model.train(False)
 
-    image_names = [file_name for file_name in glob.glob(f"{data_path}*.jpg")]
+    image_names = [file_name for file_name in glob.glob(f"{input_path}/*.jpg")]
     dataset = ContainerDataset(img_names=image_names, cfg=cfg)
 
     data_loader = DataLoader(dataset=dataset,
@@ -74,10 +102,8 @@ if __name__ == "__main__":
     num = 0
     all_rows = []
     with torch.no_grad():
-        for (imgs, img_names, shapes) in tqdm(data_loader):  # TODO dont use tqdm in production
-
+        for (imgs, img_names, shapes) in data_loader:
             inputs = []
-
             for i, img_tensor in enumerate(imgs):
                 inputs.append({"image": img_tensor, "height": shapes[0][i], "width": shapes[1][i]})
 
@@ -97,12 +123,19 @@ if __name__ == "__main__":
 
                     score = round(outputs["instances"].scores[k].item(), 3)
 
-                    all_rows.append([os.path.basename(img_names[j]), bbox, score])
+                    all_rows.append([os.path.basename(img_names[j]), score, bbox])
 
                 num += 1
 
-    for row in all_rows:
-        csv_writer.writerow(row)
+    print("Detect %d frames with objects in haul %s"%(num, input_path))
 
-    f.close()
-    print("Detect %d frames with objects in haul %s"%(num, data_path))
+    if all_rows:
+        print("Inserting data into database...")
+        table_name = "detections"
+        keys = ["pano_id", "score", "bbox"]
+        query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
+
+        print(all_rows)
+
+        execute_values(cur, query, all_rows)
+        conn.commit()

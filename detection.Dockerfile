@@ -19,6 +19,7 @@ RUN pip install \
     torchaudio==0.10.1  \
     opencv-python \
     seaborn \
+    psycopg2==2.8.6 \
     azure-identity==1.10.0 \
     azure-keyvault-secrets==4.5.1 \
     azure-storage-blob==12.13.1
@@ -28,10 +29,10 @@ RUN python -m pip install -e detectron2
 
 WORKDIR /app
 COPY configs/* /app/configs/
-COPY inference.py evaluation.py utils_coco.py /app/
+COPY inference_batch.py evaluation.py utils_coco.py upload_to_postgres.py /app/
 COPY utils /app/utils
 # copy weights
-COPY model_final.pth /app/
+COPY model_final.pth /app/weights/model_final.pth
 
 RUN useradd appuser
 RUN chown -R appuser /app
