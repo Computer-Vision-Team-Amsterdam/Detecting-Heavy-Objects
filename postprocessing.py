@@ -130,7 +130,7 @@ class PostProcessing:
             :param output_folder: where the filtered json with predictions is stored
             :
         """
-        self.stats = DataStatistics(df=detections_in_database) # TODO!
+        self.stats = DataStatistics(df=detections_in_database)
         self.non_filtered_stats = deepcopy(self.stats)
         self.threshold = threshold
         self.mask_degrees = mask_degrees
@@ -185,7 +185,7 @@ class PostProcessing:
         running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
         for prediction in tqdm(self.stats.data, disable=running_in_k8s):
             response = PanoramaClient.get_panorama(
-                prediction["pano_id"].rsplit(".", 1)[0]
+                prediction["file_name"].rsplit(".", 1)[0]
             )  # TODO: Not query, look at the database!
             heading = response.heading
             height, width = prediction["segmentation"]["size"]
@@ -220,6 +220,7 @@ class PostProcessing:
         )
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
+        # TODO the order of elements in a python list is persistent, do we need to validate the order in the different lists is the same?
 
     def prioritize_notifications(self, panoramas: List[str]) -> npt.NDArray[Any]:
         """
@@ -380,7 +381,6 @@ if __name__ == "__main__":
         output_folder.mkdir(exist_ok=True, parents=True)
 
     permits_file = f"{start_date_dag_ymd}/{args.permits_file}"
-    predictions_file = f"{start_date_dag_ymd}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
@@ -396,11 +396,6 @@ if __name__ == "__main__":
         blob_name=args.bridges_file,
         local_file_path=args.bridges_file,
     )
-    azure_connection.download_blob(
-        cname=args.bucket_detections,
-        blob_name=f"{start_date_dag}/coco_instances_results.json",
-        local_file_path=predictions_file,
-    )
 
     # Make a connection to the database
     conn, cur = upload_to_postgres.connect()
@@ -408,7 +403,8 @@ if __name__ == "__main__":
 
     # Get images with a detection
     sql = (
-        f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
+        f"SELECT A.file_name, A.bounding_box, B.camera_location_lat, B.camera_location_lon FROM detections A "
+        f"LEFT JOIN images B ON A.file_name = B.file_name WHERE "
         f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
     )
     query_df = sqlio.read_sql_query(sql, conn)

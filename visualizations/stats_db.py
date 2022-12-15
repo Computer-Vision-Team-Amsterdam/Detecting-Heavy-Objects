@@ -14,27 +14,22 @@ class DataStatistics:
         """
         json file can be either COCO annotation or COCO results file
         """
-        self.data = df
+        self.data = df[["file_name", "bounding_box"]].to_json(orient="records")
 
         self.output_dir = output_dir
-        self.widths, self.heights = self.collect_dimensions(self.data)
+        self.widths, self.heights = self.collect_dimensions()
         self.areas = [
             width * height for width, height in zip(self.widths, self.heights)
         ]
 
-    def collect_dimensions(self, data: Any) -> Tuple[List[int], List[int]]:
+    def collect_dimensions(self) -> Tuple[List[int], List[int]]:
         """
         Collects widths and heights from json file
         """
-        # # assert if we have a list/results json or a dict/annotations json
-        # if isinstance(data, list):  # this is a results json file
-        #     pass
-        # if isinstance(data, dict):  # this is an annotation json file
-        #     data = data["annotations"]
-
         widths = []
         heights = []
-        for ann in data:
+
+        for ann in self.data:
             width = ann["bounding_box"][2]
             height = ann["bounding_box"][3]
 
@@ -82,7 +77,7 @@ class DataStatistics:
         :return:
         """
         self.data = data
-        self.widths, self.heights = self.collect_dimensions(self.data)
+        self.widths, self.heights = self.collect_dimensions()
         self.areas = [
             width * height for width, height in zip(self.widths, self.heights)
         ]
