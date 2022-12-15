@@ -6,6 +6,7 @@ from typing import List
 
 import azureml._restclient.snapshots_client
 from azureml.exceptions import WebserviceException
+import os
 # python run_inference_on_azure.py --name retraining_batch_size_1 --version 1 --subset val
 
 azureml._restclient.snapshots_client.SNAPSHOT_MAX_SIZE_BYTES = 100000000000
@@ -58,6 +59,15 @@ try:
 except WebserviceException:
     flags.version = 1
 
+
+model = Model.get_model_path(
+    model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
+)
+
+
+
+flags.weights = model
+
 args = {}
 for arg in vars(flags):
     args[f"--{arg}"] = getattr(flags, arg)
@@ -67,9 +77,7 @@ args_list: List[List[str]] = [[k, v] for (k, v) in args.items()]
 args_flattened: List[str] = [val for sublist in args_list for val in sublist]  # flatten
 
 
-model = Model.get_model_path(
-    model_name=f"{flags.name}", version=int(flags.version), _workspace=ws
-)  # latest version
+
 
 script_config = ScriptRunConfig(
     source_directory=".",

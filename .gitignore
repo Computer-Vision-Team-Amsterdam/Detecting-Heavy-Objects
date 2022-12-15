@@ -173,7 +173,7 @@ notes.MD
 # Neural Network weights
 **/*.weights
 **/*.pt
-**/*.pth
+#**/*.path
 **/*.onnx
 **/*.mlmodel
 **/*.torchscript

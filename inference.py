@@ -69,6 +69,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 
     cfg.OUTPUT_DIR = flags.output_path
 
+    print(f"cfg.MODEL.WEIGHTS is {cfg.MODEL.WEIGHTS}")
     predictor = DefaultPredictor(cfg)
 
     logging.info(f"Loaded model weights from {cfg.MODEL.WEIGHTS}.")
@@ -92,6 +93,7 @@ def evaluate_model(flags: argparse.Namespace, expCfg: ExperimentConfig) -> None:
 if __name__ == "__main__":
 
     flags = arg_parser()
+    print(os.system("ls"))
 
     """
     input_path = Path(flags.data_folder, flags.subset)
@@ -118,7 +120,6 @@ if __name__ == "__main__":
         data_format=flags.data_format,
         data_folder=flags.data_folder,
     )
-
     evaluate_model(flags, experimentConfig)
     """
     # upload detection files to postgres
