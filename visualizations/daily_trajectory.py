@@ -17,14 +17,34 @@ from typing import List, Union
 
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
-from triangulation.helpers import (
-    get_panos_from_points_of_interest,
-)  # pylint: disable-all
+#from triangulation.helpers import (
+#    get_panos_from_points_of_interest,
+#)  # pylint: disable-all
 
 from visualizations.model import PointOfInterest
 from visualizations.unique_instance_prediction import generate_map
 from visualizations.utils import get_bridge_information, get_permit_locations
 
+
+def get_panos_from_points_of_interest(point_of_interest, timestamp_before, timestamp_after):
+    """
+    Get the panoramas that are closest to the points of interest
+    Takes as input a csv file with lon, lat coordinates outputs images in the output folder
+    """
+    panoramas = []
+    with open(point_of_interest, 'r') as file:
+        reader = csv.reader(file)
+        next(reader) #skip first line
+        for row in reader:
+            location = models.LocationQuery(
+                latitude=float(row[0]), longitude=float(row[1]), radius=25
+            )
+            query_result: models.PagedPanoramasResponse = PanoramaClient.list_panoramas(
+                location=location,
+                timestamp_after=timestamp_after,
+                timestamp_before=timestamp_before)
+            panoramas.append(query_result.panoramas[0])
+    return panoramas
 
 def get_daily_panoramas(
     target_date: date, location_query: models.LocationQuery
@@ -156,7 +176,7 @@ if __name__ == "__main__":
     radius = 2000
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
 
-    coordinates = "points_of_interest.csv"
-    vulnerable_bridges_file = "bridges.geojson"
+    coordinates = "prioritized_objects.csv"
+    vulnerable_bridges_file = "vuln_bridges.geojson"
     permits_file = "decos.xml"
     run(target_day, location_query, coordinates, vulnerable_bridges_file, permits_file)
