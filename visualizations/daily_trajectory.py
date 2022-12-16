@@ -124,13 +124,12 @@ def run(
     with open(points_of_interest, "r") as file:
         reader = csv.DictReader(file)
         for i, row in enumerate(reader):
+            closest_permit = permit_locations[permit_keys.index(row["permit_keys"])]
             detections.append(
                 PointOfInterest(
                     pano_id=row["closest_image"],
                     coords=(float(row["lat"]), float(row["lon"])),
-                    closest_permit=tuple(permit_locations[
-                        permit_keys.index(row["permit_keys"])
-                    ]),
+                    closest_permit=(float(closest_permit[0]), closest_permit[1]),
                     score=float(row["score"]),
                 )
             )

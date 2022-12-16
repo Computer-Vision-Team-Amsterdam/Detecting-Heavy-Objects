@@ -385,27 +385,27 @@ if __name__ == "__main__":
     permits_file = f"{start_date_dag_ymd}/{args.permits_file}"
     predictions_file = f"{start_date_dag_ymd}/coco_instances_results.json"
 
-    # # Get access to the Azure Storage account.
-    # azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
-    #
-    # # Download files to the WORKDIR of the Docker container.
-    # azure_connection.download_blob(
-    #     cname=args.bucket_ref_files,
-    #     blob_name=permits_file,
-    #     local_file_path=permits_file,
-    # )
-    # azure_connection.download_blob(
-    #     cname=args.bucket_ref_files,
-    #     blob_name=args.bridges_file,
-    #     local_file_path=args.bridges_file,
-    # )
-    # azure_connection.download_blob(
-    #     cname=args.bucket_detections,
-    #     blob_name=f"{start_date_dag}/coco_instances_results.json",
-    #     local_file_path=predictions_file,
-    # )
-    #
-    # # Find possible object intersections from detections in panoramic images.
+    # Get access to the Azure Storage account.
+    azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
+
+    # Download files to the WORKDIR of the Docker container.
+    azure_connection.download_blob(
+        cname=args.bucket_ref_files,
+        blob_name=permits_file,
+        local_file_path=permits_file,
+    )
+    azure_connection.download_blob(
+        cname=args.bucket_ref_files,
+        blob_name=args.bridges_file,
+        local_file_path=args.bridges_file,
+    )
+    azure_connection.download_blob(
+        cname=args.bucket_detections,
+        blob_name=f"{start_date_dag}/coco_instances_results.json",
+        local_file_path=predictions_file,
+    )
+
+    # Find possible object intersections from detections in panoramic images.
     postprocess = PostProcessing(
         Path(predictions_file),  # TODO why use Path
         output_folder=output_folder,
@@ -420,7 +420,6 @@ if __name__ == "__main__":
         os.path.join(start_date_dag_ymd, "points_of_interest.csv"),
         clustered_intersections,
     )
-
 
     # Make a connection to the database
     conn, cur = upload_to_postgres.connect()
