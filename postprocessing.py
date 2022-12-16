@@ -28,7 +28,9 @@ from triangulation.triangulate import triangulate
 import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
 from utils.date import get_start_date
+from visualizations.model import PointOfInterest
 from visualizations.stats import DataStatistics
+from visualizations.unique_instance_prediction import generate_map
 from visualizations.utils import get_bridge_information, get_permit_locations
 
 
@@ -444,6 +446,17 @@ if __name__ == "__main__":
         pano_match = get_closest_pano(query_df, clustered_intersections)
         pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
 
+        # Create overview map
+        map_info = pano_match_prioritized[:, [0, 1, -1]]  # get lat, lon, closest_image
+        detections = []
+        for row in map_info:
+            pano_id, lat, lon = row
+            detections.append(PointOfInterest(pano_id=pano_id, coords=(float(lat), float(lon))))
+
+        vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
+        permit_locations, _ = get_permit_locations(permits_file, postprocess.date_to_check)
+        generate_map(vulnerable_bridges, permit_locations, trajectory=None, detections=detections)
+
         # Insert the values in the database
         sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
         execute_values(cur, sql, pano_match_prioritized)
@@ -456,6 +469,12 @@ if __name__ == "__main__":
                 os.path.join(start_date_dag, csv_file),
                 csv_file,
             )
+
+        # Upload overview map to the Azure Blob Storage
+        azure_connection.upload_blob(
+            "postprocessing-output",
+            os.path.join(start_date_dag, "Daily predicted containers.html"),
+            "Daily predicted containers.html")
 
     if conn:
         cur.close()
