@@ -335,7 +335,7 @@ class PostProcessing:
 
         write_to_csv(
             structured_array,
-            self.output_folder / self.prioritized_file,
+            self.prioritized_file,
         )
 
         # Only nice the permit keys in the outputfile, not in the database
