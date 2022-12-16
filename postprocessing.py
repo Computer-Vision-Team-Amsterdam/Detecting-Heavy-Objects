@@ -422,7 +422,7 @@ if __name__ == "__main__":
     )
 
 
-    Make a connection to the database
+    # Make a connection to the database
     conn, cur = upload_to_postgres.connect()
     table_name = "containers"
 
