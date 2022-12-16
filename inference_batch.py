@@ -109,7 +109,7 @@ def instances_to_coco_json(instances, img_name):
             keypoints[k][:, :2] -= 0.5
             result["keypoints"] = keypoints[k].flatten().tolist()
         results_json.append(result)
-        results.append([img_name, boxes[k], scores[k]])
+        results.append([img_name, scores[k], boxes[k]])
     return results_json, results
 
 
