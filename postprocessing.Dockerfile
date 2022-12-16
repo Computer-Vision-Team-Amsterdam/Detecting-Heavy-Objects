@@ -39,6 +39,7 @@ RUN pip install --no-cache \
 
 WORKDIR /app
 COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
+COPY visualizations/unique_instance_prediction.py visualizations/model.py /app/visualizations/
 COPY postprocessing.py /app
 COPY utils /app/utils
 COPY upload_to_postgres.py /app
