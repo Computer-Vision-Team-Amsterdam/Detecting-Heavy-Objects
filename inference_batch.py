@@ -1,18 +1,21 @@
 import argparse
-import csv
 import glob
 import os
 from pathlib import Path
+import numpy as np
+import json
 
-import cv2
+import cv2  # TODO
 import detectron2.data.transforms as T
-import torch
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.modeling import build_model
+from detectron2.structures import BoxMode
 from psycopg2.extras import execute_values
+import pycocotools.mask as mask_util
 from torch.utils.data import DataLoader, Dataset
+import torch  # TODO
 
 import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
@@ -46,6 +49,70 @@ class ContainerDataset(Dataset):
         return len(self.img_names)
 
 
+def instances_to_coco_json(instances, img_name):
+    """
+    Dump an "Instances" object to a COCO-format json that's used for evaluation.
+
+    Args:
+        instances (Instances):
+        img_id (int): the image id
+
+    Returns:
+        list[dict]: list of json annotations in COCO format.
+    """
+    num_instance = len(instances)
+    if num_instance == 0:
+        return []
+
+    boxes = instances.pred_boxes.tensor.numpy()
+    boxes = BoxMode.convert(boxes, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+    boxes = boxes.tolist()
+    scores = instances.scores.tolist()
+    classes = instances.pred_classes.tolist()
+
+    has_mask = instances.has("pred_masks")
+    if has_mask:
+        # use RLE to encode the masks, because they are too large and takes memory
+        # since this evaluator stores outputs of the entire dataset
+        rles = [
+            mask_util.encode(np.array(mask[:, :, None], order="F", dtype="uint8"))[0]
+            for mask in instances.pred_masks
+        ]
+        for rle in rles:
+            # "counts" is an array encoded by mask_util as a byte-stream. Python3's
+            # json writer which always produces strings cannot serialize a bytestream
+            # unless you decode it. Thankfully, utf-8 works out (which is also what
+            # the pycocotools/_mask.pyx does).
+            rle["counts"] = rle["counts"].decode("utf-8")
+
+    has_keypoints = instances.has("pred_keypoints")
+    if has_keypoints:
+        keypoints = instances.pred_keypoints
+
+    results_json = []
+    results = []
+    for k in range(num_instance):
+        result = {
+            "pano_id": img_name,
+            "category_id": classes[k],
+            "bbox": boxes[k],
+            "score": scores[k],
+        }
+        if has_mask:
+            result["segmentation"] = rles[k]
+        if has_keypoints:
+            # In COCO annotations,
+            # keypoints coordinates are pixel indices.
+            # However our predictions are floating point coordinates.
+            # Therefore we subtract 0.5 to be consistent with the annotation format.
+            # This is the inverse of data loading logic in `datasets/coco.py`.
+            keypoints[k][:, :2] -= 0.5
+            result["keypoints"] = keypoints[k].flatten().tolist()
+        results_json.append(result)
+        results.append([img_name, boxes[k], scores[k]])
+    return results_json, results
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -54,6 +121,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, help="Processing on CPU or GPU?")
     parser.add_argument("--weights", type=str, help="Trained weights filename")
     opt = parser.parse_args()
+
+    results_file_name = "coco_instances_results.json"
 
     start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
 
@@ -93,7 +162,8 @@ if __name__ == "__main__":
     )
 
     num = 0
-    all_rows = []
+    data_results_json = []
+    data_results = []
     with torch.no_grad():
         for (imgs, img_names, shapes) in data_loader:
             inputs = []
@@ -105,25 +175,28 @@ if __name__ == "__main__":
             all_outputs = model(inputs)
 
             for j, outputs in enumerate(all_outputs):
-                if len(outputs["instances"]) == 0:  ### no predicted objects ###
-                    continue
-
-                for k in range(len(outputs["instances"])):
-                    xmin = round(outputs["instances"].pred_boxes.tensor[k][0].item(), 1)
-                    ymin = round(outputs["instances"].pred_boxes.tensor[k][1].item(), 1)
-                    xmax = round(outputs["instances"].pred_boxes.tensor[k][2].item(), 1)
-                    ymax = round(outputs["instances"].pred_boxes.tensor[k][3].item(), 1)
-                    bbox = [xmin, ymin, xmax, ymax]
-
-                    score = round(outputs["instances"].scores[k].item(), 3)
-
-                    all_rows.append([os.path.basename(img_names[j]), score, bbox])
-
-                num += 1
+                if "instances" in outputs:
+                    instances = outputs["instances"]
+                    prediction_json, prediction = instances_to_coco_json(instances, os.path.basename(img_names[j]))
+                if prediction_json and prediction:
+                    data_results_json.append(prediction_json[0])
+                    data_results.append(prediction[0])
+                    num += 1
 
     print("Detect %d frames with objects in haul %s" % (num, input_path))
 
-    if all_rows:
+    if data_results_json:
+        with open(results_file_name, "w") as f:
+            json.dump(data_results_json, f)
+
+        print("Upload detection file to Blob Storage...")
+        saClient.upload_blob(
+            cname="detections",
+            blob_name=f"{start_date_dag}/{results_file_name}",
+            local_file_path=results_file_name,
+        )
+
+    if data_results:
         print("Inserting data into database...")
         table_name = "detections"
 
@@ -135,5 +208,5 @@ if __name__ == "__main__":
 
         # Inserting data into database
         query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-        execute_values(cur, query, all_rows)
+        execute_values(cur, query, data_results)
         conn.commit()
