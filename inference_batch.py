@@ -1,21 +1,21 @@
 import argparse
 import glob
+import json
 import os
 from pathlib import Path
-import numpy as np
-import json
 
-import cv2  # TODO
 import detectron2.data.transforms as T
+import numpy as np
+import pycocotools.mask as mask_util
+import torch
+from cv2 import imread
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.modeling import build_model
 from detectron2.structures import BoxMode
 from psycopg2.extras import execute_values
-import pycocotools.mask as mask_util
 from torch.utils.data import DataLoader, Dataset
-import torch  # TODO
 
 import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
@@ -34,7 +34,7 @@ class ContainerDataset(Dataset):
         assert self.input_format in ["RGB", "BGR"], self.input_format
 
     def __getitem__(self, index):
-        img = cv2.imread(self.img_names[index])
+        img = imread(self.img_names[index])
         if self.input_format == "RGB":
             # whether the model expects BGR inputs or RGB
             img = img[:, :, ::-1]
@@ -177,7 +177,9 @@ if __name__ == "__main__":
             for j, outputs in enumerate(all_outputs):
                 if "instances" in outputs:
                     instances = outputs["instances"]
-                    prediction_json, prediction = instances_to_coco_json(instances, os.path.basename(img_names[j]))
+                    prediction_json, prediction = instances_to_coco_json(
+                        instances, os.path.basename(img_names[j])
+                    )
                 if prediction_json and prediction:
                     data_results_json.append(prediction_json[0])
                     data_results.append(prediction[0])
