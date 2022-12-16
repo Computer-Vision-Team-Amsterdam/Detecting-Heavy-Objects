@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     if opt.stage == "after_pipeline":
         # For a container, delete all content from a certain date.
-        cnames = ["blurred", "detections"]
+        cnames = ["blurred", "detections", "postprocessing-output"]
 
         for cname in cnames:
             all_data = saClient.list_container_content(
