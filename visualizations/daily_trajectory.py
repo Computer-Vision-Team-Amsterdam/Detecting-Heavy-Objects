@@ -91,7 +91,7 @@ def get_panorama_coords(
 def run(
     day_to_plot: date,
     location_query: models.LocationQuery,
-    points_of_interest: Union[Path, str],
+    points_of_interest_file: Union[Path, str],
     vulnerable_bridges_file: Union[Path, str],
     permits_file: Union[Path, str],
 ) -> None:
@@ -121,7 +121,7 @@ def run(
 
     detections = []
 
-    with open(points_of_interest, "r") as file:
+    with open(points_of_interest_file, "r") as file:
         reader = csv.DictReader(file)
         for i, row in enumerate(reader):
             closest_permit = permit_locations[permit_keys.index(row["permit_keys"])]
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     radius = 2000
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
 
-    coordinates = "../2021-03-17/prioritized_objects.csv"
+    coordinates_file = ".prioritized_objects.csv"
     vulnerable_bridges_file = "bridges.geojson"
-    permits_file = "../2021-03-17/decos_dump.xml"
-    run(target_day, location_query, coordinates, vulnerable_bridges_file, permits_file)
+    permits_file = "decos_dump.xml"
+    run(target_day, location_query, coordinates_file, vulnerable_bridges_file, permits_file)
