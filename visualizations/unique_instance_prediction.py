@@ -92,6 +92,7 @@ def color(cluster_id: int, colors: List[str]) -> str:
 def generate_map(
     vulnerable_bridges: List[List[List[float]]],
     permit_locations: List[List[float]],
+    n_priority: Optional[int] = 10,
     trajectory: Optional[List[List[float]]] = None,
     detections: Optional[List[PointOfInterest]] = None,
     name: Optional[str] = None,
@@ -114,7 +115,7 @@ def generate_map(
 
     # create empty map zoomed on Amsterdam
     Map = folium.Map(location=[latitude, longitude], zoom_start=12)
-
+    popup = None
     # add container locations to the map
     if detections:
         for i in range(0, len(detections)):
@@ -122,29 +123,38 @@ def generate_map(
             # get link to panorama to display
 
             pano_id = detections[i].pano_id
-            image = PanoramaClient.get_panorama(pano_id)
-            image_link = image.links.equirectangular_small.href
+            if pano_id:
+                image = PanoramaClient.get_panorama(pano_id)
+                image_link = image.links.equirectangular_small.href
+                detection_score = float(detections[i].score)
 
-            # create HTML with more info
-            html = (
-                f"""
-                   <!DOCTYPE html>
-                   <html>
-                   <center><img src=\""""
-                + image_link
-                + """\" width=400 height=200 ></center>
-                   </html>
-                   """
-            )
-            popup = folium.Popup(folium.Html(html, script=True), max_width=500)
+                # create HTML with more info
+                html = (
+                    f"""
+                       <!DOCTYPE html>
+                       <html>
+                        <h1> score: {detection_score}</h1><br>
+                       <center><img src=\""""
+                    + image_link
+                    + """\" width=400 height=200 ></center>
+                       </html>
+                       """
+                )
+                popup = folium.Popup(folium.Html(html, script=True), max_width=500)
+
+            if detection_score > 1:
+                color = "red"
+            elif detection_score > 0:
+                color = "orange"
+            else:
+                color = "green"
+
             folium.Marker(
                 location=[detections[i].coords[0], detections[i].coords[1]],
-                popup=popup,
+                popup=popup if popup else None,
                 icon=folium.Icon(
                     color="lightgreen",
-                    icon_color=color(detections[i].cluster, colors)
-                    if colors
-                    else "darkgreen",
+                    icon_color=color,
                     icon="square",
                     angle=0,
                     prefix="fa",
@@ -152,6 +162,14 @@ def generate_map(
                 radius=15,
             ).add_to(Map)
 
+            # ).add_to(marker_cluster)
+            if detections[i].closest_permit:
+                folium.PolyLine(
+                    [detections[i].closest_permit, detections[i].coords],
+                    color="purple",
+                    weight=3,
+                    opacity=0.8,
+                ).add_to(Map)
     # add line with car trajectory on the map
     if trajectory:
         folium.PolyLine(trajectory, color="green", weight=5, opacity=0.8).add_to(Map)
@@ -186,7 +204,7 @@ def generate_map(
             name = "Daily trajectory"
         if not detections and not trajectory:
             name = "Empty map"
-
+    print(f"Map is saved at {name}")
     Map.save(f"{name}.html")
 
 

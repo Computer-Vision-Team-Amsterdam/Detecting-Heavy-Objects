@@ -111,31 +111,32 @@ def run(
 
     trajectory = get_panorama_coords(daily_query_result)  # only keep their coordinates
 
+    # ======== CREATE LIST OF PERMIT LOCATIONS ============
+    date_to_check = datetime(2021, 3, 17)
+    permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
+        permits_file, date_to_check
+    )
+
     # ======== CREATE LIST OF DETECTIONS ============
 
     detections = []
-    panoramas = get_panos_from_points_of_interest(
-        points_of_interest,
-        timestamp_after=day_to_plot,
-        timestamp_before=day_to_plot + timedelta(days=1),
-    )
 
     with open(points_of_interest, "r") as file:
-        reader = csv.reader(file)
-        next(reader)  # skip first line
+        reader = csv.DictReader(file)
         for i, row in enumerate(reader):
             detections.append(
                 PointOfInterest(
-                    pano_id=panoramas[i].id, coords=(float(row[0]), float(row[1]))
+                    pano_id=row["closest_image"],
+                    coords=(float(row["lat"]), float(row["lon"])),
+                    closest_permit=permit_locations[
+                        permit_keys.index(row["permit_keys"])
+                    ],
+                    score=float(row["score"]),
                 )
             )
 
     # ======== CREATE LIST OF VULNERABLE BRIDGES ============
     vulnerable_bridges = get_bridge_information(vulnerable_bridges_file)
-
-    # ======== CREATE LIST OF PERMIT LOCATIONS ============
-    date_to_check = datetime(2021, 3, 17)
-    permit_locations, _ = get_permit_locations(permits_file, date_to_check)
 
     # ========== CREATE MAP =================
     generate_map(
@@ -156,7 +157,7 @@ if __name__ == "__main__":
     radius = 2000
     location_query = models.LocationQuery(latitude=lat, longitude=long, radius=radius)
 
-    coordinates = "points_of_interest.csv"
+    coordinates = "../2021-03-17/prioritized_objects.csv"
     vulnerable_bridges_file = "bridges.geojson"
-    permits_file = "decos.xml"
+    permits_file = "../2021-03-17/decos_dump.xml"
     run(target_day, location_query, coordinates, vulnerable_bridges_file, permits_file)
