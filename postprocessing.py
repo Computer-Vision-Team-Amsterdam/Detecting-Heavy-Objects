@@ -337,7 +337,9 @@ class PostProcessing:
             structured_array,
             self.output_folder / self.prioritized_file,
         )
-        return structured_array
+
+        # Only nice the permit keys in the outputfile, not in the database
+        return structured_array[:][:-1]
 
 
 if __name__ == "__main__":
