@@ -128,9 +128,9 @@ def run(
                 PointOfInterest(
                     pano_id=row["closest_image"],
                     coords=(float(row["lat"]), float(row["lon"])),
-                    closest_permit=permit_locations[
+                    closest_permit=tuple(permit_locations[
                         permit_keys.index(row["permit_keys"])
-                    ],
+                    ]),
                     score=float(row["score"]),
                 )
             )
