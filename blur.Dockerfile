@@ -13,7 +13,11 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Install pip packages
 COPY yolov5/requirements.txt .
 RUN python -m pip install --upgrade pip
+<<<<<<< HEAD
 RUN pip install --no-cache -r requirements.txt 
+=======
+RUN pip install --no-cache -r requirements.txt
+>>>>>>> development
 RUN pip install \
     azure-identity==1.10.0 \
     azure-keyvault-secrets==4.5.1 \
