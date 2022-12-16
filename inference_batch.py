@@ -62,7 +62,7 @@ def instances_to_coco_json(instances, img_name):
     """
     num_instance = len(instances)
     if num_instance == 0:
-        return []
+        return [], []
 
     boxes = instances.pred_boxes.tensor.numpy()
     boxes = BoxMode.convert(boxes, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
