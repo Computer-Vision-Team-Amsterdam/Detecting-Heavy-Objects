@@ -179,7 +179,7 @@ def generate_map(
     # create name for the map
     if not name:
         if detections and trajectory:
-            name = "Daily trajectory and predicted containersss"
+            name = "Daily trajectory and predicted containers"
         if detections and not trajectory:
             name = "Daily predicted containers"
         if not detections and trajectory:

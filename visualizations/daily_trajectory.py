@@ -17,34 +17,16 @@ from typing import List, Union
 
 from panorama import models  # pylint: disable=import-error
 from panorama.client import PanoramaClient  # pylint: disable=import-error
-#from triangulation.helpers import (
-#    get_panos_from_points_of_interest,
-#)  # pylint: disable-all
+from triangulation.helpers import (
+    get_panos_from_points_of_interest,
+)  # pylint: disable-all
 
 from visualizations.model import PointOfInterest
 from visualizations.unique_instance_prediction import generate_map
 from visualizations.utils import get_bridge_information, get_permit_locations
 
 
-def get_panos_from_points_of_interest(point_of_interest, timestamp_before, timestamp_after):
-    """
-    Get the panoramas that are closest to the points of interest
-    Takes as input a csv file with lon, lat coordinates outputs images in the output folder
-    """
-    panoramas = []
-    with open(point_of_interest, 'r') as file:
-        reader = csv.reader(file)
-        next(reader) #skip first line
-        for row in reader:
-            location = models.LocationQuery(
-                latitude=float(row[0]), longitude=float(row[1]), radius=25
-            )
-            query_result: models.PagedPanoramasResponse = PanoramaClient.list_panoramas(
-                location=location,
-                timestamp_after=timestamp_after,
-                timestamp_before=timestamp_before)
-            panoramas.append(query_result.panoramas[0])
-    return panoramas
+
 
 def get_daily_panoramas(
     target_date: date, location_query: models.LocationQuery
@@ -127,9 +109,11 @@ def run(
 
     # ========= CREATE CAR TRAJECTORY =================
 
-    daily_query_result = get_daily_panoramas(day_to_plot, location_query)
+    # daily_query_result = get_daily_panoramas(day_to_plot, location_query)
 
-    trajectory = get_panorama_coords(daily_query_result)  # only keep their coordinates
+    # trajectory = get_panorama_coords(daily_query_result)  # only keep their coordinates
+
+    trajectory = None
 
     # ======== CREATE LIST OF DETECTIONS ============
 
@@ -141,12 +125,12 @@ def run(
     )
 
     with open(points_of_interest, "r") as file:
-        reader = csv.reader(file)
+        reader = csv.DictReader(file, delimiter=';')
         next(reader)  # skip first line
         for i, row in enumerate(reader):
             detections.append(
                 PointOfInterest(
-                    pano_id=panoramas[i].id, coords=(float(row[0]), float(row[1]))
+                    pano_id=panoramas[i].id, coords=(float(row["lat"]), float(row["lon"]))
                 )
             )
 
