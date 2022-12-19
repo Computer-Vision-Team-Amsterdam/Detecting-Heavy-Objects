@@ -7,7 +7,7 @@ import argparse
 import json
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Generator
 
 import psycopg2
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
@@ -25,16 +25,13 @@ DATABASE = "container-detection-database"
 
 
 @contextmanager
-def connect() -> psycopg2.Cursor:
+def connect() -> Generator[psycopg2.extensions.cursor, None, None]:
     """
     Connect to the postgres database.
     """
-    conn: Optional[psycopg2.Connection] = None
-    cur: Optional[psycopg2.Cursor] = None
-
     try:
         # Connect to an existing database
-        conn: psycopg2.Connection = psycopg2.connect(
+        conn: psycopg2.extensions.connection = psycopg2.connect(
             user=f"{USERNAME}@{HOST}",
             password=PASSWORD,
             host=f"{HOST}.postgres.database.azure.com",
@@ -42,16 +39,16 @@ def connect() -> psycopg2.Cursor:
             database=DATABASE,
         )
         conn.autocommit = True
-        cur: psycopg2.Cursor = conn.cursor()
+        cur: psycopg2.extensions.cursor = conn.cursor()
         yield cur
-    except ConnectionException as error:
+    except Exception as error:
         print("Error while connecting to PostgreSQL", error)
     finally:
-        cur.close()
-        conn.close()
+        cur.close()  # type: ignore
+        conn.close()  # type: ignore
 
 
-def get_column_names(table_name: str, cur: cursor) -> List[str]:
+def get_column_names(table_name: str, cur: psycopg2.extensions.cursor) -> List[str]:
     """
     Get names of the columns in database table.
 
@@ -62,7 +59,7 @@ def get_column_names(table_name: str, cur: cursor) -> List[str]:
     """
 
     sql = f"""SELECT * FROM {table_name}"""
-    cur.execute(sql)
+    cur.execute(sql)  # type: ignore
     cols = [desc[0] for desc in cursor.description]
 
     # currently all tables' PK have 'id' in them.
@@ -131,7 +128,7 @@ def row_to_upload_from_panorama(
     return row
 
 
-def upload_images(cursor_, data) -> None:
+def upload_images(cursor_: psycopg2.extensions.cursor, data: List[str]) -> None:
     keys = get_column_names("images", cursor_)  # column names from table in postgres
     query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
 
@@ -144,7 +141,7 @@ def upload_images(cursor_, data) -> None:
     execute_values(cursor_, query, values)
 
 
-def upload_detections(cursor_, data) -> None:
+def upload_detections(cursor_: psycopg2.extensions.cursor, data: List[Dict[str, Union[str, float, datetime]]]) -> None:
     object_fields = ["pano_id", "score", "bbox"]
     keys = get_column_names("detections", cursor_)  # column names from table in postgres
     query = f"INSERT INTO detections ({','.join(keys)}) VALUES %s;"
@@ -188,10 +185,8 @@ if __name__ == "__main__":
             f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
         )
 
-        print(input_files)  # TODO remove
-
         # Download files from CloudVPS
-        input_data = []
+        input_data_images = []
         for input_file in input_files:
             local_file = input_file.split("/")[1]  # only get file name, without prefix
             saClient.download_blob(
@@ -200,10 +195,10 @@ if __name__ == "__main__":
                 local_file_path=local_file,
             )
             with open(local_file, "r") as f:
-                input_data = [line.rstrip("\n") for line in f]
+                input_data_images = [line.rstrip("\n") for line in f]
 
         with connect() as cursor:
-            upload_images(cursor, input_data)
+            upload_images(cursor, input_data_images)
 
     if opt.table == "detections":
         # download detections file from the storage account
@@ -215,7 +210,7 @@ if __name__ == "__main__":
         )
 
         f = open(input_file_path)
-        input_data = json.load(f)
+        input_data_detections = json.load(f)
 
         with connect() as cursor:
-            upload_detections(cursor, input_data)
+            upload_detections(cursor, input_data_detections)
