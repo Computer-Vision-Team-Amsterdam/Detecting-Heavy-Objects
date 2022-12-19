@@ -442,7 +442,7 @@ if __name__ == "__main__":
         else:
             # Get columns
             sql = f"SELECT * FROM {table_name} LIMIT 0"
-            cur.execute(sql)  # type: ignore
+            cur.execute(sql)
             table_columns = [desc[0] for desc in cur.description]
             table_columns.pop(0)  # Remove the id column
 
@@ -453,7 +453,7 @@ if __name__ == "__main__":
             # Insert the values in the database
             sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
             execute_values(cur, sql, pano_match_prioritized)
-            conn.commit()  # type: ignore
+            conn.commit()
 
             # Upload the file with found containers to the Azure Blob Storage
             for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:

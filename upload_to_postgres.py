@@ -43,8 +43,8 @@ def connect() -> Generator[Tuple[psycopg2.extensions.connection, psycopg2.extens
     except Exception as error:
         print("Error while connecting to PostgreSQL", error)
     finally:
-        cur.close()  # type: ignore
-        conn.close()  # type: ignore
+        cur.close()
+        conn.close()
 
 
 def get_column_names(table_name: str, cur: psycopg2.extensions.cursor) -> List[str]:
@@ -58,7 +58,7 @@ def get_column_names(table_name: str, cur: psycopg2.extensions.cursor) -> List[s
     """
 
     sql = f"""SELECT * FROM {table_name}"""
-    cur.execute(sql)  # type: ignore
+    cur.execute(sql)
     cols = [desc[0] for desc in cursor.description]
 
     # currently all tables' PK have 'id' in them.
