@@ -338,8 +338,9 @@ class PostProcessing:
             self.prioritized_file,
         )
 
-        # Only nice the permit keys in the outputfile, not in the database
-        return structured_array[:][:-1]
+        # Remove permit_keys from the structured array, we dont want this in the database.
+        column_names = list(structured_array.dtype.names)
+        return structured_array[column_names[:-1]]
 
 
 if __name__ == "__main__":
