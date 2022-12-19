@@ -7,10 +7,9 @@ import argparse
 import json
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Dict, List, Optional, Union, Generator
+from typing import Dict, List, Optional, Union, Generator, Tuple
 
 import psycopg2
-from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values
 
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
@@ -25,7 +24,7 @@ DATABASE = "container-detection-database"
 
 
 @contextmanager
-def connect() -> Generator[psycopg2.extensions.cursor, None, None]:
+def connect() -> Generator[Tuple[psycopg2.extensions.connection, psycopg2.extensions.cursor], None, None]:
     """
     Connect to the postgres database.
     """
@@ -40,7 +39,7 @@ def connect() -> Generator[psycopg2.extensions.cursor, None, None]:
         )
         conn.autocommit = True
         cur: psycopg2.extensions.cursor = conn.cursor()
-        yield cur
+        yield conn, cur
     except Exception as error:
         print("Error while connecting to PostgreSQL", error)
     finally:
@@ -197,7 +196,7 @@ if __name__ == "__main__":
             with open(local_file, "r") as f:
                 input_data_images = [line.rstrip("\n") for line in f]
 
-        with connect() as cursor:
+        with connect() as (_, cursor):
             upload_images(cursor, input_data_images)
 
     if opt.table == "detections":
@@ -212,5 +211,5 @@ if __name__ == "__main__":
         f = open(input_file_path)
         input_data_detections = json.load(f)
 
-        with connect() as cursor:
+        with connect() as (_, cursor):
             upload_detections(cursor, input_data_detections)

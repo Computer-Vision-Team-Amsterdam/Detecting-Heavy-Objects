@@ -143,9 +143,6 @@ if __name__ == "__main__":
             local_file_path=f"{input_path}/{filename}",
         )
 
-    # Make a connection to the database
-    conn, cur = upload_to_postgres.connect()
-
     cfg = get_cfg()
     cfg.merge_from_file("configs/container_detection.yaml")
     cfg.DATALOADER.NUM_WORKERS = 1
@@ -201,16 +198,17 @@ if __name__ == "__main__":
         )
 
     if data_results:
-        print("Inserting data into database...")
-        table_name = "detections"
+        with upload_to_postgres.connect() as (conn, cur):
+            print("Inserting data into database...")
+            table_name = "detections"
 
-        # Get columns
-        sql = f"SELECT * FROM {table_name} LIMIT 0"
-        cur.execute(sql)
-        table_columns = [desc[0] for desc in cur.description]
-        table_columns.pop(0)  # Remove the id column
+            # Get columns
+            sql = f"SELECT * FROM {table_name} LIMIT 0"
+            cur.execute(sql)
+            table_columns = [desc[0] for desc in cur.description]
+            table_columns.pop(0)  # Remove the id column
 
-        # Inserting data into database
-        query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-        execute_values(cur, query, data_results)
-        conn.commit()
+            # Inserting data into database
+            query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+            execute_values(cur, query, data_results)
+            conn.commit()
