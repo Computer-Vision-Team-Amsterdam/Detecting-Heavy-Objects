@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import folium
+import folium.plugins as plugins
 import geohash as gh
 import pandas as pd
 from panorama.client import PanoramaClient
@@ -92,7 +93,6 @@ def color(cluster_id: int, colors: List[str]) -> str:
 def generate_map(
     vulnerable_bridges: List[List[List[float]]],
     permit_locations: List[List[float]],
-    n_priority: Optional[int] = 10,
     trajectory: Optional[List[List[float]]] = None,
     detections: Optional[List[PointOfInterest]] = None,
     name: Optional[str] = None,
@@ -152,13 +152,12 @@ def generate_map(
             folium.Marker(
                 location=[detections[i].coords[0], detections[i].coords[1]],
                 popup=popup if popup else None,
-                icon=folium.Icon(
-                    color="lightgreen",
-                    icon_color=color,
-                    icon="square",
-                    angle=0,
-                    prefix="fa",
-                ),
+
+                # icon=folium.Icon(color="lightgreen", icon_color=color, icon="square", angle=0, prefix="fa"),
+                icon=plugins.BeautifyIcon(icon="arrow-down",
+                                          icon_shape="marker",
+                                          number=i + 1,
+                                          background_color=color),
                 radius=15,
             ).add_to(Map)
 

@@ -244,7 +244,9 @@ class PostProcessing:
         permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
             self.permits_file, self.date_to_check
         )
-
+        print(f"permit locations: {permit_locations}")
+        print(f"permit keys: {permit_keys}")
+        print(f"permit locations failer: {permit_locations_failed}")
         container_locations = get_container_locations(
             self.output_folder / self.objects_file
         )
@@ -304,6 +306,8 @@ class PostProcessing:
             calculate_score(bridges_distances[idx], permit_distances[idx])
             for idx in range(len(container_locations))
         ]
+
+        print(f"Closest permits: {closest_permits}")
         sorted_indices = np.argsort([score * -1 for score in scores])
         prioritized_containers = np.array(container_locations)[sorted_indices]
         permit_distances_sorted = np.array(permit_distances)[sorted_indices]
@@ -340,9 +344,7 @@ class PostProcessing:
             self.prioritized_file,
         )
 
-        # Remove permit_keys from the structured array, we dont want this in the database.
-        column_names = list(structured_array.dtype.names)
-        return structured_array[column_names[:-1]]
+        return structured_array
 
 
 if __name__ == "__main__":
@@ -453,20 +455,37 @@ if __name__ == "__main__":
         pano_match = get_closest_pano(query_df, clustered_intersections)
         pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
 
-        # Create overview map
-        map_info = pano_match_prioritized[:, [0, 1, -1]]  # get lat, lon, closest_image
-        detections = []
-        for row in map_info:
-            pano_id, lat, lon = row
-            detections.append(PointOfInterest(pano_id=pano_id, coords=(float(lat), float(lon))))
-
         vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
-        permit_locations, _ = get_permit_locations(permits_file, postprocess.date_to_check)
-        generate_map(vulnerable_bridges, permit_locations, trajectory=None, detections=detections)
+
+        permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
+            permits_file, postprocess.date_to_check
+        )
+
+        # Create overview map
+        print(pano_match_prioritized)
+        detections = []
+        for row in pano_match_prioritized:
+            print(row)
+            lat, lon, score, _, _, closest_image, permit_key = row
+            closest_permit = permit_locations[permit_keys.index(permit_key)]
+            detections.append(
+                PointOfInterest(pano_id=closest_image.split(".")[0],  # remove .jpg
+                                coords=(float(lat), float(lon)),
+                                closest_permit=(closest_permit[0], closest_permit[1]),
+                                score=score)
+            )
+
+        generate_map(
+            vulnerable_bridges, permit_locations, trajectory=None, detections=detections, name="Overview"
+        )
+
+        generate_map(
+            vulnerable_bridges, permit_locations, trajectory=None, detections=detections[:25], name="Prioritized"
+        )
 
         # Insert the values in the database
         sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-        execute_values(cur, sql, pano_match_prioritized)
+        execute_values(cur, sql, pano_match_prioritized[:-1])  # we don't want permit_keys in the database.
         conn.commit()
 
         # Upload the file with found containers to the Azure Blob Storage
@@ -477,11 +496,13 @@ if __name__ == "__main__":
                 csv_file,
             )
 
-        # Upload overview map to the Azure Blob Storage
-        azure_connection.upload_blob(
-            "postprocessing-output",
-            os.path.join(start_date_dag, "Daily predicted containers.html"),
-            "Daily predicted containers.html")
+        # Upload overview and prioritized maps to the Azure Blob Storage
+        for html_file in ["Overview.html", "Prioritized.html"]:
+            azure_connection.upload_blob(
+                "postprocessing-output",
+                os.path.join(start_date_dag, html_file),
+                html_file,
+            )
 
     if conn:
         cur.close()
