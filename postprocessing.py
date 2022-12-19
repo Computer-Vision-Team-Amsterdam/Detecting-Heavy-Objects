@@ -100,7 +100,7 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
         filename,
         data,
         header=",".join(data.dtype.names),
-        fmt="%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s",
+        fmt="%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
         delimiter=",",
         comments="",
     )
@@ -221,6 +221,7 @@ class PostProcessing:
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
     def prioritize_notifications(self, panoramas: List[str]) -> npt.NDArray[Any]:
+
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and
         canals. This function returns a structured array (column based) with floats and strings inside.
@@ -238,13 +239,19 @@ class PostProcessing:
             else:
                 return 0
 
-        permit_locations, permit_locations_failed = get_permit_locations(
+        permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
             self.permits_file, self.date_to_check
         )
+
+        container_locations = get_container_locations(
+            self.output_folder / self.objects_file
+        )
+        bridge_locations = get_bridge_information(self.bridges_file)
+
+        container_locations_geom = [Point(location) for location in container_locations]
         permit_locations_geom = [
             Point(permit_location) for permit_location in permit_locations
         ]
-        bridge_locations = get_bridge_information(self.bridges_file)
         bridge_locations_geom = [
             LineString(bridge_location)
             for bridge_location in bridge_locations
@@ -261,11 +268,6 @@ class PostProcessing:
             comments="",
         )
 
-        container_locations = get_container_locations(
-            self.output_folder / self.objects_file
-        )
-        container_locations_geom = [Point(location) for location in container_locations]
-
         if (
             not bridge_locations_geom
             or not container_locations_geom
@@ -277,6 +279,7 @@ class PostProcessing:
 
         bridges_distances = []
         permit_distances = []
+        closest_permits = []
         for container_location in container_locations_geom:
             closest_bridge_distance = min(
                 [
@@ -286,16 +289,15 @@ class PostProcessing:
             )
             bridges_distances.append(round(closest_bridge_distance, 2))
 
-            closest_permit_distance = min(
-                [
-                    geopy.distance.distance(
-                        container_location.coords, permit_location.coords
-                    ).meters
-                    for permit_location in permit_locations_geom
-                ]
-            )
-            permit_distances.append(round(closest_permit_distance, 2))
+            closest_permit_distances = [
+                geopy.distance.distance(
+                    container_location.coords, permit_location.coords
+                ).meters
+                for permit_location in permit_locations_geom
+            ]
 
+            permit_distances.append(np.amin(closest_permit_distances))
+            closest_permits.append(permit_keys[np.argmin(closest_permit_distances)])
         scores = [
             calculate_score(bridges_distances[idx], permit_distances[idx])
             for idx in range(len(container_locations))
@@ -304,6 +306,7 @@ class PostProcessing:
         prioritized_containers = np.array(container_locations)[sorted_indices]
         permit_distances_sorted = np.array(permit_distances)[sorted_indices]
         bridges_distances_sorted = np.array(bridges_distances)[sorted_indices]
+        permit_keys = np.array(closest_permits)[sorted_indices]
         sorted_scores = np.array(scores)[sorted_indices]
         sorted_panoramas = np.array(panoramas)[sorted_indices]
 
@@ -316,6 +319,7 @@ class PostProcessing:
                     permit_distances_sorted,
                     bridges_distances_sorted,
                     sorted_panoramas,
+                    permit_keys,
                 )
             ),
             dtype=[
@@ -325,6 +329,7 @@ class PostProcessing:
                 ("permit_distance", float),
                 ("bridge_distance", float),
                 ("closest_image", "U64"),
+                ("permit_keys", "U64"),
             ],
         )
 
@@ -333,7 +338,9 @@ class PostProcessing:
             self.prioritized_file,
         )
 
-        return structured_array
+        # Remove permit_keys from the structured array, we dont want this in the database.
+        column_names = list(structured_array.dtype.names)
+        return structured_array[column_names[:-1]]
 
 
 if __name__ == "__main__":
