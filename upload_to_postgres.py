@@ -7,11 +7,9 @@ import argparse
 import json
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
 import psycopg2
-from psycopg2._psycopg import connection  # pylint: disable-msg=E0611
-from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
 from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values
 
@@ -27,16 +25,16 @@ DATABASE = "container-detection-database"
 
 
 @contextmanager
-def connect() -> cursor:
+def connect() -> psycopg2.Cursor:
     """
     Connect to the postgres database.
     """
-    conn = None
-    cur = None
+    conn: Optional[psycopg2.Connection] = None
+    cur: Optional[psycopg2.Cursor] = None
 
     try:
         # Connect to an existing database
-        conn = psycopg2.connect(
+        conn: psycopg2.Connection = psycopg2.connect(
             user=f"{USERNAME}@{HOST}",
             password=PASSWORD,
             host=f"{HOST}.postgres.database.azure.com",
@@ -44,7 +42,7 @@ def connect() -> cursor:
             database=DATABASE,
         )
         conn.autocommit = True
-        cur = conn.cursor()
+        cur: psycopg2.Cursor = conn.cursor()
         yield cur
     except ConnectionException as error:
         print("Error while connecting to PostgreSQL", error)
@@ -133,7 +131,7 @@ def row_to_upload_from_panorama(
     return row
 
 
-def upload_images(cursor_, data):
+def upload_images(cursor_, data) -> None:
     keys = get_column_names("images", cursor_)  # column names from table in postgres
     query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
 
@@ -146,7 +144,7 @@ def upload_images(cursor_, data):
     execute_values(cursor_, query, values)
 
 
-def upload_detections(cursor_, data):
+def upload_detections(cursor_, data) -> None:
     object_fields = ["pano_id", "score", "bbox"]
     keys = get_column_names("detections", cursor_)  # column names from table in postgres
     query = f"INSERT INTO detections ({','.join(keys)}) VALUES %s;"
