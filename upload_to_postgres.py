@@ -5,6 +5,7 @@ as well as predictions of the container detection model.
 
 import argparse
 import json
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -25,7 +26,8 @@ PORT = "5432"
 DATABASE = "container-detection-database"
 
 
-def connect() -> Tuple[connection, cursor]:
+@contextmanager
+def connect() -> cursor:
     """
     Connect to the postgres database.
     """
@@ -41,12 +43,14 @@ def connect() -> Tuple[connection, cursor]:
             port=PORT,
             database=DATABASE,
         )
+        conn.autocommit = True
         cur = conn.cursor()
-
+        yield cur
     except ConnectionException as error:
         print("Error while connecting to PostgreSQL", error)
-
-    return conn, cur
+    finally:
+        cur.close()
+        conn.close()
 
 
 def get_column_names(table_name: str, cur: cursor) -> List[str]:
@@ -88,10 +92,9 @@ def row_to_upload(
     """
     row: Dict[str, Union[str, float]] = {key: "" for key in table_columns}
 
-    if len(table_columns) != len(row):
-        raise ValueError(
-            "You are trying to add more/less columns than current table columns."
-        )
+    if len(row) is not len(table_columns):
+        raise ValueError("Amount of values does not match amount of columns.")
+
     for i, column_name in enumerate(table_columns):
         row[column_name] = data_element[object_fields[i]]
 
@@ -124,69 +127,37 @@ def row_to_upload_from_panorama(
     row["heading"] = pano_object.heading
     row["taken_at"] = pano_object.timestamp
 
-    assert len(row) == len(table_columns)
+    if len(row) is not len(table_columns):
+        raise ValueError("Amount of values does not match amount of columns.")
 
     return row
 
 
-def combine_rows_to_upload(
-    data: Union[List[str], Union[List[Dict[str, Union[str, float, datetime]]]]],
-    object_fields: List[Optional[str]],
-    table_columns: List[str],
-) -> List[Dict[str, Union[str, float, datetime]]]:
-    """
-    Creates list of rows with data to upload to table.
-
-    :param data: list of pano ids OR list of dicts with detections from detectron2
-    :param object_fields: fields from the data object to be considered for upload
-    :param table_columns: corresponding columns from table
-
-    :return: rows to upload to table
-    """
-    is_object_fields = (
-        len(object_fields) != 0
-    )  # if there are no object fields passed, we query panorama for element
+def upload_images(cursor_, data):
+    keys = get_column_names("images", cursor_)  # column names from table in postgres
+    query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
 
     rows: List[Dict[str, Union[str, float, datetime]]] = [
-        row_to_upload(element, object_fields, table_columns)  # type: ignore
-        if is_object_fields
-        else row_to_upload_from_panorama(element, table_columns)  # type: ignore
+        row_to_upload_from_panorama(element, table_columns)  # type: ignore
         for element in data
     ]
+    values = [list(item.values()) for item in rows]
 
-    return rows
+    execute_values(cursor_, query, values)
 
 
-def upload_input(
-    conn: connection,
-    cur: cursor,
-    table_name: str,
-    data: Union[List[str], List[Dict[str, Union[str, float, datetime]]]],
-    object_fields: List[Union[None, str]],
-) -> None:
-    """
-    Uploads rows to table in postgres.
+def upload_detections(cursor_, data):
+    object_fields = ["pano_id", "score", "bbox"]
+    keys = get_column_names("detections", cursor_)  # column names from table in postgres
+    query = f"INSERT INTO detections ({','.join(keys)}) VALUES %s;"
 
-    :param conn: connection to database
-    :param cur: table parser
-    :param table_name: name of database table to upload to
-    :param data: input data; either a list of panoramas ids
-                OR list of dicts with predictions
-    :param object_fields: fields from the data object to be considered for upload
+    rows: List[Dict[str, Union[str, float, datetime]]] = [
+        row_to_upload(element, object_fields, keys)  # type: ignore
+        for element in data
+    ]
+    values = [list(item.values()) for item in rows]
 
-    """
-
-    keys = get_column_names(table_name, cur)  # column names from table in postgres
-    to_upload_data: List[
-        Dict[str, Union[str, float, datetime]]
-    ] = combine_rows_to_upload(data, object_fields, table_columns=keys)
-
-    query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
-    values = [list(item.values()) for item in to_upload_data]
-
-    execute_values(cur, query, values)
-    conn.commit()
-
+    execute_values(cursor_, query, values)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -233,7 +204,8 @@ if __name__ == "__main__":
             with open(local_file, "r") as f:
                 input_data = [line.rstrip("\n") for line in f]
 
-        object_fields_to_select = []
+        with connect() as cursor:
+            upload_images(cursor, input_data)
 
     if opt.table == "detections":
         # download detections file from the storage account
@@ -246,12 +218,6 @@ if __name__ == "__main__":
 
         f = open(input_file_path)
         input_data = json.load(f)
-        object_fields_to_select = ["pano_id", "score", "bbox"]
 
-    connection, cursor = connect()
-    upload_input(connection, cursor, opt.table, input_data, object_fields_to_select)
-
-    if connection:
-        cursor.close()
-        connection.close()
-        print("PostgreSQL connection is closed")
+        with connect() as cursor:
+            upload_detections(cursor, input_data)
