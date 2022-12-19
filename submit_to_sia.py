@@ -195,11 +195,21 @@ if __name__ == "__main__":
         type=str,
         help="Processing date in the format %Y-%m-%d %H:%M:%S.%f",
     )
+    parser.add_argument(
+        "--container-id-list",
+        type=str,
+        help="Delimited list input of ids corresponding to the 'containers' database table.",
+    )
     args = parser.parse_args()
 
-    start_date_dag, start_date_dag_ymd = get_start_date(args.date)
-
     add_notification = False  # TODO make this an argument
+    manual_filter = True  # TODO make this an argument
+
+    print(f"List of ranking IDs as input: {args.container_id_list}")
+    ids_to_send = [int(item) for item in args.container_id_list.split(",")]
+    print(f"List of ranking IDs as input (parsed to ints): {ids_to_send}")
+
+    start_date_dag, start_date_dag_ymd = get_start_date(args.date)
 
     # Get API data
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
@@ -220,8 +230,13 @@ if __name__ == "__main__":
 
     if query_df.empty:
         print(
-            "DataFrame is empty! No illegal containers are found for the provided date."
+            "DataFrame is empty! No illegal containers are found for the provided date. Aborting..."
         )
+        sys.exit()
+
+    if manual_filter:
+        # Select Pandas rows based on list index
+        query_df = query_df.iloc[ids_to_send]
 
     for index, row in query_df.iterrows():
         # Get panoramic image closest to the found container
