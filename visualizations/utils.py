@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 def get_permit_locations(
     file: Union[Path, str], date_to_check: datetime
-) -> Tuple[List[List[float]], List[float]]:
+) -> Tuple[List[List[float]], List[str], List[str]]:
     """
     Returns all the containers permits from an decos objects permit file.
     """
@@ -47,7 +47,6 @@ def get_permit_locations(
         TODO use a function like this
         This function separates an address string (street name, house number, house number extension and zipcode)
         into parts.
-
         Regular expression quantifiers:
         X?  X, once or not at all
         X*  X, zero or more times
@@ -79,6 +78,7 @@ def get_permit_locations(
     xmlparse = Xet.parse(file)
     root = xmlparse.getroot()
     permit_locations = []
+    permit_keys = []
     permit_locations_failed = []
     print("Parsing the permits information")
     running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
@@ -119,8 +119,8 @@ def get_permit_locations(
                 continue
 
             permit_locations.append(lonlat)
-
-    return permit_locations, permit_locations_failed
+            permit_keys.append(item.find("ITEM_KEY").text)
+    return permit_locations, permit_keys, permit_locations_failed
 
 
 def get_bridge_information(file: Union[Path, str]) -> List[List[List[float]]]:
