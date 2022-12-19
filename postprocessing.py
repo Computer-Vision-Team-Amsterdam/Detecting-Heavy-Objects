@@ -456,13 +456,11 @@ if __name__ == "__main__":
         pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
 
         vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
-
         permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
             permits_file, postprocess.date_to_check
         )
 
-        # Create overview map
-        print(pano_match_prioritized)
+        # Create maps
         detections = []
         for row in pano_match_prioritized:
             print(row)
