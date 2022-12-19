@@ -238,6 +238,7 @@ if __name__ == "__main__":
     if manual_filter:
         # Select Pandas rows based on list index
         query_df = query_df.iloc[query_df["container_id"].isin(ids_to_send)]
+        assert len(ids_to_send) == len(query_df.container_id)
 
     for index, row in query_df.iterrows():
         # Get panoramic image closest to the found container
