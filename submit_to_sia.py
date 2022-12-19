@@ -187,6 +187,7 @@ def _image_upload(auth_headers: Dict[str, str], filename: str, sig_id: str) -> A
 
 
 if __name__ == "__main__":
+    # Example input: {"date":"2018-05-03 00:00:00.00","container-id-list":"1,2,3,4"}
     parser = argparse.ArgumentParser(
         description="Run postprocessing for container detection pipeline"
     )
