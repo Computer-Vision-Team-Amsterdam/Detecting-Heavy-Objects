@@ -1,4 +1,3 @@
-# type: ignore
 import argparse
 import glob
 import json
