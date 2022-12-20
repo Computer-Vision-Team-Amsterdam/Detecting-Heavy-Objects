@@ -199,15 +199,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "--container-id-list",
         type=str,
+        default="",
         help="Delimited list input of ids corresponding to the 'containers' database table.",
     )
     args = parser.parse_args()
 
     add_notification = False  # TODO make this an argument
-    manual_filter = True  # TODO make this an argument
 
-    print(f"List of ranking IDs as input: {args.container_id_list}")
-    ids_to_send = [int(item) for item in args.container_id_list.split(",")]
+    try:
+        if args.container_id_list == "":
+            print(f"No list of ranking IDs provided. Using all rows in database 'containers' with a score > 0.")
+            ids_to_send = []
+        else:
+            print(f"List of ranking IDs as input: {args.container_id_list}")
+            ids_to_send = [int(item) for item in args.container_id_list.split(",")]
+    except Exception as e:
+        print("Please try again, with only numbers separated by commas (e.g. '1,2,3,4')")
+        raise e
     print(f"List of ranking IDs as input (parsed to ints): {ids_to_send}")
 
     start_date_dag, start_date_dag_ymd = get_start_date(args.date)
@@ -235,10 +243,11 @@ if __name__ == "__main__":
         )
         sys.exit()
 
-    if manual_filter:
+    if len(ids_to_send) > 0:
         # Select Pandas rows based on list index
         query_df = query_df.iloc[query_df["container_id"].isin(ids_to_send)]
-        assert len(ids_to_send) == len(query_df.container_id)
+        if len(ids_to_send) != len(query_df.container_id):
+            raise ValueError("Amount of IDs does not match amount of rows in database.")
 
     for index, row in query_df.iterrows():
         # Get panoramic image closest to the found container
