@@ -424,47 +424,41 @@ if __name__ == "__main__":
         clustered_intersections,
     )
 
-    # Make a connection to the database
-    conn, cur = upload_to_postgres.connect()
-    table_name = "containers"
+    with upload_to_postgres.connect() as (conn, cur):
+        table_name = "containers"
 
-    # Get images with a detection
-    sql = (
-        f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
-        f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
-    )
-    query_df = sqlio.read_sql_query(sql, conn)
-    query_df = pd.DataFrame(query_df)
-
-    if query_df.empty:
-        print(
-            "DataFrame is empty! No images with a detection are found for the provided date."
+        # Get images with a detection
+        sql = (
+            f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
+            f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
         )
-    else:
-        # Get columns
-        sql = f"SELECT * FROM {table_name} LIMIT 0"
-        cur.execute(sql)
-        table_columns = [desc[0] for desc in cur.description]
-        table_columns.pop(0)  # Remove the id column
+        query_df = sqlio.read_sql_query(sql, conn)
+        query_df = pd.DataFrame(query_df)
 
-        # Find a panorama closest to an intersection
-        pano_match = get_closest_pano(query_df, clustered_intersections)
-        pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
-
-        # Insert the values in the database
-        sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-        execute_values(cur, sql, pano_match_prioritized)
-        conn.commit()
-
-        # Upload the file with found containers to the Azure Blob Storage
-        for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:
-            azure_connection.upload_blob(
-                "postprocessing-output",
-                os.path.join(start_date_dag, csv_file),
-                csv_file,
+        if query_df.empty:
+            print(
+                "DataFrame is empty! No images with a detection are found for the provided date."
             )
+        else:
+            # Get columns
+            sql = f"SELECT * FROM {table_name} LIMIT 0"
+            cur.execute(sql)
+            table_columns = [desc[0] for desc in cur.description]
+            table_columns.pop(0)  # Remove the id column
 
-    if conn:
-        cur.close()
-        conn.close()
-        print("PostgreSQL connection is closed")
+            # Find a panorama closest to an intersection
+            pano_match = get_closest_pano(query_df, clustered_intersections)
+            pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
+
+            # Insert the values in the database
+            sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+            execute_values(cur, sql, pano_match_prioritized)
+            conn.commit()
+
+            # Upload the file with found containers to the Azure Blob Storage
+            for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:
+                azure_connection.upload_blob(
+                    "postprocessing-output",
+                    os.path.join(start_date_dag, csv_file),
+                    csv_file,
+                )
