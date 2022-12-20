@@ -227,13 +227,18 @@ if __name__ == "__main__":
     # Get access to the Azure Storage account.
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # Get images with a detection
-    sql = (
-        f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
-        f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
-        f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
-    )
+    if len(ids_to_send) > 0:
+        sql = (
+            "SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name;"
+        )
+    else:
+        sql = (
+            f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
+            f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
+            f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
+        )
 
+    # Make a connection to the database
     with upload_to_postgres.connect() as (conn, _):
         query_df = sqlio.read_sql_query(sql, conn)
 
