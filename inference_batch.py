@@ -3,6 +3,7 @@ import glob
 import json
 import os
 from pathlib import Path
+from typing import Any, List, Tuple
 
 import detectron2.data.transforms as T
 import numpy as np
@@ -22,8 +23,8 @@ from utils.azure_storage import StorageAzureClient
 from utils.date import get_start_date
 
 
-class ContainerDataset(Dataset):
-    def __init__(self, img_names, cfg=None):
+class ContainerDataset:
+    def __init__(self, img_names: List[str], cfg: Any = None) -> None:
         self.img_names = img_names
         if len(cfg.DATASETS.TEST):
             self.metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
@@ -31,9 +32,8 @@ class ContainerDataset(Dataset):
             [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
         )  # TODO validate the input dims
         self.input_format = cfg.INPUT.FORMAT
-        assert self.input_format in ["RGB", "BGR"], self.input_format
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Tuple[Any, str, Tuple[int]]:
         img = imread(self.img_names[index])
         if self.input_format == "RGB":
             # whether the model expects BGR inputs or RGB
@@ -45,11 +45,13 @@ class ContainerDataset(Dataset):
 
         return image, img_name, img.shape[:2]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.img_names)
 
 
-def instances_to_coco_json(instances, img_name):
+def instances_to_coco_json(
+    instances: Any, img_name: str
+) -> Tuple[List[Any], List[Any]]:
     """
     Dump an "Instances" object to a COCO-format json that's used for evaluation.
 
