@@ -461,7 +461,6 @@ if __name__ == "__main__":
             # Create maps
             detections = []
             for row in pano_match_prioritized:
-                print(row)
                 lat, lon, score, _, _, closest_image, permit_key = row
                 closest_permit = permit_locations[permit_keys.index(permit_key)]
                 detections.append(
