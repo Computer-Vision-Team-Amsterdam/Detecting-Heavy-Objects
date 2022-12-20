@@ -5,13 +5,11 @@ as well as predictions of the container detection model.
 
 import argparse
 import json
+from contextlib import contextmanager
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union, Generator, Tuple
 
 import psycopg2
-from psycopg2._psycopg import connection  # pylint: disable-msg=E0611
-from psycopg2._psycopg import cursor  # pylint: disable-msg=E0611
-from psycopg2.errors import ConnectionException  # pylint: disable-msg=E0611
 from psycopg2.extras import execute_values
 
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
@@ -25,31 +23,31 @@ PORT = "5432"
 DATABASE = "container-detection-database"
 
 
-def connect() -> Tuple[connection, cursor]:
+@contextmanager
+def connect() -> Generator[Tuple[psycopg2.extensions.connection, psycopg2.extensions.cursor], None, None]:
     """
     Connect to the postgres database.
     """
-    conn = None
-    cur = None
-
     try:
         # Connect to an existing database
-        conn = psycopg2.connect(
+        conn: psycopg2.extensions.connection = psycopg2.connect(
             user=f"{USERNAME}@{HOST}",
             password=PASSWORD,
             host=f"{HOST}.postgres.database.azure.com",
             port=PORT,
             database=DATABASE,
         )
-        cur = conn.cursor()
-
-    except ConnectionException as error:
+        conn.autocommit = True
+        cur: psycopg2.extensions.cursor = conn.cursor()
+        yield conn, cur
+    except Exception as error:
         print("Error while connecting to PostgreSQL", error)
+    finally:
+        cur.close()
+        conn.close()
 
-    return conn, cur
 
-
-def get_column_names(table_name: str, cur: cursor) -> List[str]:
+def get_column_names(table_name: str, cur: psycopg2.extensions.cursor) -> List[str]:
     """
     Get names of the columns in database table.
 
@@ -88,10 +86,9 @@ def row_to_upload(
     """
     row: Dict[str, Union[str, float]] = {key: "" for key in table_columns}
 
-    if len(table_columns) != len(row):
-        raise ValueError(
-            "You are trying to add more/less columns than current table columns."
-        )
+    if len(row) is not len(table_columns):
+        raise ValueError("Amount of values does not match amount of columns.")
+
     for i, column_name in enumerate(table_columns):
         row[column_name] = data_element[object_fields[i]]
 
@@ -124,69 +121,37 @@ def row_to_upload_from_panorama(
     row["heading"] = pano_object.heading
     row["taken_at"] = pano_object.timestamp
 
-    assert len(row) == len(table_columns)
+    if len(row) is not len(table_columns):
+        raise ValueError("Amount of values does not match amount of columns.")
 
     return row
 
 
-def combine_rows_to_upload(
-    data: Union[List[str], Union[List[Dict[str, Union[str, float, datetime]]]]],
-    object_fields: List[Optional[str]],
-    table_columns: List[str],
-) -> List[Dict[str, Union[str, float, datetime]]]:
-    """
-    Creates list of rows with data to upload to table.
-
-    :param data: list of pano ids OR list of dicts with detections from detectron2
-    :param object_fields: fields from the data object to be considered for upload
-    :param table_columns: corresponding columns from table
-
-    :return: rows to upload to table
-    """
-    is_object_fields = (
-        len(object_fields) != 0
-    )  # if there are no object fields passed, we query panorama for element
+def upload_images(cursor_: psycopg2.extensions.cursor, data: List[str]) -> None:
+    keys = get_column_names("images", cursor_)  # column names from table in postgres
+    query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
 
     rows: List[Dict[str, Union[str, float, datetime]]] = [
-        row_to_upload(element, object_fields, table_columns)  # type: ignore
-        if is_object_fields
-        else row_to_upload_from_panorama(element, table_columns)  # type: ignore
+        row_to_upload_from_panorama(element, keys)
         for element in data
     ]
+    values = [list(item.values()) for item in rows]
 
-    return rows
+    execute_values(cursor_, query, values)
 
 
-def upload_input(
-    conn: connection,
-    cur: cursor,
-    table_name: str,
-    data: Union[List[str], List[Dict[str, Union[str, float, datetime]]]],
-    object_fields: List[Union[None, str]],
-) -> None:
-    """
-    Uploads rows to table in postgres.
+def upload_detections(cursor_: psycopg2.extensions.cursor, data: List[Dict[str, Union[str, float, datetime]]]) -> None:
+    object_fields = ["pano_id", "score", "bbox"]
+    keys = get_column_names("detections", cursor_)  # column names from table in postgres
+    query = f"INSERT INTO detections ({','.join(keys)}) VALUES %s;"
 
-    :param conn: connection to database
-    :param cur: table parser
-    :param table_name: name of database table to upload to
-    :param data: input data; either a list of panoramas ids
-                OR list of dicts with predictions
-    :param object_fields: fields from the data object to be considered for upload
+    rows: List[Dict[str, Union[str, float, datetime]]] = [
+        row_to_upload(element, object_fields, keys)  # type: ignore
+        for element in data
+    ]
+    values = [list(item.values()) for item in rows]
 
-    """
-
-    keys = get_column_names(table_name, cur)  # column names from table in postgres
-    to_upload_data: List[
-        Dict[str, Union[str, float, datetime]]
-    ] = combine_rows_to_upload(data, object_fields, table_columns=keys)
-
-    query = f"INSERT INTO {table_name} ({','.join(keys)}) VALUES %s"
-    values = [list(item.values()) for item in to_upload_data]
-
-    execute_values(cur, query, values)
-    conn.commit()
-
+    execute_values(cursor_, query, values)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -219,10 +184,8 @@ if __name__ == "__main__":
             f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
         )
 
-        print(input_files)  # TODO remove
-
         # Download files from CloudVPS
-        input_data = []
+        input_data_images = []
         for input_file in input_files:
             local_file = input_file.split("/")[1]  # only get file name, without prefix
             saClient.download_blob(
@@ -231,9 +194,10 @@ if __name__ == "__main__":
                 local_file_path=local_file,
             )
             with open(local_file, "r") as f:
-                input_data = [line.rstrip("\n") for line in f]
+                input_data_images = [line.rstrip("\n") for line in f]
 
-        object_fields_to_select = []
+        with connect() as (_, cursor):
+            upload_images(cursor, input_data_images)
 
     if opt.table == "detections":
         # download detections file from the storage account
@@ -245,13 +209,7 @@ if __name__ == "__main__":
         )
 
         f = open(input_file_path)
-        input_data = json.load(f)
-        object_fields_to_select = ["pano_id", "score", "bbox"]
+        input_data_detections = json.load(f)
 
-    connection, cursor = connect()
-    upload_input(connection, cursor, opt.table, input_data, object_fields_to_select)
-
-    if connection:
-        cursor.close()
-        connection.close()
-        print("PostgreSQL connection is closed")
+        with connect() as (_, cursor):
+            upload_detections(cursor, input_data_detections)
