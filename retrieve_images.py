@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Tuple
 import json
+from collections import defaultdict
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -86,12 +87,14 @@ def get_pano_ids(start_date_dag_ymd, one_day_later):
         print(response.raise_for_status())
         return []
 
-    pano_id_list = []
+    pano_ids_dict = defaultdict(list)
 
     pano_data = pano_data_all['_embedded']['panoramas']
 
     for item in pano_data:
-        pano_id_list.append(item['pano_id'])
+        pano_id = item['pano_id']
+        pano_id_key = pano_id.split("_")[0]
+        pano_ids_dict[pano_id_key].append(pano_id)
 
     # Check for next page with data
     next_page = pano_data_all['_links']['next']['href']
@@ -105,12 +108,15 @@ def get_pano_ids(start_date_dag_ymd, one_day_later):
 
         # Append the panorama id's to the list
         for item in pano_data:
-            pano_id_list.append(item['pano_id'])
+            pano_id = item['pano_id']
+            pano_id_key = pano_id.split("_")[0]
+            pano_ids_dict[pano_id_key].append(pano_id)
 
         # Check for next page
         next_page = pano_data_all['_links']['next']['href']
 
-    return pano_id_list
+    return pano_ids_dict
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -151,7 +157,23 @@ if __name__ == "__main__":
         start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
         end_date = start_date + timedelta(days=1)
         one_day_later = end_date.strftime(my_format_ymd)
-        pano_ids = get_pano_ids(start_date_dag_ymd, one_day_later)
+        pano_ids_dict = get_pano_ids(start_date_dag_ymd, one_day_later)
+
+        pano_ids = []
+        for pano_id_item in pano_ids_dict.keys():
+            filename_retrieve = f"{pano_id_item}.txt"
+            # All pano ids in a flat list
+            pano_ids += pano_ids_dict[pano_id_item]
+
+            with open(filename_retrieve, "w") as f:
+                for s in pano_ids_dict[pano_id_item]:
+                    f.write(s + "\n")
+
+            saClient.upload_blob(
+                cname=cname_input,
+                blob_name=f"{start_date_dag_ymd}/{filename_retrieve}",
+                local_file_path=filename_retrieve,
+            )
 
     print(
         f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS."
