@@ -220,7 +220,7 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self, panoramas: List[str]) -> npt.NDArray[Any]:
+    def prioritize_notifications(self, panoramas: List[str]) -> Any:
 
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and
