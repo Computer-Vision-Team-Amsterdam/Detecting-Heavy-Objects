@@ -132,7 +132,7 @@ def upload_images(cursor_: psycopg2.extensions.cursor, data: List[str]) -> None:
     query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
 
     rows: List[Dict[str, Union[str, float, datetime]]] = [
-        row_to_upload_from_panorama(element, keys)  # type: ignore
+        row_to_upload_from_panorama(element, keys)
         for element in data
     ]
     values = [list(item.values()) for item in rows]
