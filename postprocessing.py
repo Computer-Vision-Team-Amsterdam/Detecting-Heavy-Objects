@@ -62,7 +62,7 @@ def get_closest_pano(df: Any, clustered_intersections: Any) -> Any:
     pano_match = [match_value(df, "point", x, "file_name") for x in closest_points]
 
     # Flatten the list
-    return np.concatenate(pano_match).ravel()
+    return np.concatenate(pano_match).ravel()  # type: ignore
 
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
@@ -101,7 +101,7 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
     np.savetxt(
         filename,
         data,
-        header=",".join(data.dtype.names),
+        header=",".join(data.dtype.names),  # type: ignore
         fmt="%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
         delimiter=",",
         comments="",
@@ -244,9 +244,7 @@ class PostProcessing:
         permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
             self.permits_file, self.date_to_check
         )
-        print(f"permit locations: {permit_locations}")
-        print(f"permit keys: {permit_keys}")
-        print(f"permit locations failer: {permit_locations_failed}")
+
         container_locations = get_container_locations(
             self.output_folder / self.objects_file
         )
@@ -467,23 +465,37 @@ if __name__ == "__main__":
             lat, lon, score, _, _, closest_image, permit_key = row
             closest_permit = permit_locations[permit_keys.index(permit_key)]
             detections.append(
-                PointOfInterest(pano_id=closest_image.split(".")[0],  # remove .jpg
-                                coords=(float(lat), float(lon)),
-                                closest_permit=(closest_permit[0], closest_permit[1]),
-                                score=score)
+                PointOfInterest(
+                    pano_id=closest_image.split(".")[0],  # remove .jpg
+                    coords=(float(lat), float(lon)),
+                    closest_permit=(closest_permit[0], closest_permit[1]),
+                    score=score,
+                )
             )
 
         generate_map(
-            vulnerable_bridges, permit_locations, trajectory=None, detections=detections, name="Overview"
+            vulnerable_bridges,
+            permit_locations,
+            trajectory=None,
+            detections=detections,
+            name="Overview",
         )
 
         generate_map(
-            vulnerable_bridges, permit_locations, trajectory=None, detections=detections[:25], name="Prioritized"
+            vulnerable_bridges,
+            permit_locations,
+            trajectory=None,
+            detections=detections[:25],
+            name="Prioritized",
         )
 
         # Insert the values in the database
         sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-        execute_values(cur, sql, pano_match_prioritized[:-1])  # we don't want permit_keys in the database.
+        print(f"shape: {pano_match_prioritized.shape}")
+        print(f"pano match prioritized: {pano_match_prioritized[:-1]}")
+        execute_values(
+            cur, sql, pano_match_prioritized[:-1]
+        )  # we don't want permit_keys in the database.
         conn.commit()
 
         # Upload the file with found containers to the Azure Blob Storage
