@@ -152,12 +152,13 @@ def generate_map(
             folium.Marker(
                 location=[detections[i].coords[0], detections[i].coords[1]],
                 popup=popup if popup else None,
-
                 # icon=folium.Icon(color="lightgreen", icon_color=color, icon="square", angle=0, prefix="fa"),
-                icon=plugins.BeautifyIcon(icon="arrow-down",
-                                          icon_shape="marker",
-                                          number=i + 1,
-                                          background_color=color),
+                icon=plugins.BeautifyIcon(
+                    icon="arrow-down",
+                    icon_shape="marker",
+                    number=i + 1,
+                    background_color=color,
+                ),
                 radius=15,
             ).add_to(Map)
 
