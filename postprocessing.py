@@ -101,7 +101,7 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
     np.savetxt(
         filename,
         data,
-        header=",".join(data.dtype.names),  # type: ignore
+        header=",".join(data.dtype.names),
         fmt="%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
         delimiter=",",
         comments="",
@@ -492,10 +492,10 @@ if __name__ == "__main__":
             )
 
             # Insert the values in the database
-            print(f"shape: {pano_match_prioritized.shape}")
-            print(f"pano match prioritized: {pano_match_prioritized[:-1]}")
             sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-            execute_values(cur, sql, pano_match_prioritized[:-1])
+            # we don't want permit_keys in the database.
+            cols_to_insert = list(pano_match_prioritized.dtype.names)[:-1]
+            execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
             conn.commit()
 
             # Upload the file with found containers to the Azure Blob Storage
