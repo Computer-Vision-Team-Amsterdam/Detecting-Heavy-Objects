@@ -252,7 +252,8 @@ if __name__ == "__main__":
         # Select Pandas rows based on list index
         query_df = query_df.iloc[query_df["container_id"].isin(ids_to_send)]
         if len(ids_to_send) != len(query_df.container_id):
-            raise ValueError("Amount of IDs does not match amount of rows in database.")
+            ids_not_in_db = set(ids_to_send) - set(query_df["container_id"].tolist())
+            raise ValueError(f"The following IDs from user input have not been found in the database: {ids_not_in_db}")
 
     for index, row in query_df.iterrows():
         # Get panoramic image closest to the found container
