@@ -4,13 +4,13 @@ downloads them locally and uploads them to the storage account
 The images are downloaded in the `retrieved_images` folder.
 """
 import argparse
+import json
 import os
 import shutil
+from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Tuple
-import json
-from collections import defaultdict
+from typing import Any, Tuple
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -74,46 +74,54 @@ def download_panorama_from_cloudvps(
     except requests.HTTPError as exception:
         print(f"Failed for panorama {panorama_id}:\n{exception}")
 
-def get_pano_ids(start_date_dag_ymd, one_day_later):
+
+def get_pano_ids(start_date_dag_ymd: str) -> Any:
     """
     Get panoramic image id's for a user defined bounding box region
     """
-    pano_url = f"https://api.data.amsterdam.nl/panorama/panoramas/?srid=28992&timestamp_after={start_date_dag_ymd}&timestamp_before={one_day_later}"
+    my_format_ymd = "%Y-%m-%d"
+    start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
+    end_date = start_date + timedelta(days=1)
+    one_day_later = end_date.strftime(my_format_ymd)
+
+    pano_url = (
+        f"https://api.data.amsterdam.nl/panorama/panoramas/?srid=28992&timestamp_after={start_date_dag_ymd}"
+        f"&timestamp_before={one_day_later}"
+    )
 
     response = requests.get(pano_url)
     if response.ok:
         pano_data_all = json.loads(response.content)
     else:
-        print(response.raise_for_status())
-        return []
+        response.raise_for_status()
 
     pano_ids_dict = defaultdict(list)
 
-    pano_data = pano_data_all['_embedded']['panoramas']
+    pano_data = pano_data_all["_embedded"]["panoramas"]
 
     for item in pano_data:
-        pano_id = item['pano_id']
+        pano_id = item["pano_id"]
         pano_id_key = pano_id.split("_")[0]
         pano_ids_dict[pano_id_key].append(pano_id)
 
     # Check for next page with data
-    next_page = pano_data_all['_links']['next']['href']
+    next_page = pano_data_all["_links"]["next"]["href"]
 
     # Exit the while loop if there is no next page
     while next_page:
         with requests.get(next_page) as response:
             pano_data_all = json.loads(response.content)
 
-        pano_data = pano_data_all['_embedded']['panoramas']
+        pano_data = pano_data_all["_embedded"]["panoramas"]
 
         # Append the panorama id's to the list
         for item in pano_data:
-            pano_id = item['pano_id']
+            pano_id = item["pano_id"]
             pano_id_key = pano_id.split("_")[0]
             pano_ids_dict[pano_id_key].append(pano_id)
 
         # Check for next page
-        next_page = pano_data_all['_links']['next']['href']
+        next_page = pano_data_all["_links"]["next"]["href"]
 
     return pano_ids_dict
 
@@ -153,11 +161,7 @@ if __name__ == "__main__":
                 pano_ids = [line.rstrip("\n") for line in f]
     else:
         # Get pano ids from API that we want to download from CloudVPS
-        my_format_ymd = "%Y-%m-%d"
-        start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
-        end_date = start_date + timedelta(days=1)
-        one_day_later = end_date.strftime(my_format_ymd)
-        pano_ids_dict = get_pano_ids(start_date_dag_ymd, one_day_later)
+        pano_ids_dict = get_pano_ids(start_date_dag_ymd)
 
         pano_ids = []
         for pano_id_item in pano_ids_dict.keys():
@@ -175,9 +179,7 @@ if __name__ == "__main__":
                 local_file_path=filename_retrieve,
             )
 
-    print(
-        f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS."
-    )
+    print(f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS.")
 
     # Download files from CloudVPS
     local_file_path = "retrieved_images"
