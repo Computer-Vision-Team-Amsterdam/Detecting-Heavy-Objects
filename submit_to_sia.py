@@ -187,6 +187,7 @@ def _image_upload(auth_headers: Dict[str, str], filename: str, sig_id: str) -> A
 
 
 if __name__ == "__main__":
+    # Example input: {"date":"2018-05-03 00:00:00.00","container-id-list":"1,2,3,4"}
     parser = argparse.ArgumentParser(
         description="Run postprocessing for container detection pipeline"
     )
@@ -195,11 +196,29 @@ if __name__ == "__main__":
         type=str,
         help="Processing date in the format %Y-%m-%d %H:%M:%S.%f",
     )
+    parser.add_argument(
+        "--container-id-list",
+        type=str,
+        default="",
+        help="Delimited list input of ids corresponding to the 'containers' database table.",
+    )
     args = parser.parse_args()
 
-    start_date_dag, start_date_dag_ymd = get_start_date(args.date)
-
     add_notification = False  # TODO make this an argument
+
+    try:
+        if args.container_id_list == "":
+            print(f"No list of ranking IDs provided. Using all rows in database 'containers' with a score > 0.")
+            ids_to_send = []
+        else:
+            print(f"List of ranking IDs as input: {args.container_id_list}")
+            ids_to_send = [int(item) for item in args.container_id_list.split(",")]
+    except Exception as e:
+        print("Please try again, with only numbers separated by commas (e.g. '1,2,3,4')")
+        raise e
+    print(f"List of ranking IDs as input (parsed to ints): {ids_to_send}")
+
+    start_date_dag, start_date_dag_ymd = get_start_date(args.date)
 
     # Get API data
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
@@ -208,20 +227,34 @@ if __name__ == "__main__":
     # Get access to the Azure Storage account.
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # Get images with a detection
-    sql = (
-        f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
-        f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
-        f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
-    )
+    if len(ids_to_send) > 0:
+        sql = (
+            "SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name;"
+        )
+    else:
+        # TODO: perform sanitizing inputs SQL. For now, code will break if start_date_dag_ymd is not a datetime.
+        sql = (
+            f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
+            f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
+            f"BY A.score DESC LIMIT '{MAX_SIGNALS_TO_SEND}';"
+        )
 
+    # Make a connection to the database
     with upload_to_postgres.connect() as (conn, _):
         query_df = sqlio.read_sql_query(sql, conn)
 
     if query_df.empty:
         print(
-            "DataFrame is empty! No illegal containers are found for the provided date."
+            "DataFrame is empty! No illegal containers are found for the provided date. Aborting..."
         )
+        sys.exit()
+
+    if len(ids_to_send) > 0:
+        # Select Pandas rows based on list index
+        query_df = query_df.iloc[query_df["container_id"].isin(ids_to_send)]
+        if len(ids_to_send) != len(query_df.container_id):
+            ids_not_in_db = set(ids_to_send) - set(query_df["container_id"].tolist())
+            raise ValueError(f"The following IDs from user input have not been found in the database: {ids_not_in_db}")
 
     for index, row in query_df.iterrows():
         # Get panoramic image closest to the found container

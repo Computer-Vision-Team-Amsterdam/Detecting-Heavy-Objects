@@ -430,6 +430,7 @@ if __name__ == "__main__":
         table_name = "containers"
 
         # Get images with a detection
+        # TODO: perform sanitizing inputs SQL. For now, code will break if start_date_dag_ymd is not a datetime.
         sql = (
             f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
             f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
