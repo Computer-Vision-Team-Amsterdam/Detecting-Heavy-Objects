@@ -232,6 +232,7 @@ if __name__ == "__main__":
             "SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name;"
         )
     else:
+        # TODO: perform sanitizing inputs SQL. For now, code will break if start_date_dag_ymd is not a datetime.
         sql = (
             f"SELECT * FROM containers A LEFT JOIN images B ON A.closest_image = B.file_name "
             f"WHERE date_trunc('day', B.taken_at) = '{start_date_dag_ymd}'::date AND A.score <> 0 ORDER "
