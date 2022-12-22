@@ -140,7 +140,7 @@ stages :
     displayName: 'Deploy DEV (CD)'
     dependsOn:
     - Build
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/pipeline-parallel-deploy')) # replace to refs/heads/development after pipeline test
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/development'))
     jobs:
     - deployment: DeployCheck # Empty deployment job to handle approvals
       displayName: 'Approval Checks'
@@ -172,7 +172,7 @@ stages :
               az acr login --name $(containerRegistryName.dev)
               docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
               docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
-              # remove comment after pipeline test # docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+              docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
               docker system prune -af
 
   - stage: Deploy_TEST
