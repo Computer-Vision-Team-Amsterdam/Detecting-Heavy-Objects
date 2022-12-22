@@ -153,7 +153,7 @@ stages :
   
     - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
       - job: Deploy_${{ dockerFile.Name }}
-        displayName: 'Deployment'
+        displayName: 'Deployment - ${{ dockerFile.displayName }}'
         dependsOn:
         - DeployCheck
         pool:
