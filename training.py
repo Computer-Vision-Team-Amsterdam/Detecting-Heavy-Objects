@@ -15,7 +15,6 @@ from utils import ExperimentConfig, register_dataset
 class MyTrainer(DefaultTrainer):
 
     @classmethod
-    # TODO: can i use yield here?
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         output_dir = f"{cfg.OUTPUT_DIR}"
         Path(output_dir).mkdir(parents=True, exist_ok=True)

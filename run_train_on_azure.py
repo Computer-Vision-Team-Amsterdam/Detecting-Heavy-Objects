@@ -23,7 +23,7 @@ from azureml.core import (
 
 from configs.config_parser import arg_parser
 
-EXPERIMENT_NAME = "test_with_data_sample"
+EXPERIMENT_NAME = "retrain-detectron2"
 
 
 ws = Workspace.from_config()
@@ -32,7 +32,7 @@ env = Environment.from_dockerfile("cuda_env_container", "Dockerfile")
 dataset = Dataset.get_by_name(ws, "container-project-dataset-2")
 
 mounted_dataset = dataset.as_mount(path_on_compute="container-project-dataset/")
-compute_target = ComputeTarget(ws, "container-model-gpu")
+compute_target = ComputeTarget(ws, "stronger-gpu")
 experiment = Experiment(workspace=ws, name=EXPERIMENT_NAME)
 
 flags = arg_parser()

@@ -24,11 +24,13 @@ INPUT:
   RANDOM_FLIP: "horizontal"
 
 SOLVER:
-  IMS_PER_BATCH: 1
+  IMS_PER_BATCH: 4
   MAX_ITER: 10000
-  BASE_LR: 0.00025
+  BASE_LR: 0.001
   STEPS: [] # do not perform decay on the learning rate
   CHECKPOINT_PERIOD: 2000
+  AMP:
+    ENABLED: False
 
 
 DATASETS:
