@@ -138,47 +138,18 @@ if __name__ == "__main__":
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # List contents of Blob Container
-    cname_input = "retrieve-images-input"
-    input_files = saClient.list_container_content(
-        cname=cname_input,
-        blob_prefix=start_date_dag_ymd,
-    )
-    print(
-        f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
-    )
+    # Get pano ids from API that we want to download from CloudVPS
+    pano_ids_dict = get_pano_ids(start_date_dag_ymd)
 
-    if len(input_files) > 0:
-        # Download txt file(s) with pano ids that we want to download from CloudVPS
-        pano_ids = []
-        for input_file in input_files:
-            local_file = input_file.split("/")[1]  # only get file name, without prefix
-            saClient.download_blob(
-                cname=cname_input,
-                blob_name=input_file,
-                local_file_path=local_file,
-            )
-            with open(local_file, "r") as f:
-                pano_ids = [line.rstrip("\n") for line in f]
-    else:
-        # Get pano ids from API that we want to download from CloudVPS
-        pano_ids_dict = get_pano_ids(start_date_dag_ymd)
+    pano_ids = []
+    for pano_id_item in pano_ids_dict.keys():
+        filename_retrieve = f"{pano_id_item}.txt"
+        # All pano ids in a flat list
+        pano_ids += pano_ids_dict[pano_id_item]
 
-        pano_ids = []
-        for pano_id_item in pano_ids_dict.keys():
-            filename_retrieve = f"{pano_id_item}.txt"
-            # All pano ids in a flat list
-            pano_ids += pano_ids_dict[pano_id_item]
-
-            with open(filename_retrieve, "w") as f:
-                for s in pano_ids_dict[pano_id_item]:
-                    f.write(s + "\n")
-
-            saClient.upload_blob(
-                cname=cname_input,
-                blob_name=f"{start_date_dag_ymd}/{filename_retrieve}",
-                local_file_path=filename_retrieve,
-            )
+    # TODO hoe weten we welke pano ids zijn geprocessed?
+    # TODO pano_ids = set(pano_ids_all) - set(pano_ids_processed)
+    # TODO split data "pano_ids" in chunks and save 1.txt, 2.txt etc to retrieve-images/{start_date_dag}
 
     print(f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS.")
 
