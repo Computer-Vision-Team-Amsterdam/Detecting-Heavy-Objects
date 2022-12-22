@@ -140,32 +140,40 @@ stages :
     displayName: 'Deploy DEV (CD)'
     dependsOn:
     - Build
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/development'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/pipeline-parallel-deploy')) # replace to refs/heads/development after pipeline test
     jobs:
-    - deployment: Deploy
-      displayName: 'Deployment'
-      pool:
-        vmImage: ubuntu-latest
+    - deployment: DeployCheck # Empty deployment job to handle approvals
+      displayName: 'Approval Checks'
       environment: development
       strategy:
         runOnce:
           deploy:
             steps:
-            - checkout: self
+            - download: none
+  
+    - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
+      - job: Deploy_${{ dockerFile.Name }}
+        displayName: 'Deployment'
+        dependsOn:
+        - DeployCheck
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+        - download: current
+          artifact: ContainerImage_${{ dockerFile.Name }}
 
-            - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
-              - task: AzureCLI@2
-                displayName: 'Docker Push - ${{ dockerFile.displayName }}'
-                inputs:
-                  azureSubscription: $(armServiceConnection.dev)
-                  scriptType: pscore
-                  scriptLocation: inlineScript
-                  inlineScript: |
-                    az acr login --name $(containerRegistryName.dev)
-                    docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
-                    docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
-                    docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
-                    docker system prune -af
+        - task: AzureCLI@2
+          displayName: 'Docker Push - ${{ dockerFile.displayName }}'
+          inputs:
+            azureSubscription: $(armServiceConnection.dev)
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              az acr login --name $(containerRegistryName.dev)
+              docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
+              docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+              docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
+              docker system prune -af
 
   - stage: Deploy_TEST
     displayName: 'Deploy TEST (CD)'
