@@ -1,7 +1,6 @@
 # Build with following command to forward SSH keys from host machine to access private GitHub repo's:
 # DOCKER_BUILDKIT=1 docker build --ssh default -f postprocessing.dockerfile -t as01weuacrovja4xx7veccq.azurecr.io/container-detection-postprocessing:0.1 .
 # This should be addressed when building this image in a pipeline
-# az acr build -t postprocessing:latest -f postprocessing.Dockerfile -r cvtweuacrogidgmnhwma3zq .
 
 FROM python:3.7
 
@@ -31,9 +30,6 @@ RUN pip install --no-cache \
         scipy==1.7.3 \
         shapely==1.8.2 \
         tqdm==4.64.0 \
-        folium==0.14.0 \
-        python-geohash==0.8.5 \
-        dataclass-wizard==0.22.2 \
         azure-cli==2.39.0 \
         azure-identity==1.10.0 \
         azure-keyvault-secrets==4.5.1 \
@@ -42,8 +38,7 @@ RUN pip install --no-cache \
         git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
 
 WORKDIR /app
-COPY visualizations/stats.py visualizations/utils.py /app/visualizations/
-COPY visualizations/unique_instance_prediction.py visualizations/model.py /app/visualizations/
+COPY visualizations/stats_db.py visualizations/utils.py /app/visualizations/
 COPY postprocessing.py /app
 COPY utils /app/utils
 COPY upload_to_postgres.py /app
