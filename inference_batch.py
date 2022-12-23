@@ -149,7 +149,7 @@ def download_panos():
         saClient.download_blob(
             cname="blurred",
             blob_name=blob,
-            local_file_path=f"{opt.output_folder}/{filename}",
+            local_file_path=f"{input_path}/{filename}",
         )
 
 
