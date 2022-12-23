@@ -74,7 +74,9 @@ def run(
         update=False,  # update all models
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
-        date=''  # not used
+        date='',  # TODO not used
+        worker_id='',  # TODO not used
+        num_workers=''  # TODO not used
 ):
     source = str(source)
     # Directories
