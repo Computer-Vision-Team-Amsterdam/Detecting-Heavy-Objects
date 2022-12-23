@@ -237,9 +237,9 @@ def download_panos():
     for blob in pano_ids_txt:
         filename = blob.split("/")[1]
         saClient.download_blob(
-            cname="blurred",
+            cname="unblurred",
             blob_name=blob,
-            local_file_path=f"{opt.output_folder}/{filename}",
+            local_file_path=f"{output_folder}/{filename}",
         )
 
 
@@ -254,9 +254,9 @@ if __name__ == "__main__":
         opt.source.mkdir(exist_ok=True, parents=True)
 
     # update output folder
-    opt.output_folder = Path(opt.output_folder, start_date_dag)
-    if not opt.output_folder.exists():
-        opt.output_folder.mkdir(exist_ok=True, parents=True)
+    output_folder = Path(opt.output_folder, start_date_dag)
+    if not output_folder.exists():
+        output_folder.mkdir(exist_ok=True, parents=True)
 
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
@@ -267,9 +267,9 @@ if __name__ == "__main__":
     main(opt)
 
     # upload blurred images to storage account
-    for file in os.listdir(f"{opt.output_folder}"):
+    for file in os.listdir(output_folder):
         saClient.upload_blob(
             cname="blurred",
             blob_name=f"{start_date_dag}/{file}",
-            local_file_path=f"{opt.output_folder}/{file}",
+            local_file_path=f"{output_folder}/{file}",
         )
