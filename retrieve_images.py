@@ -45,14 +45,15 @@ def download_panorama_from_cloudvps(
     if Path(f"./{output_dir}/{panorama_id}.jpg").exists():
         print(f"Panorama {panorama_id} is already downloaded.")
         return
-    id_name, img_name = split_pano_id(panorama_id)
+    id_name, pano_name = split_pano_id(panorama_id)
 
     try:
         url = (
             BASE_URL + f"{date.year}/"
             f"{str(date.month).zfill(2)}/"
             f"{str(date.day).zfill(2)}/"
-            f"{id_name}/{img_name}.jpg"
+            f"{id_name}/{pano_name}/"
+            f"equirectangular/panorama_8000.jpg"
         )
 
         response = requests.get(
