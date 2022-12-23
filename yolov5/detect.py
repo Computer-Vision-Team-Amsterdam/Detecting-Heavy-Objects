@@ -178,7 +178,6 @@ def parse_opt():
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[2048, 1024], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.6, help='NMS IoU threshold')
-    parser.add_argument('--date', type=str, help='date for images to be blurred')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
@@ -190,6 +189,10 @@ def parse_opt():
     parser.add_argument('--update', action='store_true', help='update all models')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
+
+    parser.add_argument('--date', type=str, help='date for images to be blurred')
+    parser.add_argument('--worker-id', type=int, help='worker ID')
+
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(vars(opt))
@@ -218,10 +221,30 @@ if __name__ == "__main__":
 
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
+
+    # List contents of Blob Container
+    cname_input = "retrieve-images-input"
+
+    # Download txt file(s) with pano ids that we want to download from CloudVPS
+    local_file = f"{opt.worker_id}.jpg"
+    saClient.download_blob(
+        cname=cname_input,
+        blob_name=f"{start_date_dag}/{local_file}",
+        local_file_path=local_file,
+    )
+    with open(local_file, "r") as f:
+        pano_ids = [line.rstrip("\n") for line in f]
+
+    # Get all file names of the panoramic images from the storage account
     blobs = saClient.list_container_content(
         cname="unblurred", blob_prefix=start_date_dag
     )
-    for blob in blobs:
+
+    # Validate if all blobs are available
+    if len(set(pano_ids) - set(blobs)) != 0:
+        raise ValueError("Not all panoramic images are available in the storage account! Aborting...")
+
+    for blob in pano_ids:
         blob = blob.split("/")[-1]  # only get file name, without prefix
         saClient.download_blob(
             cname="unblurred",
