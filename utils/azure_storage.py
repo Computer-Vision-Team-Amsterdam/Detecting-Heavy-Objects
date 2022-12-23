@@ -110,6 +110,17 @@ class StorageAzureClient(BaseAzureClient):
             print("List blobs operation failed")
             raise ex
 
+    def list_container_directories(self, cname: str) -> List[str]:
+        try:
+            container_client = self.blob_service_client.get_container_client(
+                container=cname
+            )
+            dirs = container_client.walk_blobs("", delimiter="/")
+            return [dir_name.name for dir_name in dirs]
+        except Exception as ex:
+            print("List directories operation failed")
+            raise ex
+
     def delete_blobs(self, cname: str, blob_names: List[str]) -> None:
         """Delete blobs from a container in the cloud.
         Args:
