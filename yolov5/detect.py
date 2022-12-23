@@ -192,6 +192,7 @@ def parse_opt():
 
     parser.add_argument('--date', type=str, help='date for images to be blurred')
     parser.add_argument('--worker-id', type=int, help='worker ID')
+    parser.add_argument('--num-workers', type=int, help='number of workers')
 
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
@@ -222,13 +223,10 @@ if __name__ == "__main__":
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # List contents of Blob Container
-    cname_input = "retrieve-images-input"
-
     # Download txt file(s) with pano ids that we want to download from CloudVPS
     local_file = f"{opt.worker_id}.jpg"
     saClient.download_blob(
-        cname=cname_input,
+        cname="retrieve-images-input",
         blob_name=f"{start_date_dag}/{local_file}",
         local_file_path=local_file,
     )
