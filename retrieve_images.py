@@ -132,26 +132,71 @@ if __name__ == "__main__":
     parser.add_argument(
         "--date", type=str, help="Processing date in the format %Y-%m-%d %H:%M:%S.%f"
     )
+    parser.add_argument("--worker-id", type=int, help="worker ID")
+    parser.add_argument("--num-workers", type=int, help="number of workers")
     opt = parser.parse_args()
 
     start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # Get pano ids from API that we want to download from CloudVPS
-    pano_ids_dict = get_pano_ids(start_date_dag_ymd)
+    development = True
+    if development:
+        pano_ids = [
+            "TMX7315120208-000020_pano_0000_000000",
+            "TMX7315120208-000020_pano_0000_000001",
+            "TMX7315120208-000020_pano_0000_000002",
+            "TMX7316010203-001697_pano_0000_000220",
+            "TMX7316010203-001697_pano_0000_000215",
+            "TMX7316010203-001697_pano_0000_000216",
+            "TMX7316010203-001697_pano_0000_000217",
+        ]
+    else:
+        # Get pano ids from API that we want to download from CloudVPS
+        pano_ids_dict = get_pano_ids(start_date_dag_ymd)
+        # Pano ids to a flat list (you can also exclude pano keys in pano_ids_dict.keys()).
+        pano_ids = []
+        for pano_id_item in pano_ids_dict.keys():
+            pano_ids += pano_ids_dict[pano_id_item]
 
-    pano_ids = []
-    for pano_id_item in pano_ids_dict.keys():
-        filename_retrieve = f"{pano_id_item}.txt"
-        # All pano ids in a flat list
-        pano_ids += pano_ids_dict[pano_id_item]
-
-    # TODO hoe weten we welke pano ids zijn geprocessed?
-    # TODO pano_ids = set(pano_ids_all) - set(pano_ids_processed)
-    # TODO split data "pano_ids" in chunks and save 1.txt, 2.txt etc to retrieve-images/{start_date_dag}
+    # # TODO Check if pano ids are already processed today
+    # List virtual directories in Azure Blob Storage
+    # all_dirs = saClient.list_container_directories(cname="retrieve-images-input")
+    # start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
+    # pano_ids_processed = []
+    # for dir_name in all_dirs:
+    #     # Convert string to datatime object
+    #     dir_date = datetime.strptime(dir_name, "%Y-%m-%d_%H-%M-%S")
+    #     # Compare dir name with the start DAG date
+    #     if dir_date < start_date:
+    #         print("TODO get all files inside this folder along with the contents (pano ids)")
+    #         # TODO do pano_ids_processed.extend(the_pano_ids_list)
+    # TODO pano_ids = set(pano_ids) - set(pano_ids_processed)
 
     print(f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS.")
+
+    # TODO split data "pano_ids" in chunks and save 1.txt, 2.txt etc to retrieve-images/{start_date_dag}
+
+    if len(pano_ids) < opt.num_workers:
+        raise ValueError("Number of workers is larger than items to process. Aborting...")
+
+    workers = list(range(opt.num_workers))
+    split_list = [[] for x in workers]
+    for i, x in enumerate(pano_ids):
+        split_list[i % len(workers)].append(x)
+
+    for chunk_id, chunk_data in enumerate(split_list, 1):
+        filename_chunk = f"{chunk_id}.txt"
+
+        with open(filename_chunk, "w") as f:
+            for s in chunk_data:
+                f.write(s + "\n")
+
+        saClient.upload_blob(
+            cname="retrieve-images-input",
+            blob_name=f"{start_date_dag}/{filename_chunk}",
+            local_file_path=filename_chunk,
+        )
 
     # Download files from CloudVPS
     local_file_path = "retrieved_images"
