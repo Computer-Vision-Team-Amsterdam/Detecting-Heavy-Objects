@@ -136,7 +136,7 @@ def get_chunk_pano_ids():
 def download_panos():
     # Get all file names of the panoramic images from the storage account
     blobs = saClient.list_container_content(
-        cname="unblurred", blob_prefix=start_date_dag
+        cname="blurred", blob_prefix=start_date_dag
     )
 
     # Validate if all blobs are available
