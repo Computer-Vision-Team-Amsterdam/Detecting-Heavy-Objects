@@ -132,7 +132,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--date", type=str, help="Processing date in the format %Y-%m-%d %H:%M:%S.%f"
     )
-    parser.add_argument("--worker-id", type=int, help="worker ID")
     parser.add_argument("--num-workers", type=int, help="number of workers")
     opt = parser.parse_args()
 
