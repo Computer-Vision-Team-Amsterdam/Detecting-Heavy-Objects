@@ -117,7 +117,7 @@ def instances_to_coco_json(
 
 def get_chunk_pano_ids():
     # Download txt file(s) with pano ids that we want to download from CloudVPS
-    local_file = f"{opt.worker_id}.jpg"
+    local_file = f"{opt.worker_id}.txt"
     saClient.download_blob(
         cname="retrieve-images-input",
         blob_name=f"{start_date_dag}/{local_file}",
