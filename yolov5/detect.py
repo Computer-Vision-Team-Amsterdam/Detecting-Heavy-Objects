@@ -230,15 +230,16 @@ def download_panos():
     )
 
     # Validate if all blobs are available
-    pano_ids_txt = [item + ".txt" for item in pano_ids]
+    pano_ids_txt = [f"{start_date_dag}/{item}.jpg" for item in pano_ids]
     if len(set(pano_ids_txt) - set(blobs)) != 0:
         raise ValueError("Not all panoramic images are available in the storage account! Aborting...")
 
     for blob in pano_ids_txt:
+        filename = blob.split("/")[1]
         saClient.download_blob(
             cname="blurred",
-            blob_name=f"{start_date_dag}/{blob}",
-            local_file_path=f"{opt.output_folder}/{blob}",
+            blob_name=blob,
+            local_file_path=f"{opt.output_folder}/{filename}",
         )
 
 
