@@ -235,6 +235,10 @@ if __name__ == "__main__":
     with open(local_file, "r") as f:
         pano_ids = [line.rstrip("\n") for line in f]
 
+    if len(pano_ids) < opt.num_workers:
+        raise ValueError("Number of workers is larger than items to process. Aborting...")
+    print(f"Printing first and last file names from the chunk: {pano_ids[0]} {pano_ids[-1]}")
+
     # Get all file names of the panoramic images from the storage account
     blobs = saClient.list_container_content(
         cname="unblurred", blob_prefix=start_date_dag
