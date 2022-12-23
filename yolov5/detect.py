@@ -205,6 +205,42 @@ def main(opt):
     run(**vars(opt))
 
 
+def get_chunk_pano_ids():
+    # Download txt file(s) with pano ids that we want to download from CloudVPS
+    local_file = f"{opt.worker_id}.jpg"
+    saClient.download_blob(
+        cname="retrieve-images-input",
+        blob_name=f"{start_date_dag}/{local_file}",
+        local_file_path=local_file,
+    )
+    with open(local_file, "r") as f:
+        pano_ids = [line.rstrip("\n") for line in f]
+
+    if len(pano_ids) < opt.num_workers:
+        raise ValueError("Number of workers is larger than items to process. Aborting...")
+    print(f"Printing first and last file names from the chunk: {pano_ids[0]} {pano_ids[-1]}")
+
+    return pano_ids
+
+
+def download_panos():
+    # Get all file names of the panoramic images from the storage account
+    blobs = saClient.list_container_content(
+        cname="unblurred", blob_prefix=start_date_dag
+    )
+
+    # Validate if all blobs are available
+    if len(set(pano_ids) - set(blobs)) != 0:
+        raise ValueError("Not all panoramic images are available in the storage account! Aborting...")
+
+    for blob in pano_ids:
+        saClient.download_blob(
+            cname="blurred",
+            blob_name=f"{start_date_dag}/{blob}",
+            local_file_path=f"{input_path}/{blob}",
+        )
+
+
 if __name__ == "__main__":
     opt = parse_opt()
 
@@ -223,36 +259,8 @@ if __name__ == "__main__":
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    # Download txt file(s) with pano ids that we want to download from CloudVPS
-    local_file = f"{opt.worker_id}.jpg"
-    saClient.download_blob(
-        cname="retrieve-images-input",
-        blob_name=f"{start_date_dag}/{local_file}",
-        local_file_path=local_file,
-    )
-    with open(local_file, "r") as f:
-        pano_ids = [line.rstrip("\n") for line in f]
-
-    if len(pano_ids) < opt.num_workers:
-        raise ValueError("Number of workers is larger than items to process. Aborting...")
-    print(f"Printing first and last file names from the chunk: {pano_ids[0]} {pano_ids[-1]}")
-
-    # Get all file names of the panoramic images from the storage account
-    blobs = saClient.list_container_content(
-        cname="unblurred", blob_prefix=start_date_dag
-    )
-
-    # Validate if all blobs are available
-    if len(set(pano_ids) - set(blobs)) != 0:
-        raise ValueError("Not all panoramic images are available in the storage account! Aborting...")
-
-    for blob in pano_ids:
-        blob = blob.split("/")[-1]  # only get file name, without prefix
-        saClient.download_blob(
-            cname="unblurred",
-            blob_name=f"{start_date_dag}/{blob}",
-            local_file_path=f"{opt.source}/{blob}",
-        )
+    pano_ids = get_chunk_pano_ids()
+    download_panos()
 
     main(opt)
 
