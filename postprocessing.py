@@ -28,7 +28,9 @@ from triangulation.triangulate import triangulate
 import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
 from utils.date import get_start_date
+from visualizations.model import PointOfInterest
 from visualizations.stats import DataStatistics
+from visualizations.unique_instance_prediction import generate_map
 from visualizations.utils import get_bridge_information, get_permit_locations
 
 
@@ -302,6 +304,8 @@ class PostProcessing:
             calculate_score(bridges_distances[idx], permit_distances[idx])
             for idx in range(len(container_locations))
         ]
+
+        print(f"Closest permits: {closest_permits}")
         sorted_indices = np.argsort([score * -1 for score in scores])
         prioritized_containers = np.array(container_locations)[sorted_indices]
         permit_distances_sorted = np.array(permit_distances)[sorted_indices]
@@ -338,9 +342,7 @@ class PostProcessing:
             self.prioritized_file,
         )
 
-        # Remove permit_keys from the structured array, we dont want this in the database.
-        column_names = list(structured_array.dtype.names)
-        return structured_array[column_names[:-1]]
+        return structured_array
 
 
 if __name__ == "__main__":
@@ -428,10 +430,12 @@ if __name__ == "__main__":
         table_name = "containers"
 
         # Get images with a detection
+        # TODO: perform sanitizing inputs SQL. For now, code will break if start_date_dag_ymd is not a datetime.
         sql = (
             f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
             f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
         )
+
         query_df = sqlio.read_sql_query(sql, conn)
         query_df = pd.DataFrame(query_df)
 
@@ -450,9 +454,48 @@ if __name__ == "__main__":
             pano_match = get_closest_pano(query_df, clustered_intersections)
             pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
 
+            vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
+            permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
+                permits_file, postprocess.date_to_check
+            )
+
+            # Create maps
+            detections = []
+            for row in pano_match_prioritized:
+                lat, lon, score, _, _, closest_image, permit_key = row
+                closest_permit = permit_locations[permit_keys.index(permit_key)]
+                detections.append(
+                    PointOfInterest(
+                        pano_id=closest_image.split(".")[0],  # remove .jpg
+                        coords=(float(lat), float(lon)),
+                        closest_permit=(closest_permit[0], closest_permit[1]),
+                        score=score,
+                    )
+                )
+
+            # Create overview map
+            generate_map(
+                vulnerable_bridges,
+                permit_locations,
+                trajectory=None,
+                detections=detections,
+                name="Overview",
+            )
+
+            # Create prioritized map
+            generate_map(
+                vulnerable_bridges,
+                permit_locations,
+                trajectory=None,
+                detections=detections[:25],
+                name="Prioritized",
+            )
+
             # Insert the values in the database
             sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-            execute_values(cur, sql, pano_match_prioritized)
+            # we don't want permit_keys in the database.
+            cols_to_insert = list(pano_match_prioritized.dtype.names)[:-1]
+            execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
             conn.commit()
 
             # Upload the file with found containers to the Azure Blob Storage
@@ -461,4 +504,12 @@ if __name__ == "__main__":
                     "postprocessing-output",
                     os.path.join(start_date_dag, csv_file),
                     csv_file,
+                )
+
+            # Upload overview and prioritized maps to the Azure Blob Storage
+            for html_file in ["Overview.html", "Prioritized.html"]:
+                azure_connection.upload_blob(
+                    "postprocessing-output",
+                    os.path.join(start_date_dag, html_file),
+                    html_file,
                 )
