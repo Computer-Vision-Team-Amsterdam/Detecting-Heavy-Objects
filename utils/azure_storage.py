@@ -92,8 +92,20 @@ class StorageAzureClient(BaseAzureClient):
             container_client = self.blob_service_client.get_container_client(
                 container=cname
             )
-            blobs = container_client.list_blobs(name_starts_with=blob_prefix)
-            return [blob.name for blob in blobs]
+            blob_names = []
+            next_marker = None
+            while True:
+                blob_list = container_client.list_blobs(name_starts_with=blob_prefix,
+                                                        num_results=400,
+                                                        marker=next_marker)
+                for blob in blob_list:
+                    blob_names.append(blob.name)
+
+                next_marker = blob_list.next_marker
+                if not next_marker:
+                    break
+
+            return blob_names
         except Exception as ex:
             print("List blobs operation failed")
             raise ex

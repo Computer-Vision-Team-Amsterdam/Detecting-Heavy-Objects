@@ -4,11 +4,13 @@ downloads them locally and uploads them to the storage account
 The images are downloaded in the `retrieved_images` folder.
 """
 import argparse
+import json
 import os
 import shutil
-from datetime import datetime
+from collections import defaultdict
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Tuple
+from typing import Any, Tuple
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -17,9 +19,9 @@ from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from utils.date import get_start_date
 
 azClient = BaseAzureClient()
-BASE_URL = "https://3206eec333a04cc980799f75a593505a.objectstore.eu/intermediate/"
-USERNAME = azClient.get_secret_value("CloudVpsRawUsername")
-PASSWORD = azClient.get_secret_value("CloudVpsRawPassword")
+BASE_URL = azClient.get_secret_value("CloudVpsBlurredUrl")
+USERNAME = azClient.get_secret_value("CloudVpsBlurredUsername")
+PASSWORD = azClient.get_secret_value("CloudVpsBlurredPassword")
 
 
 def split_pano_id(panorama_id: str) -> Tuple[str, str]:
@@ -43,14 +45,15 @@ def download_panorama_from_cloudvps(
     if Path(f"./{output_dir}/{panorama_id}.jpg").exists():
         print(f"Panorama {panorama_id} is already downloaded.")
         return
-    id_name, img_name = split_pano_id(panorama_id)
+    id_name, pano_name = split_pano_id(panorama_id)
 
     try:
         url = (
             BASE_URL + f"{date.year}/"
             f"{str(date.month).zfill(2)}/"
             f"{str(date.day).zfill(2)}/"
-            f"{id_name}/{img_name}.jpg"
+            f"{id_name}/{pano_name}/"
+            f"equirectangular/panorama_8000.jpg"
         )
 
         response = requests.get(
@@ -71,6 +74,57 @@ def download_panorama_from_cloudvps(
 
     except requests.HTTPError as exception:
         print(f"Failed for panorama {panorama_id}:\n{exception}")
+
+
+def get_pano_ids(start_date_dag_ymd: str) -> Any:
+    """
+    Get panoramic image id's for a user defined bounding box region
+    """
+    my_format_ymd = "%Y-%m-%d"
+    start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
+    end_date = start_date + timedelta(days=1)
+    one_day_later = end_date.strftime(my_format_ymd)
+
+    pano_url = (
+        f"https://api.data.amsterdam.nl/panorama/panoramas/?srid=28992&timestamp_after={start_date_dag_ymd}"
+        f"&timestamp_before={one_day_later}"
+    )
+
+    response = requests.get(pano_url)
+    if response.ok:
+        pano_data_all = json.loads(response.content)
+    else:
+        response.raise_for_status()
+
+    pano_ids_dict = defaultdict(list)
+
+    pano_data = pano_data_all["_embedded"]["panoramas"]
+
+    for item in pano_data:
+        pano_id = item["pano_id"]
+        pano_id_key = pano_id.split("_")[0]
+        pano_ids_dict[pano_id_key].append(pano_id)
+
+    # Check for next page with data
+    next_page = pano_data_all["_links"]["next"]["href"]
+
+    # Exit the while loop if there is no next page
+    while next_page:
+        with requests.get(next_page) as response:
+            pano_data_all = json.loads(response.content)
+
+        pano_data = pano_data_all["_embedded"]["panoramas"]
+
+        # Append the panorama id's to the list
+        for item in pano_data:
+            pano_id = item["pano_id"]
+            pano_id_key = pano_id.split("_")[0]
+            pano_ids_dict[pano_id_key].append(pano_id)
+
+        # Check for next page
+        next_page = pano_data_all["_links"]["next"]["href"]
+
+    return pano_ids_dict
 
 
 if __name__ == "__main__":
@@ -94,17 +148,39 @@ if __name__ == "__main__":
         f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
     )
 
-    # Download txt file(s) with pano ids that we want to download from CloudVPS
-    pano_ids = []
-    for input_file in input_files:
-        local_file = input_file.split("/")[1]  # only get file name, without prefix
-        saClient.download_blob(
-            cname=cname_input,
-            blob_name=input_file,
-            local_file_path=local_file,
-        )
-        with open(local_file, "r") as f:
-            pano_ids = [line.rstrip("\n") for line in f]
+    if len(input_files) > 0:
+        # Download txt file(s) with pano ids that we want to download from CloudVPS
+        pano_ids = []
+        for input_file in input_files:
+            local_file = input_file.split("/")[1]  # only get file name, without prefix
+            saClient.download_blob(
+                cname=cname_input,
+                blob_name=input_file,
+                local_file_path=local_file,
+            )
+            with open(local_file, "r") as f:
+                pano_ids = [line.rstrip("\n") for line in f]
+    else:
+        # Get pano ids from API that we want to download from CloudVPS
+        pano_ids_dict = get_pano_ids(start_date_dag_ymd)
+
+        pano_ids = []
+        for pano_id_item in pano_ids_dict.keys():
+            filename_retrieve = f"{pano_id_item}.txt"
+            # All pano ids in a flat list
+            pano_ids += pano_ids_dict[pano_id_item]
+
+            with open(filename_retrieve, "w") as f:
+                for s in pano_ids_dict[pano_id_item]:
+                    f.write(s + "\n")
+
+            saClient.upload_blob(
+                cname=cname_input,
+                blob_name=f"{start_date_dag_ymd}/{filename_retrieve}",
+                local_file_path=filename_retrieve,
+            )
+
+    print(f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS.")
 
     # Download files from CloudVPS
     local_file_path = "retrieved_images"

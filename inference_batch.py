@@ -102,6 +102,10 @@ def instances_to_coco_json(
         }
         if has_mask:
             result["segmentation"] = rles[k]
+        else:
+            # Don't append result dict when there is no segmentation mask
+            print(f"Detectron2 had issues with instance segmentation task for image {img_name}.")
+            continue
         if has_keypoints:
             # In COCO annotations,
             # keypoints coordinates are pixel indices.
@@ -142,9 +146,6 @@ if __name__ == "__main__":
             blob_name=blob,
             local_file_path=f"{input_path}/{filename}",
         )
-
-    # Make a connection to the database
-    conn, cur = upload_to_postgres.connect()
 
     cfg = get_cfg()
     cfg.merge_from_file("configs/container_detection.yaml")
@@ -201,16 +202,17 @@ if __name__ == "__main__":
         )
 
     if data_results:
-        print("Inserting data into database...")
-        table_name = "detections"
+        with upload_to_postgres.connect() as (conn, cur):
+            print("Inserting data into database...")
+            table_name = "detections"
 
-        # Get columns
-        sql = f"SELECT * FROM {table_name} LIMIT 0"
-        cur.execute(sql)
-        table_columns = [desc[0] for desc in cur.description]
-        table_columns.pop(0)  # Remove the id column
+            # Get columns
+            sql = f"SELECT * FROM {table_name} LIMIT 0"
+            cur.execute(sql)
+            table_columns = [desc[0] for desc in cur.description]
+            table_columns.pop(0)  # Remove the id column
 
-        # Inserting data into database
-        query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-        execute_values(cur, query, data_results)
-        conn.commit()
+            # Inserting data into database
+            query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+            execute_values(cur, query, data_results)
+            conn.commit()
