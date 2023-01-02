@@ -89,22 +89,11 @@ class StorageAzureClient(BaseAzureClient):
         """
 
         try:
-            # https://stackoverflow.com/questions/24302487/python-azure-sdk-using-list-blobs-to-get-more-than-5-000-results
-            blob_names = []
-            next_marker = None
-            while True:
-                blob_list = self.blob_service_client.list_blobs(container_name=cname,
-                                                                prefix=blob_prefix,
-                                                                num_results=4000,
-                                                                marker=next_marker)
-                for blob in blob_list:
-                    blob_names.append(blob.name)
-
-                next_marker = blob_list.next_marker
-                if not next_marker:
-                    break
-
-            return blob_names
+            container_client = self.blob_service_client.get_container_client(
+                container=cname
+            )
+            blobs = container_client.list_blobs(name_starts_with=blob_prefix)
+            return [blob.name for blob in blobs]
         except Exception as ex:
             print("List blobs operation failed")
             raise ex
