@@ -160,12 +160,10 @@ if __name__ == "__main__":
             pano_ids += pano_ids_dict[pano_id_item]
 
     # Check if pano ids are already processed today
-    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    start_date_ymd = datetime.strftime(start_date, "%Y-%m-%d")  # get same day
+    # The IDs of the panoramas that are previously processed are saved in retrieve-images-input
     pano_ids_processed = []
-
     all_blobs = saClient.list_container_content(cname="retrieve-images-input")
-    same_day_blobs = [blob_name for blob_name in all_blobs if blob_name.split("/")[-2].startswith(start_date_ymd)]
+    same_day_blobs = [blob_name for blob_name in all_blobs if blob_name.split("/")[-2].startswith(start_date_dag_ymd)]
     print(f"Same day blobs: {same_day_blobs}")
     # Update output folder inside the WORKDIR of the docker container
 
@@ -187,11 +185,9 @@ if __name__ == "__main__":
     pano_ids = set(pano_ids) - set(pano_ids_processed)
     print(f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS.")
 
-    # TODO split data "pano_ids" in chunks and save 1.txt, 2.txt etc to retrieve-images/{start_date_dag}
-
-    if len(pano_ids) < opt.num_workers:
+    if not len(pano_ids):
         raise ValueError(
-            "Number of workers is larger than items to process. Aborting..."
+            "There are no new images to process. Aborting..."
         )
 
     workers = list(range(opt.num_workers))
