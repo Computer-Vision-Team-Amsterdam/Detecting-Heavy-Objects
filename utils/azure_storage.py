@@ -93,7 +93,7 @@ class StorageAzureClient(BaseAzureClient):
             blob_names = []
             next_marker = None
             while True:
-                blob_list = self.blob_service_client.list_blobs(container=cname,
+                blob_list = self.blob_service_client.list_blobs(container_name=cname,
                                                                 prefix=blob_prefix,
                                                                 num_results=4000,
                                                                 marker=next_marker)
