@@ -102,6 +102,10 @@ def instances_to_coco_json(
         }
         if has_mask:
             result["segmentation"] = rles[k]
+        else:
+            # Don't append result dict when there is no segmentation mask
+            print(f"Detectron2 had issues with instance segmentation task for image {img_name}.")
+            continue
         if has_keypoints:
             # In COCO annotations,
             # keypoints coordinates are pixel indices.
