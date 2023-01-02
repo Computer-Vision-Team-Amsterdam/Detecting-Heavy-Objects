@@ -276,7 +276,7 @@ stages :
     dependsOn:
     - Deploy_ACC
 #    - VulnerabilityScan
-    condition: and(succeeded(), 'Manual', eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
