@@ -50,7 +50,7 @@ class ContainerDataset:
 
 
 def instances_to_coco_json(
-    instances: Any, img_name: str
+        instances: Any, img_name: str
 ) -> Tuple[List[Any], List[Any]]:
     """
     Dump an "Instances" object to a COCO-format json that's used for evaluation.
@@ -102,6 +102,10 @@ def instances_to_coco_json(
         }
         if has_mask:
             result["segmentation"] = rles[k]
+        else:
+            # Don't append result dict when there is no segmentation mask
+            print(f"Detectron2 had issues with instance segmentation task for image {img_name}.")
+            continue
         if has_keypoints:
             # In COCO annotations,
             # keypoints coordinates are pixel indices.
@@ -115,7 +119,7 @@ def instances_to_coco_json(
     return results_json, results
 
 
-def get_chunk_pano_ids():
+def get_chunk_pano_ids() -> List[str]:
     # Download txt file(s) with pano ids that we want to download from CloudVPS
     local_file = f"{opt.worker_id}.txt"
     saClient.download_blob(
@@ -127,22 +131,26 @@ def get_chunk_pano_ids():
         pano_ids = [line.rstrip("\n") for line in f]
 
     if len(pano_ids) < opt.num_workers:
-        raise ValueError("Number of workers is larger than items to process. Aborting...")
-    print(f"Printing first and last file names from the chunk: {pano_ids[0]} {pano_ids[-1]}")
+        raise ValueError(
+            "Number of workers is larger than items to process. Aborting..."
+        )
+    print(
+        f"Printing first and last file names from the chunk: {pano_ids[0]} {pano_ids[-1]}"
+    )
 
     return pano_ids
 
 
-def download_panos():
+def download_panos() -> None:
     # Get all file names of the panoramic images from the storage account
-    blobs = saClient.list_container_content(
-        cname="blurred", blob_prefix=start_date_dag
-    )
+    blobs = saClient.list_container_content(cname="blurred", blob_prefix=start_date_dag)
 
     # Validate if all blobs are available
     pano_ids_txt = [f"{start_date_dag}/{item}.jpg" for item in pano_ids]
     if len(set(pano_ids_txt) - set(blobs)) != 0:
-        raise ValueError("Not all panoramic images are available in the storage account! Aborting...")
+        raise ValueError(
+            "Not all panoramic images are available in the storage account! Aborting..."
+        )
 
     for blob in pano_ids_txt:
         filename = blob.split("/")[1]

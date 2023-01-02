@@ -10,7 +10,7 @@ import shutil
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -190,10 +190,13 @@ if __name__ == "__main__":
     # TODO split data "pano_ids" in chunks and save 1.txt, 2.txt etc to retrieve-images/{start_date_dag}
 
     if len(pano_ids) < opt.num_workers:
-        raise ValueError("Number of workers is larger than items to process. Aborting...")
+        raise ValueError(
+            "Number of workers is larger than items to process. Aborting..."
+        )
 
     workers = list(range(opt.num_workers))
-    split_list = [[] for x in workers]
+    split_list = [[] for x in workers]  # type: List[List[str]]
+
     for i, x in enumerate(pano_ids):
         split_list[i % len(workers)].append(x)
 
