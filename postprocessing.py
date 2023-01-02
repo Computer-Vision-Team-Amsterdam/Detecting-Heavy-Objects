@@ -433,6 +433,7 @@ if __name__ == "__main__":
         blob_name=permits_file,
         local_file_path=permits_file,
     )
+
     azure_connection.download_blob(
         cname=args.bucket_ref_files,
         blob_name=args.bridges_file,
@@ -447,6 +448,7 @@ if __name__ == "__main__":
         permits_file=permits_file,
         bridges_file=args.bridges_file,
     )
+
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()

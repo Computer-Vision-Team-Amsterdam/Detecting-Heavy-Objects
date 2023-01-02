@@ -164,6 +164,7 @@ if __name__ == "__main__":
     pano_ids_processed = []
     all_blobs = saClient.list_container_content(cname="retrieve-images-input")
     same_day_blobs = [blob_name for blob_name in all_blobs if blob_name.split("/")[-2].startswith(start_date_dag_ymd)]
+
     print(f"Same day blobs: {same_day_blobs}")
     # Update output folder inside the WORKDIR of the docker container
 
