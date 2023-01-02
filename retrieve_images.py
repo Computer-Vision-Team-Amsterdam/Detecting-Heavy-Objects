@@ -159,20 +159,32 @@ if __name__ == "__main__":
         for pano_id_item in pano_ids_dict.keys():
             pano_ids += pano_ids_dict[pano_id_item]
 
-    # # TODO Check if pano ids are already processed today
-    # List virtual directories in Azure Blob Storage
-    # all_dirs = saClient.list_container_directories(cname="retrieve-images-input")
-    # start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
-    # pano_ids_processed = []
-    # for dir_name in all_dirs:
-    #     # Convert string to datatime object
-    #     dir_date = datetime.strptime(dir_name, "%Y-%m-%d_%H-%M-%S")
-    #     # Compare dir name with the start DAG date
-    #     if dir_date < start_date:
-    #         print("TODO get all files inside this folder along with the contents (pano ids)")
-    #         # TODO do pano_ids_processed.extend(the_pano_ids_list)
-    # TODO pano_ids = set(pano_ids) - set(pano_ids_processed)
+    # Check if pano ids are already processed today
+    start_date = datetime.strptime(opt.date, "%Y-%m-%d %H:%M:%S.%f")
+    start_date_ymd = datetime.strftime(start_date, "%Y-%m-%d")  # get same day
+    pano_ids_processed = []
 
+    all_blobs = saClient.list_container_content(cname="retrieve-images-input")
+    same_day_blobs = [blob_name for blob_name in all_blobs if blob_name.split("/")[-2].startswith(start_date_ymd)]
+    print(f"Same day blobs: {same_day_blobs}")
+    # Update output folder inside the WORKDIR of the docker container
+
+    for blob in same_day_blobs:
+        blob_date = blob.split("/")[0]
+        local_file_path = Path(blob_date)
+        if not local_file_path.exists():
+            local_file_path.mkdir(exist_ok=True, parents=True)
+        saClient.download_blob(cname="retrieve-images-input",
+                               blob_name=blob,
+                               local_file_path=blob)
+        print(f"Downloaded {blob}")
+
+    for blob in same_day_blobs:
+        with open(blob) as file:
+            lines = [line.rstrip() for line in file]
+            pano_ids_processed.extend(lines)
+
+    pano_ids = set(pano_ids) - set(pano_ids_processed)
     print(f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS.")
 
     # TODO split data "pano_ids" in chunks and save 1.txt, 2.txt etc to retrieve-images/{start_date_dag}
