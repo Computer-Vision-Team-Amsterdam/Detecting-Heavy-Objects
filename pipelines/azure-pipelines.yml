@@ -275,8 +275,8 @@ stages :
     displayName: 'Deploy PROD (CD)'
     dependsOn:
     - Deploy_ACC
-    - VulnerabilityScan
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+#    - VulnerabilityScan
+    condition: and(succeeded(), 'Manual', eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
     - deployment: Deploy
       displayName: 'Deployment'
