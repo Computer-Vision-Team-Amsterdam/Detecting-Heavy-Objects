@@ -388,10 +388,43 @@ if __name__ == "__main__":
         output_folder.mkdir(exist_ok=True, parents=True)
 
     permits_file = f"{start_date_dag_ymd}/{args.permits_file}"
-    predictions_file = f"{start_date_dag_ymd}/coco_instances_results.json"
 
     # Get access to the Azure Storage account.
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
+
+    # Get all prediction files where the mission day is the same the start_date
+    all_blobs = azure_connection.list_container_content(cname=args.bucket_detections)
+    same_day_coco_jsons = [blob for blob in all_blobs if blob.split("/")[0].startswith(start_date_dag_ymd) and
+                           blob.split("/")[-1].endswith(".json")]
+
+    # Download all coco_instances_results.json from the same day
+    for blob in same_day_coco_jsons:
+        blob_date = blob.split("/")[0]
+        local_file_path = Path(blob_date)
+        if not local_file_path.exists():
+            local_file_path.mkdir(exist_ok=True, parents=True)
+        azure_connection.download_blob(cname=args.bucket_detections,
+                                       blob_name=blob,
+                                       local_file_path=blob)
+        print(f"Downloaded {blob}")
+
+    combined_predictions = []
+    for blob in same_day_coco_jsons:
+        f = open(blob)
+        predictions = json.load(f)
+        combined_predictions.extend(predictions)
+        f.close()
+
+    # Save combined json file in WORKDIR of the Docker container
+    with open('coco_instances_results_combined.json', 'w') as outfile:
+        json.dump(combined_predictions, outfile)
+
+    # Upload it to the storage account
+    azure_connection.upload_blob(
+        "postprocessing-output",
+        os.path.join(start_date_dag, "coco_instances_results_combined.json"),
+        "coco_instances_results_combined.json",
+    )
 
     # Download files to the WORKDIR of the Docker container.
     azure_connection.download_blob(
@@ -399,25 +432,22 @@ if __name__ == "__main__":
         blob_name=permits_file,
         local_file_path=permits_file,
     )
+
     azure_connection.download_blob(
         cname=args.bucket_ref_files,
         blob_name=args.bridges_file,
         local_file_path=args.bridges_file,
     )
-    azure_connection.download_blob(
-        cname=args.bucket_detections,
-        blob_name=f"{start_date_dag}/coco_instances_results.json",
-        local_file_path=predictions_file,
-    )
 
     # Find possible object intersections from detections in panoramic images.
     postprocess = PostProcessing(
-        Path(predictions_file),  # TODO why use Path
+        Path("coco_instances_results_combined.json"),  # TODO why use Path
         output_folder=output_folder,
         date_to_check=datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
         permits_file=permits_file,
         bridges_file=args.bridges_file,
     )
+
     postprocess.filter_by_size()
     postprocess.filter_by_angle()
     clustered_intersections = postprocess.find_points_of_interest()
