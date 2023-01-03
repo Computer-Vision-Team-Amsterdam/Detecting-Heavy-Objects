@@ -393,7 +393,7 @@ if __name__ == "__main__":
     azure_connection = StorageAzureClient(secret_key="data-storage-account-url")
 
     # Get all prediction files where the mission day is the same the start_date
-    all_blobs = azure_connection.list_container_content(cname=args.bucket_ref_files)
+    all_blobs = azure_connection.list_container_content(cname=args.bucket_detections)
     same_day_coco_jsons = [blob for blob in all_blobs if blob.split("/")[0].startswith(start_date_dag_ymd) and
                            blob.split("/")[-1].endswith(".json")]
 
@@ -412,7 +412,6 @@ if __name__ == "__main__":
     for blob in same_day_coco_jsons:
         f = open(blob)
         predictions = json.load(f)
-        print(f"predictions from coco json: {predictions}")
         combined_predictions.extend(predictions)
         f.close()
 
@@ -423,7 +422,7 @@ if __name__ == "__main__":
     # Upload it to the storage account
     azure_connection.upload_blob(
         "postprocessing-output",
-        os.path.join(start_date_dag_ymd, "coco_instances_results_combined.json"),
+        os.path.join(start_date_dag, "coco_instances_results_combined.json"),
         "coco_instances_results_combined.json",
     )
 
