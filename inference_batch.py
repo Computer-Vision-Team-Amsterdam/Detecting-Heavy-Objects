@@ -50,7 +50,7 @@ class ContainerDataset:
 
 
 def instances_to_coco_json(
-    instances: Any, img_name: str
+        instances: Any, img_name: str
 ) -> Tuple[List[Any], List[Any]]:
     """
     Dump an "Instances" object to a COCO-format json that's used for evaluation.
