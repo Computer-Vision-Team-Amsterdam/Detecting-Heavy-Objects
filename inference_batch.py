@@ -130,10 +130,9 @@ def get_chunk_pano_ids() -> List[str]:
     with open(local_file, "r") as f:
         pano_ids = [line.rstrip("\n") for line in f]
 
-    if len(pano_ids) < opt.num_workers:
-        raise ValueError(
-            "Number of workers is larger than items to process. Aborting..."
-        )
+    if not len(pano_ids):
+        raise ValueError("There are no new images to process. Aborting...")
+
     print(
         f"Printing first and last file names from the chunk: {pano_ids[0]} {pano_ids[-1]}"
     )

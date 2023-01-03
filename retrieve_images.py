@@ -57,7 +57,7 @@ def download_panorama_from_cloudvps(
         )
 
         response = requests.get(
-            url, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD)
+            url, timeout=20, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD)
         )
         if response.status_code == 404:
             raise FileNotFoundError(f"No resource found at {url}")
@@ -72,8 +72,16 @@ def download_panorama_from_cloudvps(
 
         print(f"{panorama_id} completed.")
 
-    except requests.HTTPError as exception:
-        print(f"Failed for panorama {panorama_id}:\n{exception}")
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP Error: Failed for panorama {panorama_id}:\n{e}")
+    except requests.exceptions.Timeout as e:
+        print(f"Timeout Error: Failed for panorama {panorama_id}:\n{e}")
+    except requests.exceptions.ConnectionError as e:
+        # In the event of a network problem (e.g. DNS failure, refused connection, etc),
+        # Requests will raise a ConnectionError exception.
+        print(f"Connection error: Failed for panorama {panorama_id}:\n{e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Unknown Error: Failed for panorama {panorama_id}:\n{e}")
 
 
 def get_pano_ids(start_date_dag_ymd: str) -> Any:
