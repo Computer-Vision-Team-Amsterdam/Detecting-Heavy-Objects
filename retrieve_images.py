@@ -163,7 +163,11 @@ if __name__ == "__main__":
     # The IDs of the panoramas that are previously processed are saved in retrieve-images-input
     pano_ids_processed = []
     all_blobs = saClient.list_container_content(cname="retrieve-images-input")
-    same_day_blobs = [blob_name for blob_name in all_blobs if blob_name.split("/")[-2].startswith(start_date_dag_ymd)]
+    same_day_blobs = [
+        blob_name
+        for blob_name in all_blobs
+        if blob_name.split("/")[-2].startswith(start_date_dag_ymd)
+    ]
 
     print(f"Same day blobs: {same_day_blobs}")
     # Update output folder inside the WORKDIR of the docker container
@@ -173,9 +177,9 @@ if __name__ == "__main__":
         local_file_path = Path(blob_date)
         if not local_file_path.exists():
             local_file_path.mkdir(exist_ok=True, parents=True)
-        saClient.download_blob(cname="retrieve-images-input",
-                               blob_name=blob,
-                               local_file_path=blob)
+        saClient.download_blob(
+            cname="retrieve-images-input", blob_name=blob, local_file_path=blob
+        )
         print(f"Downloaded {blob}")
 
     for blob in same_day_blobs:
@@ -183,13 +187,11 @@ if __name__ == "__main__":
             lines = [line.rstrip() for line in file]
             pano_ids_processed.extend(lines)
 
-    pano_ids = set(pano_ids) - set(pano_ids_processed)
+    pano_ids = list(set(pano_ids) - set(pano_ids_processed))
     print(f"Found {len(pano_ids)} panoramas that will be downloaded from CloudVPS.")
 
     if not len(pano_ids):
-        raise ValueError(
-            "There are no new images to process. Aborting..."
-        )
+        raise ValueError("There are no new images to process. Aborting...")
 
     workers = list(range(opt.num_workers))
     split_list = [[] for x in workers]  # type: List[List[str]]
@@ -211,16 +213,18 @@ if __name__ == "__main__":
         )
 
     # Download files from CloudVPS
-    local_file_path = "retrieved_images"
+    local_retrieved_images_path = "retrieved_images"
     for pano_id in pano_ids:
         download_panorama_from_cloudvps(
-            datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"), pano_id, local_file_path
+            datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
+            pano_id,
+            local_retrieved_images_path,
         )
 
     # Upload images to Cloud
-    for file in os.listdir(local_file_path):
+    for file in os.listdir(local_retrieved_images_path):
         saClient.upload_blob(
             cname="unblurred",
             blob_name=f"{start_date_dag}/{file}",
-            local_file_path=f"{local_file_path}/{file}",
+            local_file_path=f"{local_retrieved_images_path}/{file}",
         )
