@@ -415,15 +415,16 @@ if __name__ == "__main__":
         combined_predictions.extend(predictions)
         f.close()
 
+    combined_detection_results = "coco_instances_results_combined.json"
     # Save combined json file in WORKDIR of the Docker container
-    with open('coco_instances_results_combined.json', 'w') as outfile:
+    with open(combined_detection_results, "w") as outfile:
         json.dump(combined_predictions, outfile)
 
     # Upload it to the storage account
     azure_connection.upload_blob(
         "postprocessing-output",
-        os.path.join(start_date_dag, "coco_instances_results_combined.json"),
-        "coco_instances_results_combined.json",
+        os.path.join(start_date_dag, combined_detection_results),
+        combined_detection_results,
     )
 
     # Download files to the WORKDIR of the Docker container.
@@ -441,7 +442,7 @@ if __name__ == "__main__":
 
     # Find possible object intersections from detections in panoramic images.
     postprocess = PostProcessing(
-        Path("coco_instances_results_combined.json"),  # TODO why use Path
+        Path(combined_detection_results),  # TODO why use Path
         output_folder=output_folder,
         date_to_check=datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
         permits_file=permits_file,
