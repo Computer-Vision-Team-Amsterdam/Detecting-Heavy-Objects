@@ -201,6 +201,24 @@ if __name__ == "__main__":
     if not len(pano_ids):
         raise ValueError("There are no new images to process. Aborting...")
 
+    # Download files from CloudVPS
+    local_retrieved_images_path = "retrieved_images"
+    for pano_id in pano_ids:
+        download_panorama_from_cloudvps(
+            datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
+            pano_id,
+            local_retrieved_images_path,
+        )
+
+    # Upload images to Cloud
+    for file in os.listdir(local_retrieved_images_path):
+        saClient.upload_blob(
+            cname="unblurred",
+            blob_name=f"{start_date_dag}/{file}",
+            local_file_path=f"{local_retrieved_images_path}/{file}",
+        )
+
+    # Split pano_ids list in chunks and upload to Cloud
     workers = list(range(opt.num_workers))
     split_list = [[] for x in workers]  # type: List[List[str]]
 
@@ -218,21 +236,4 @@ if __name__ == "__main__":
             cname="retrieve-images-input",
             blob_name=f"{start_date_dag}/{filename_chunk}",
             local_file_path=filename_chunk,
-        )
-
-    # Download files from CloudVPS
-    local_retrieved_images_path = "retrieved_images"
-    for pano_id in pano_ids:
-        download_panorama_from_cloudvps(
-            datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
-            pano_id,
-            local_retrieved_images_path,
-        )
-
-    # Upload images to Cloud
-    for file in os.listdir(local_retrieved_images_path):
-        saClient.upload_blob(
-            cname="unblurred",
-            blob_name=f"{start_date_dag}/{file}",
-            local_file_path=f"{local_retrieved_images_path}/{file}",
         )
