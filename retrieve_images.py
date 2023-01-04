@@ -72,6 +72,8 @@ def download_panorama_from_cloudvps(
 
         print(f"{panorama_id} completed.")
 
+        return panorama_id
+
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error: Failed for panorama {panorama_id}:\n{e}")
     except requests.exceptions.Timeout as e:
