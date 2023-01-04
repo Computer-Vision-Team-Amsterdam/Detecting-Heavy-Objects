@@ -37,14 +37,14 @@ def split_pano_id(panorama_id: str) -> Tuple[str, str]:
 
 def download_panorama_from_cloudvps(
     date: datetime, panorama_id: str, output_dir: str
-) -> None:
+) -> str:
     """
     Downloads panorama from cloudvps to local folder.
     """
 
     if Path(f"./{output_dir}/{panorama_id}.jpg").exists():
         print(f"Panorama {panorama_id} is already downloaded.")
-        return
+        return ""
     id_name, pano_name = split_pano_id(panorama_id)
 
     try:
@@ -203,12 +203,15 @@ if __name__ == "__main__":
 
     # Download files from CloudVPS
     local_retrieved_images_path = "retrieved_images"
+    dl_pano_ids = []
     for pano_id in pano_ids:
-        download_panorama_from_cloudvps(
+        dl_pano_id = download_panorama_from_cloudvps(
             datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
             pano_id,
             local_retrieved_images_path,
         )
+        if dl_pano_id:
+            dl_pano_ids.append(dl_pano_id)
 
     # Upload images to Cloud
     for file in os.listdir(local_retrieved_images_path):  # type: ignore
