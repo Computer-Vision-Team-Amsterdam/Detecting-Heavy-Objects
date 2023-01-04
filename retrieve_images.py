@@ -211,7 +211,7 @@ if __name__ == "__main__":
         )
 
     # Upload images to Cloud
-    for file in os.listdir(local_retrieved_images_path):
+    for file in os.listdir(local_retrieved_images_path):  # type: ignore
         saClient.upload_blob(
             cname="unblurred",
             blob_name=f"{start_date_dag}/{file}",
