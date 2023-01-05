@@ -70,7 +70,7 @@ def download_panorama_from_cloudvps(
             shutil.copyfileobj(response.raw, out_file)
         del response
 
-        print(f"{panorama_id} completed.")
+        # print(f"{panorama_id} completed.")
 
         return panorama_id
 
