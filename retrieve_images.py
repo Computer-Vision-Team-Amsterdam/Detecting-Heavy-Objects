@@ -76,14 +76,18 @@ def download_panorama_from_cloudvps(
 
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error: Failed for panorama {panorama_id}:\n{e}")
+        return ""
     except requests.exceptions.Timeout as e:
         print(f"Timeout Error: Failed for panorama {panorama_id}:\n{e}")
+        return ""
     except requests.exceptions.ConnectionError as e:
         # In the event of a network problem (e.g. DNS failure, refused connection, etc),
         # Requests will raise a ConnectionError exception.
         print(f"Connection error: Failed for panorama {panorama_id}:\n{e}")
+        return ""
     except requests.exceptions.RequestException as e:
         print(f"Unknown Error: Failed for panorama {panorama_id}:\n{e}")
+        return ""
 
 
 def get_pano_ids(start_date_dag_ymd: str) -> Any:
