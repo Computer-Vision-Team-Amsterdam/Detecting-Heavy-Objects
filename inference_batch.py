@@ -50,7 +50,7 @@ class ContainerDataset:
 
 
 def instances_to_coco_json(
-    instances: Any, img_name: str
+        instances: Any, img_name: str
 ) -> Tuple[List[Any], List[Any]]:
     """
     Dump an "Instances" object to a COCO-format json that's used for evaluation.
@@ -102,6 +102,10 @@ def instances_to_coco_json(
         }
         if has_mask:
             result["segmentation"] = rles[k]
+        else:
+            # Don't append result dict when there is no segmentation mask
+            print(f"Detectron2 had issues with instance segmentation task for image {img_name}.")
+            continue
         if has_keypoints:
             # In COCO annotations,
             # keypoints coordinates are pixel indices.
@@ -115,6 +119,47 @@ def instances_to_coco_json(
     return results_json, results
 
 
+def get_chunk_pano_ids() -> List[str]:
+    # Download txt file(s) with pano ids that we want to download from CloudVPS
+    local_file = f"{opt.worker_id}.txt"
+    saClient.download_blob(
+        cname="retrieve-images-input",
+        blob_name=f"{start_date_dag}/{local_file}",
+        local_file_path=local_file,
+    )
+    with open(local_file, "r") as f:
+        pano_ids = [line.rstrip("\n") for line in f]
+
+    if not len(pano_ids):
+        raise ValueError("There are no new images to process. Aborting...")
+
+    print(
+        f"Printing first and last file names from the chunk: {pano_ids[0]} {pano_ids[-1]}"
+    )
+
+    return pano_ids
+
+
+def download_panos() -> None:
+    # Get all file names of the panoramic images from the storage account
+    blobs = saClient.list_container_content(cname="blurred", blob_prefix=start_date_dag)
+
+    # Validate if all blobs are available
+    pano_ids_txt = [f"{start_date_dag}/{item}.jpg" for item in pano_ids]
+    if len(set(pano_ids_txt) - set(blobs)) != 0:
+        raise ValueError(
+            "Not all panoramic images are available in the storage account! Aborting..."
+        )
+
+    for blob in pano_ids_txt:
+        filename = blob.split("/")[1]
+        saClient.download_blob(
+            cname="blurred",
+            blob_name=blob,
+            local_file_path=f"{input_path}/{filename}",
+        )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -122,9 +167,11 @@ if __name__ == "__main__":
     )
     parser.add_argument("--device", type=str, help="Processing on CPU or GPU?")
     parser.add_argument("--weights", type=str, help="Trained weights filename")
+    parser.add_argument("--worker-id", type=int, help="worker ID")
+    parser.add_argument("--num-workers", type=int, help="number of workers")
     opt = parser.parse_args()
 
-    results_file_name = "coco_instances_results.json"
+    results_file_name = f"coco_instances_results_{opt.worker_id}.json"
 
     start_date_dag, start_date_dag_ymd = get_start_date(opt.date)
 
@@ -134,14 +181,9 @@ if __name__ == "__main__":
 
     # Download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
-    blobs = saClient.list_container_content(cname="blurred", blob_prefix=start_date_dag)
-    for blob in blobs:
-        filename = blob.split("/")[-1]  # only get file name, without prefix
-        saClient.download_blob(
-            cname="blurred",
-            blob_name=blob,
-            local_file_path=f"{input_path}/{filename}",
-        )
+
+    pano_ids = get_chunk_pano_ids()
+    download_panos()
 
     cfg = get_cfg()
     cfg.merge_from_file("configs/container_detection.yaml")
