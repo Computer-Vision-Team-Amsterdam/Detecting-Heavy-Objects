@@ -420,12 +420,6 @@ if __name__ == "__main__":
     with open(combined_detection_results, "w") as outfile:
         json.dump(combined_predictions, outfile)
 
-    # Upload it to the storage account
-    azure_connection.upload_blob(
-        "postprocessing-output",
-        os.path.join(start_date_dag, combined_detection_results),
-        combined_detection_results,
-    )
 
     # Download files to the WORKDIR of the Docker container.
     azure_connection.download_blob(
@@ -536,6 +530,13 @@ if __name__ == "__main__":
                     os.path.join(start_date_dag, csv_file),
                     csv_file,
                 )
+
+            # Upload the combined json detection file to the Azure Blob Storage
+            azure_connection.upload_blob(
+                "postprocessing-output",
+                os.path.join(start_date_dag, combined_detection_results),
+                combined_detection_results,
+            )
 
             # Upload overview and prioritized maps to the Azure Blob Storage
             for html_file in ["Overview.html", "Prioritized.html"]:
