@@ -122,26 +122,26 @@ def run(
             p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
             p = Path(p)  # to Path
-            save_path = str(output_folder / p.name)  # im.jpg
-            txt_path = str(output_folder / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+            save_path = str(source / p.name)  # im.jpg
+            # txt_path = str(output_folder / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
             s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], im0.shape).round()
 
-                # Print results
-                for c in det[:, 5].unique():
-                    n = (det[:, 5] == c).sum()  # detections per class
-                    s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                # # Print results
+                # for c in det[:, 5].unique():
+                #     n = (det[:, 5] == c).sum()  # detections per class
+                #     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
-                    if save_txt:  # Write to file
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
-                        with open(f'{txt_path}.txt', 'a') as f:
-                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                    # if save_txt:  # Write to file
+                    #     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                    #     line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
+                    #     with open(f'{txt_path}.txt', 'a') as f:
+                    #         f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
                     if no_save_img:
                         x1 = int(xyxy[0].item())
@@ -152,9 +152,9 @@ def run(
                         blurred = cv2.GaussianBlur(blur, (45,45), 0)
                         im0[y1:y2, x1:x2] = blurred
 
-            # Save results (image with blurs)
-            if no_save_img:
-                cv2.imwrite(save_path, im0)
+                # Overwrite results, image with blur(s), when there is a detection
+                if no_save_img:
+                    cv2.imwrite(save_path, im0)
 
         # Print time (inference-only)
         # LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
@@ -162,9 +162,8 @@ def run(
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
-    if save_txt or no_save_img:
-        s = f"\n{len(list(output_folder.glob('labels/*.txt')))} labels saved to {output_folder / 'labels'}" if save_txt else ''
-        LOGGER.info(f"Results saved to {colorstr('bold', output_folder)}{s}")
+    if no_save_img:
+        LOGGER.info(f"Results saved to {colorstr('bold', output_folder)}")
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
@@ -174,7 +173,7 @@ def run(
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default=f'{os.getcwd()}/weights/best.pt', help='model path or triton URL')
-    parser.add_argument('--source', type=str, default=f'{os.getcwd()}/unblurred', help='file/dir/URL/glob/screen/0(webcam)')
+    parser.add_argument('--source', type=str, default=f'{os.getcwd()}/pano_images', help='file/dir/URL/glob/screen/0(webcam)')
     parser.add_argument('--data', type=str, default=f'{os.getcwd()}/data/pano.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--output-folder', type=Path, default=f'{os.getcwd()}/blurred', help='location where blurred images are stored')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[2048, 1024], help='inference size h,w')
@@ -256,10 +255,10 @@ if __name__ == "__main__":
     if not opt.source.exists():
         opt.source.mkdir(exist_ok=True, parents=True)
 
-    # update output folder
-    opt.output_folder = Path(opt.output_folder, start_date_dag)
-    if not opt.output_folder.exists():
-        opt.output_folder.mkdir(exist_ok=True, parents=True)
+    # # update output folder
+    # opt.output_folder = Path(opt.output_folder, start_date_dag)
+    # if not opt.output_folder.exists():
+    #     opt.output_folder.mkdir(exist_ok=True, parents=True)
 
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
@@ -270,9 +269,9 @@ if __name__ == "__main__":
     main(opt)
 
     # upload blurred images to storage account
-    for file in os.listdir(opt.output_folder):
+    for file in os.listdir(opt.source):
         saClient.upload_blob(
             cname="blurred",
             blob_name=f"{start_date_dag}/{file}",
-            local_file_path=f"{opt.output_folder}/{file}",
+            local_file_path=f"{opt.source}/{file}",
         )
