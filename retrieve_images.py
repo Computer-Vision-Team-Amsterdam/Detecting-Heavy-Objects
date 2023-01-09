@@ -231,7 +231,7 @@ if __name__ == "__main__":
     workers = list(range(opt.num_workers))
     split_list = [[] for x in workers]  # type: List[List[str]]
 
-    for i, x in enumerate(pano_ids):
+    for i, x in enumerate(dl_pano_ids):
         split_list[i % len(workers)].append(x)
 
     for chunk_id, chunk_data in enumerate(split_list, 1):
