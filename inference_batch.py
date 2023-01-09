@@ -22,6 +22,7 @@ import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
 from utils.date import get_start_date
 
+MAX_IMAGES_TO_LOAD = 1000
 
 class ContainerDataset:
     def __init__(self, img_names: List[str], cfg: Any = None) -> None:
@@ -195,36 +196,39 @@ if __name__ == "__main__":
     DetectionCheckpointer(model).load(opt.weights)
     model.train(False)
 
-    image_names = [file_name for file_name in glob.glob(f"{input_path}/*.jpg")]
-    dataset = ContainerDataset(img_names=image_names, cfg=cfg)
-
-    data_loader = DataLoader(
-        dataset=dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True
-    )
-
+    all_image_names = [file_name for file_name in glob.glob(f"{input_path}/*.jpg")]
+    chunked_list = [all_image_names[i:i + MAX_IMAGES_TO_LOAD] for i in range(0, len(all_image_names),
+                                                                             MAX_IMAGES_TO_LOAD)]
     num = 0
     data_results_json = []
     data_results = []
-    with torch.no_grad():
-        for (imgs, img_names, shapes) in data_loader:
-            inputs = []
-            for i, img_tensor in enumerate(imgs):
-                inputs.append(
-                    {"image": img_tensor, "height": shapes[0][i], "width": shapes[1][i]}
-                )
 
-            all_outputs = model(inputs)
+    for image_names in chunked_list:
+        dataset = ContainerDataset(img_names=image_names, cfg=cfg)
+        data_loader = DataLoader(
+            dataset=dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True
+        )
 
-            for j, outputs in enumerate(all_outputs):
-                if "instances" in outputs:
-                    instances = outputs["instances"]
-                    prediction_json, prediction = instances_to_coco_json(
-                        instances, os.path.basename(img_names[j])
+        with torch.no_grad():
+            for (imgs, img_names, shapes) in data_loader:
+                inputs = []
+                for i, img_tensor in enumerate(imgs):
+                    inputs.append(
+                        {"image": img_tensor, "height": shapes[0][i], "width": shapes[1][i]}
                     )
-                if prediction_json and prediction:
-                    data_results_json.append(prediction_json[0])
-                    data_results.append(prediction[0])
-                    num += 1
+
+                all_outputs = model(inputs)
+
+                for j, outputs in enumerate(all_outputs):
+                    if "instances" in outputs:
+                        instances = outputs["instances"]
+                        prediction_json, prediction = instances_to_coco_json(
+                            instances, os.path.basename(img_names[j])
+                        )
+                    if prediction_json and prediction:
+                        data_results_json.append(prediction_json[0])
+                        data_results.append(prediction[0])
+                        num += 1
 
     print("Detect %d frames with objects in haul %s" % (num, input_path))
 
