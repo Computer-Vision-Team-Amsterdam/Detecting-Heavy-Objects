@@ -255,11 +255,6 @@ if __name__ == "__main__":
     if not opt.source.exists():
         opt.source.mkdir(exist_ok=True, parents=True)
 
-    # # update output folder
-    # opt.output_folder = Path(opt.output_folder, start_date_dag)
-    # if not opt.output_folder.exists():
-    #     opt.output_folder.mkdir(exist_ok=True, parents=True)
-
     # download images from storage account
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
