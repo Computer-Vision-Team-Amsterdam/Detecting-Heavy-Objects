@@ -22,7 +22,7 @@ import upload_to_postgres
 from utils.azure_storage import StorageAzureClient
 from utils.date import get_start_date
 
-MAX_IMAGES_TO_LOAD = 1000
+MAX_IMAGES_TO_LOAD = 1000  # max images to load in memory
 
 class ContainerDataset:
     def __init__(self, img_names: List[str], cfg: Any = None) -> None:
