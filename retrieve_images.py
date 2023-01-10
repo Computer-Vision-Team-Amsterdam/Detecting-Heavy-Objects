@@ -169,7 +169,7 @@ if __name__ == "__main__":
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    development = True
+    development = False
     if development:
         # TODO only works for date {"date":"2020-05-08 00:00:00.00"}
         pano_ids = [
