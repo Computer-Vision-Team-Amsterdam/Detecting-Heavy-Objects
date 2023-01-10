@@ -126,7 +126,6 @@ stages :
               pip install git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
             displayName: 'Install panorama'
           - script: |
-#              conda env create -f det2.yml
               source activate det2
               pytest -s --cov=. --cov-report html --cov-report term-missing
             displayName: 'pytest'
