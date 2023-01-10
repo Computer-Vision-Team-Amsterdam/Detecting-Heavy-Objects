@@ -134,8 +134,9 @@ def get_pano_ids(start_date_dag_ymd: str) -> Any:
     # indefinitely
     count = pano_data_all["count"]
     next_page = pano_data_all["_links"]["next"]["href"]
-    separator = "&" if "?" in next_page else "?"
-    next_page += f"{separator}limit_results={count}"
+    if next_page:
+        separator = "&" if "?" in next_page else "?"
+        next_page += f"{separator}limit_results={count}"
 
     # Exit the while loop if there is no next page
     while next_page:
