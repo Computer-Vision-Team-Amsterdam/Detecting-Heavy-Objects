@@ -108,7 +108,7 @@ def get_pano_ids(start_date_dag_ymd: str) -> Any:
 
     """
     my_format_ymd = "%Y-%m-%d"
-    start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd) - timedelta(days=1)
+    start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
     end_date = start_date + timedelta(days=1)
     one_day_later = end_date.strftime(my_format_ymd)
 
