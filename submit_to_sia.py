@@ -2,7 +2,7 @@ import os
 import socket
 from typing import Any, Dict, List, Optional
 import sys
-
+from datetime import datetime
 import requests
 
 socket.setdefaulttimeout(100)
@@ -53,6 +53,7 @@ def _get_description(permit_distance: str, bridge_distance: str) -> str:
 
 
 def _to_signal(start_date_dag: str, lat_lon: Dict[str, float], bag_data: List[Any]) -> Any:
+    date_now = datetime.strptime(start_date_dag, "%Y-%m-%d").date()
     json_to_send = {
         "text": TEXT,
         "location": {
@@ -69,7 +70,7 @@ def _to_signal(start_date_dag: str, lat_lon: Dict[str, float], bag_data: List[An
         "priority": {
             "priority": "low",
         },
-        "incident_date_start": start_date_dag,
+        "incident_date_start": date_now.strftime("%Y-%m-%d %H:%M"),
     }
 
     if bag_data:
@@ -281,7 +282,7 @@ if __name__ == "__main__":
             address_data = _get_bag_address_in_range(lat_lon)
             # Add a new signal to meldingen.amsterdam.nl
             signal_id = _post_signal(
-                headers, _to_signal(start_date_dag, lat_lon, address_data)
+                headers, _to_signal(start_date_dag_ymd, lat_lon, address_data)
             )
             # Add an attachment to the previously created signal
             _image_upload(headers, closest_image, signal_id)
