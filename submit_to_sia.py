@@ -204,13 +204,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    add_notification = False  # TODO make this an argument
-
     try:
         if args.container_id_list == "":
+            add_notification = False  # TODO make this an argument
             print(f"No list of ranking IDs provided. Using all rows in database 'containers' with a score > 0.")
             ids_to_send = []
         else:
+            add_notification = True  # TODO make this an argument
             print(f"List of ranking IDs as input: {args.container_id_list}")
             ids_to_send = [int(item) for item in args.container_id_list.split(",")]
     except Exception as e:

@@ -105,10 +105,8 @@ def get_pano_ids(start_date_dag_ymd: str) -> Any:
     )
 
     response = requests.get(pano_url)
-    if response.ok:
-        pano_data_all = json.loads(response.content)
-    else:
-        response.raise_for_status()
+    response.raise_for_status()
+    pano_data_all = json.loads(response.content)
 
     pano_ids_dict = defaultdict(list)
 
@@ -119,8 +117,13 @@ def get_pano_ids(start_date_dag_ymd: str) -> Any:
         pano_id_key = pano_id.split("_")[0]
         pano_ids_dict[pano_id_key].append(pano_id)
 
-    # Check for next page with data
+    # Check for next page with data. Limit query to the maximum of the initial record count to avoid pages being added
+    # indefinitely
+    count = pano_data_all["count"]
     next_page = pano_data_all["_links"]["next"]["href"]
+    if next_page:
+        separator = "&" if "?" in next_page else "?"
+        next_page += f"{separator}limit_results={count}"
 
     # Exit the while loop if there is no next page
     while next_page:
@@ -153,7 +156,7 @@ if __name__ == "__main__":
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    development = True
+    development = False
     if development:
         # TODO only works for date {"date":"2020-05-08 00:00:00.00"}
         pano_ids = [
@@ -177,6 +180,7 @@ if __name__ == "__main__":
     # The IDs of the panoramas that are previously processed are saved in retrieve-images-input
     pano_ids_processed = []
     all_blobs = saClient.list_container_content(cname="retrieve-images-input")
+
     same_day_blobs = [
         blob_name
         for blob_name in all_blobs
