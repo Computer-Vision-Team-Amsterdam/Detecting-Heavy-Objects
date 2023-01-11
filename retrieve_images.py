@@ -195,7 +195,7 @@ if __name__ == "__main__":
     all_blobs = saClient.list_container_content(cname="retrieve-images-input")
 
     same_day_blobs = []
-    for blob_name in saClient.list_container_content(cname="retrieve-images-input"):
+    for blob_name in all_blobs:
         blob_name_date_prefix = blob_name.split("/")[-2]
         if (
                 blob_name_date_prefix.startswith(start_date_dag_ymd)
