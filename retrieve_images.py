@@ -16,7 +16,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
-from utils.date import get_start_date, get_yesterdays_date
+from utils.date import get_start_date
 
 azClient = BaseAzureClient()
 BASE_URL = azClient.get_secret_value("CloudVpsBlurredUrl")
@@ -93,19 +93,6 @@ def download_panorama_from_cloudvps(
 def get_pano_ids(start_date_dag_ymd: str) -> Any:
     """
     Get panoramic image id's for a user defined bounding box region
-
-    N.B. Due to batch processing, a _scheduled_ DAGRun will either process data that was gathered on its start date, or
-         on the date before its start date. This is the case because the Panorama images are processed overnight, so
-         images for a given date may only become available past midnight.
-    N.B. Timestamps that contain only YY-MM-DD info are interpreted as midnight (00:00:00) on that date.
-
-    When querying all data for a Panorama mission in a batched DAGRun, we should therefore keep in mind that we do not
-    know if we have crossed midnight yet:
-        - the timestamp_before should be tomorrow at midnight, in order to get all images for the current day (in case
-          we are running a batch on the day of data collection),
-        - the timestamp_after should be yesterday at midnight, in order to get all images for the previous day (in case
-          it is past midnight after the day of data collection).
-
     """
     my_format_ymd = "%Y-%m-%d"
     start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
@@ -194,14 +181,11 @@ if __name__ == "__main__":
     pano_ids_processed = []
     all_blobs = saClient.list_container_content(cname="retrieve-images-input")
 
-    same_day_blobs = []
-    for blob_name in all_blobs:
-        blob_name_date_prefix = blob_name.split("/")[-2]
-        if (
-                blob_name_date_prefix.startswith(start_date_dag_ymd)
-                or blob_name_date_prefix.startswith(get_yesterdays_date(start_date_dag_ymd))
-        ):
-            same_day_blobs.append(blob_name)
+    same_day_blobs = [
+        blob_name
+        for blob_name in all_blobs
+        if blob_name.split("/")[-2].startswith(start_date_dag_ymd)
+    ]
 
     print(f"Same day blobs: {same_day_blobs}")
     # Update output folder inside the WORKDIR of the docker container
