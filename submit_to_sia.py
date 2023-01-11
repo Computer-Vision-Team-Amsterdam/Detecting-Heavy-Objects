@@ -251,18 +251,26 @@ if __name__ == "__main__":
 
     if len(ids_to_send) > 0:
         # Select Pandas rows based on list index
-        query_df = query_df.iloc[query_df["container_id"].isin(ids_to_send)]
+        query_df = query_df[query_df["container_id"].isin(ids_to_send)]
         if len(ids_to_send) != len(query_df.container_id):
             ids_not_in_db = set(ids_to_send) - set(query_df["container_id"].tolist())
             raise ValueError(f"The following IDs from user input have not been found in the database: {ids_not_in_db}")
 
+    all_blurred_images = azure_connection.list_container_content(cname="blurred")
+
     for index, row in query_df.iterrows():
         # Get panoramic image closest to the found container
         closest_image = row["closest_image"]
+        indices = [i for i, s in enumerate(all_blurred_images) if closest_image in s]
+        if indices:
+            blob_name = all_blurred_images[0]  # Get first item
+        else:
+            raise ValueError("The image is not found in the Azure Storage Account. Aborting...")
+
         # Download files to the WORKDIR of the Docker container
         azure_connection.download_blob(
             cname="blurred",
-            blob_name=f"{start_date_dag}/{closest_image}",
+            blob_name=blob_name,
             local_file_path=closest_image,
         )
 
