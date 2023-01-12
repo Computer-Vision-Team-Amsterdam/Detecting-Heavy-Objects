@@ -214,17 +214,96 @@ The converter on the output of the correct_faulty_panoramas()
 
 These output files we can rename and upload to Azure.
 
-## Azure DevOps Pipeline
-Triggered automatically by commit/push to develop and main branch.
+## Azure DevOps Pipeline: Pre-deploy tests
+Triggered automatically by PR to development or main branch. Not triggered automatically in case of documentation or pipeline update.
+
+### Location:
+- Pipeline source: */pipelines/pre-deployment-pipeline.yml*
+- Pipeline name: *Detecting-Heavy-Objects.PreDeployTests*
+- Pipeline DevOps project: [Computer-Vision-Team-Amsterdam](https://dev.azure.com/CloudCompetenceCenter/Computer-Vision-Team-Amsterdam)
 
 ### Parameters:
 Automatically triggered pipeline runs can use these parameters only in its default values. Intended only for manual runs for pipeline or build test reasons.
 
-- *SkipTests* -- skips pre-deployment tests, default: false
-- *BuildAndPush* -- builds and pushes the containers to Azure Container Registry
+- *BanditBaselineFile* -- baseline file name to be used for the Bandit scan. Default: *bandit-relaxed.json*
+- *ContinueAfterBanditFail* -- pipeline does not fail in case of high-severity issues in Bandit scanner results. Default: *true*
+
+## Azure DevOps Pipeline: Build and Deploy
+Triggered automatically by push to development or main branch. Not triggered automatically in case of documentation or pipeline update.
+
+### Location:
+- Pipeline source: */pipelines/azure-pipelines.yml*
+- Pipeline name: *Detecting-Heavy-Objects.BuildAndPush*
+- Pipeline DevOps project: [Computer-Vision-Team-Amsterdam](https://dev.azure.com/CloudCompetenceCenter/Computer-Vision-Team-Amsterdam)
+
+### Parameters:
+Automatically triggered pipeline runs can use these parameters only in its default values. Intended only for manual runs for pipeline or build test reasons.
+
 - *DockerFiles* -- object specifying DockerFiles to be built with the following paramters
-    - *displayName* display name of the docker file - visible only in pipeline logs
+    - *name* -- shortcut name of the docker file - used as a reference in the pipeline
+    - *displayName* -- display name of the docker file - visible only in pipeline logs
     - *dockerFileName* -- name of the docker file to be built and pushed
     - *dockerFileRelativePath* '' -- relative path of the docker file (e.g. '' or '/folder')
     - *imageRepository* -- repository name in ACR
     - *tag* -- container tag for docker build command
+
+### Stages:
+
+#### Build (CI)
+Builds docker images and stores them in pipeline artifacts.
+
+**Additional info:**
+- Pipeline artifacts are used to pass docker images between stages.
+    - There is no additional cost for these data.
+
+#### Deploy DEV (CD)
+Deploys the docker images to DEV environment.
+
+**Prerequisites:**
+- Build (success)
+
+**Additional info:**
+- Runs only for commits to *development* branch
+
+#### Deploy TEST (CD)
+Deploys the docker images to TEST environment.
+
+**Prerequisites:**
+- Build (success)
+
+**Additional info:**
+- Runs only for commits to *main* branch
+
+#### Deploy ACC (CD)
+Deploys the docker images to ACC environment.
+
+**Prerequisites:**
+- Deploy TEST (success)
+
+**Additional info:**
+- Runs only for commits to *main* branch
+
+#### Vulnerability scan
+Tests vulnerabilites detected by Microsoft Defender for Cloud after image deployment to ACR.
+
+**Prerequisites:**
+- Deploy TEST (success)
+
+**Additional info:**
+- Uses [Image Scan Automation Enrichment Security Gate](https://github.com/Azure/Microsoft-Defender-for-Cloud/blob/main/Container%20Image%20Scan%20Vulnerability%20Assessment/Image%20Scan%20Automation%20Enrichment%20Security%20Gate/ImageScanSummaryAssessmentGate.ps1)
+- Runs only for commits to *main* branch
+- TEST environment ACR is evaluated in the scan
+- 10 minutes wait time before scan results are assessed
+
+#### Deploy PROD (CD) 
+Deploys the docker images to PROD environment.
+
+**Prerequisites:**
+- Deploy ACC (success)
+- Vulnerability scan
+
+**Additional info:**
+- Runs only for commits to *main* branch
+- Requires successful result of the vulnerability scan
+- Approval required to run deployment to PROD
+    - Uses *environments* feature in Azure DevOps to handle approvals

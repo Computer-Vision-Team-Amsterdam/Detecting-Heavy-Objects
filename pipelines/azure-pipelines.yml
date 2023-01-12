@@ -1,7 +1,4 @@
-# Python package
-# Create and test a Python package on multiple Python versions.
-# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+# Build and Deploy pipeline for Detecting-Heavy-Objects
 
 trigger:
   branches:
@@ -9,11 +6,11 @@ trigger:
     - main
     - development
   paths:
-    exclude:
+    exclude: # not triggered for docs and pipeline update
     - pipelines/*
     - README.md
 
-pr: none
+pr: none # not triggered on PR
 
 parameters:
 - name: DockerFiles
@@ -83,6 +80,7 @@ variables:
   containerRegistryName.prod: 'cvtweuacrpju7nekr55bcdo'
 
 stages :
+  # Build docker images and store them to pipeline artifact
   - stage: Build
     displayName: 'Build (CI)'
     jobs:
@@ -136,6 +134,7 @@ stages :
               path: $(Build.ArtifactStagingDirectory)
               artifact: ContainerImage_${{ dockerFile.Name }}
 
+  # Deploy docker images from pipeline artifacts to DEV environment
   - stage: Deploy_DEV
     displayName: 'Deploy DEV (CD)'
     dependsOn:
@@ -149,7 +148,7 @@ stages :
         runOnce:
           deploy:
             steps:
-            - download: none
+            - download: none # do not download artifacts for this deployment job
   
     - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
       - job: Deploy_${{ dockerFile.Name }}
@@ -160,7 +159,7 @@ stages :
           vmImage: ubuntu-latest
         steps:
         - download: current
-          artifact: ContainerImage_${{ dockerFile.Name }}
+          artifact: ContainerImage_${{ dockerFile.Name }} # downloads docker image from pipeline artifacts
 
         - task: AzureCLI@2
           displayName: 'Docker Push - ${{ dockerFile.displayName }}'
@@ -175,6 +174,7 @@ stages :
               docker push $(containerRegistryName.dev).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
               docker system prune -af
 
+  # Deploy docker images from pipeline artifacts to TEST environment
   - stage: Deploy_TEST
     displayName: 'Deploy TEST (CD)'
     dependsOn:
@@ -188,7 +188,7 @@ stages :
         runOnce:
           deploy:
             steps:
-            - download: none
+            - download: none # do not download artifacts for this deployment job
   
     - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
       - job: Deploy_${{ dockerFile.Name }}
@@ -214,7 +214,8 @@ stages :
               docker push $(containerRegistryName.test).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
               docker system prune -af
 
-  - stage: Deploy_ACC
+  # Deploy docker images from pipeline artifacts to ACC environment
+  - stage: Deploy_ACC 
     displayName: 'Deploy ACC (CD)'
     dependsOn:
     - Deploy_TEST
@@ -227,7 +228,7 @@ stages :
         runOnce:
           deploy:
             steps:
-            - download: none
+            - download: none # do not download artifacts for this deployment job
   
     - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
       - job: Deploy_${{ dockerFile.Name }}
@@ -252,7 +253,8 @@ stages :
               docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.acc).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
               docker push $(containerRegistryName.acc).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
               docker system prune -af
-                     
+
+  # Run Vulnerability scan              
   - stage: VulnerabilityScan
     displayName: 'Vulnerability Scan'
     dependsOn:
@@ -287,6 +289,7 @@ stages :
               scriptPath: '$(Build.SourcesDirectory)/pipelines/scripts/ImageScanSummaryAssessmentGate.ps1'
               arguments: '-registryName $(containerRegistryName.test) -repository ${{ dockerFile.imageRepository }} -tag ${{ dockerFile.tag }}'
 
+  # Deploy docker images from pipeline artifacts to PROD environment
   - stage: Deploy_PROD
     displayName: 'Deploy PROD (CD)'
     dependsOn:
@@ -301,7 +304,7 @@ stages :
         runOnce:
           deploy:
             steps:
-            - download: none
+            - download: none # do not download artifacts for this deployment job
   
     - ${{ each dockerFile in parameters.DockerFiles }}: # Loop through all files specified in DockerFiles parameter
       - job: Deploy_${{ dockerFile.Name }}
