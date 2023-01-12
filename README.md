@@ -248,6 +248,7 @@ Automatically triggered pipeline runs can use these parameters only in its defau
 #### Build (CI)
 Builds docker images and stores them in pipeline artifacts.
 
+**Additional info:**
 - Pipeline artifacts are used to pass docker images between stages.
     - There is no additional cost for these data.
 
@@ -257,6 +258,7 @@ Deploys the docker images to DEV environment.
 **Prerequisites:**
 - Build (success)
 
+**Additional info:**
 - Runs only for commits to *development* branch
 
 #### Deploy TEST (CD)
@@ -265,6 +267,7 @@ Deploys the docker images to TEST environment.
 **Prerequisites:**
 - Build (success)
 
+**Additional info:**
 - Runs only for commits to *main* branch
 
 #### Deploy ACC (CD)
@@ -273,6 +276,7 @@ Deploys the docker images to ACC environment.
 **Prerequisites:**
 - Deploy TEST (success)
 
+**Additional info:**
 - Runs only for commits to *main* branch
 
 #### Vulnerability scan
@@ -281,6 +285,7 @@ Tests vulnerabilites detected by Microsoft Defender for Cloud after image deploy
 **Prerequisites:**
 - Deploy TEST (success)
 
+**Additional info:**
 - Uses [Image Scan Automation Enrichment Security Gate](https://github.com/Azure/Microsoft-Defender-for-Cloud/blob/main/Container%20Image%20Scan%20Vulnerability%20Assessment/Image%20Scan%20Automation%20Enrichment%20Security%20Gate/ImageScanSummaryAssessmentGate.ps1)
 - Runs only for commits to *main* branch
 - TEST environment ACR is evaluated in the scan
@@ -293,6 +298,7 @@ Deploys the docker images to PROD environment.
 - Deploy ACC (success)
 - Vulnerability scan
 
+**Additional info:**
 - Runs only for commits to *main* branch
 - Requires successful result of the vulnerability scan
 - Approval required to run deployment to PROD
