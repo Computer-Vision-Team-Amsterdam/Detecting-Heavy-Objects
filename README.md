@@ -218,7 +218,9 @@ These output files we can rename and upload to Azure.
 Triggered automatically by PR to development or main branch. Not triggered automatically in case of documentation or pipeline update.
 
 ### Location:
-- /pipelines/pre-deployment-pipeline.yml
+- Pipeline source: */pipelines/pre-deployment-pipeline.yml*
+- Pipeline name: *Detecting-Heavy-Objects.PreDeployTests*
+- Pipeline DevOps project: [Computer-Vision-Team-Amsterdam](https://dev.azure.com/CloudCompetenceCenter/Computer-Vision-Team-Amsterdam)
 
 ### Parameters:
 Automatically triggered pipeline runs can use these parameters only in its default values. Intended only for manual runs for pipeline or build test reasons.
@@ -230,7 +232,9 @@ Automatically triggered pipeline runs can use these parameters only in its defau
 Triggered automatically by push to development or main branch. Not triggered automatically in case of documentation or pipeline update.
 
 ### Location:
-- /pipelines/azure-pipelines.yml
+- Pipeline source: */pipelines/azure-pipelines.yml*
+- Pipeline name: *Detecting-Heavy-Objects.BuildAndPush*
+- Pipeline DevOps project: [Computer-Vision-Team-Amsterdam](https://dev.azure.com/CloudCompetenceCenter/Computer-Vision-Team-Amsterdam)
 
 ### Parameters:
 Automatically triggered pipeline runs can use these parameters only in its default values. Intended only for manual runs for pipeline or build test reasons.
