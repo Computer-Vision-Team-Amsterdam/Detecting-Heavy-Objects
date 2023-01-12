@@ -214,14 +214,6 @@ The converter on the output of the correct_faulty_panoramas()
 
 These output files we can rename and upload to Azure.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-## Azure DevOps Pipeline
-Triggered automatically by commit/push to develop and main branch.
-=======
-=======
->>>>>>> 7eecdd8c560e8f7aa018853c144d9defb596c29e
-
 ## Azure DevOps Pipeline: Pre-deploy tests
 Triggered automatically by PR to development or main branch. Not triggered automatically in case of documentation or pipeline update.
 
@@ -239,10 +231,6 @@ Triggered automatically by push to development or main branch. Not triggered aut
 
 ### Location:
 - /pipelines/azure-pipelines.yml
-<<<<<<< HEAD
->>>>>>> 7eecdd8 (updated pipeline docs - v1)
-=======
->>>>>>> 7eecdd8c560e8f7aa018853c144d9defb596c29e
 
 ### Parameters:
 Automatically triggered pipeline runs can use these parameters only in its default values. Intended only for manual runs for pipeline or build test reasons.
