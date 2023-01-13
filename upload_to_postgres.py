@@ -194,7 +194,7 @@ if __name__ == "__main__":
                 local_file_path=local_file,
             )
             with open(local_file, "r") as f:
-                input_data_images = [line.rstrip("\n") for line in f]
+                input_data_images.extend([line.rstrip("\n") for line in f])
 
         with connect() as (_, cursor):
             upload_images(cursor, input_data_images)

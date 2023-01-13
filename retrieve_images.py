@@ -96,51 +96,51 @@ def get_pano_ids(start_date_dag_ymd: str) -> Any:
     """
     pano_ids_dict = defaultdict(list)
 
-    for start_date_dag_ymd_item in [start_date_dag_ymd, "2022-12-31"]:
-        my_format_ymd = "%Y-%m-%d"
-        start_date = datetime.strptime(start_date_dag_ymd_item, my_format_ymd)
-        end_date = start_date + timedelta(days=1)
-        one_day_later = end_date.strftime(my_format_ymd)
+    start_date_dag_ymd = "2023-01-11"  # TODO remove!!!
+    my_format_ymd = "%Y-%m-%d"
+    start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
+    end_date = start_date + timedelta(days=1)
+    one_day_later = end_date.strftime(my_format_ymd)
 
-        pano_url = (
-            f"https://api.data.amsterdam.nl/panorama/panoramas/?srid=28992&timestamp_after={start_date_dag_ymd_item}"
-            f"&timestamp_before={one_day_later}"
-        )
+    pano_url = (
+        f"https://api.data.amsterdam.nl/panorama/panoramas/?srid=28992&timestamp_after={start_date_dag_ymd}"
+        f"&timestamp_before={one_day_later}"
+    )
 
-        response = requests.get(pano_url)
-        response.raise_for_status()
-        pano_data_all = json.loads(response.content)
+    response = requests.get(pano_url)
+    response.raise_for_status()
+    pano_data_all = json.loads(response.content)
+
+    pano_data = pano_data_all["_embedded"]["panoramas"]
+
+    for item in pano_data:
+        pano_id = item["pano_id"]
+        pano_id_key = pano_id.split("_")[0]
+        pano_ids_dict[pano_id_key].append(pano_id)
+
+    # Check for next page with data. Limit query to the maximum of the initial record count to avoid pages being added
+    # indefinitely
+    count = pano_data_all["count"]
+    next_page = pano_data_all["_links"]["next"]["href"]
+    if next_page:
+        separator = "&" if "?" in next_page else "?"
+        next_page += f"{separator}limit_results={count}"
+
+    # Exit the while loop if there is no next page
+    while next_page:
+        with requests.get(next_page) as response:
+            pano_data_all = json.loads(response.content)
 
         pano_data = pano_data_all["_embedded"]["panoramas"]
 
+        # Append the panorama id's to the list
         for item in pano_data:
             pano_id = item["pano_id"]
             pano_id_key = pano_id.split("_")[0]
             pano_ids_dict[pano_id_key].append(pano_id)
 
-        # Check for next page with data. Limit query to the maximum of the initial record count to avoid pages being added
-        # indefinitely
-        count = pano_data_all["count"]
+        # Check for next page
         next_page = pano_data_all["_links"]["next"]["href"]
-        if next_page:
-            separator = "&" if "?" in next_page else "?"
-            next_page += f"{separator}limit_results={count}"
-
-        # Exit the while loop if there is no next page
-        while next_page:
-            with requests.get(next_page) as response:
-                pano_data_all = json.loads(response.content)
-
-            pano_data = pano_data_all["_embedded"]["panoramas"]
-
-            # Append the panorama id's to the list
-            for item in pano_data:
-                pano_id = item["pano_id"]
-                pano_id_key = pano_id.split("_")[0]
-                pano_ids_dict[pano_id_key].append(pano_id)
-
-            # Check for next page
-            next_page = pano_data_all["_links"]["next"]["href"]
 
     return pano_ids_dict
 
