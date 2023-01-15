@@ -29,17 +29,21 @@ def get_permit_locations(
         """
         Check whether container is valid on that day
         """
-        start_date = permit.find("DATE6")
-        end_date = permit.find("DATE7")
+        try:
+            start_date = permit.find("DATE6")
+            end_date = permit.find("DATE7")
 
-        start_date = datetime.strptime(  # type:ignore
-            start_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
-        )
-        end_date = datetime.strptime(end_date.text, "%Y-%m-%dT%H:%M:%S")  # type:ignore
+            start_date = datetime.strptime(  # type:ignore
+                start_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
+            )
+            end_date = datetime.strptime(end_date.text, "%Y-%m-%dT%H:%M:%S")  # type:ignore
 
-        # Check if permit is valid
-        if end_date >= date_to_check >= start_date:  # type:ignore
-            return True
+            # Check if permit is valid
+            if end_date >= date_to_check >= start_date:  # type:ignore
+                return True
+        except Exception as e:
+            print(f"There was an exception in the is_permit_valid_on_day function: {e}")
+
         return False
 
     def split_dutch_street_address(address: str) -> List[str]:
@@ -67,11 +71,14 @@ def get_permit_locations(
             "cabin",
         ]
         description = permit.find("TEXT8")
-        if any(
-            get_close_matches(word, container_words)
-            for word in description.text.split(" ")
-        ):
-            return True
+        try:
+            if any(
+                    get_close_matches(word, container_words)
+                    for word in description.text.split(" ")
+            ):
+                return True
+        except Exception as e:
+            print(f"There was an exception in the is_container_permit function: {e}")
 
         return False
 
