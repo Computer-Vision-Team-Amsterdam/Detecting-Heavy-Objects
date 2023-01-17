@@ -180,8 +180,7 @@ class PostProcessing:
         """
         predictions_to_keep = []
         print("Filtering based on angle")
-        # TODO why do we use self.stats.data and not pandas df
-        for (prediction) in self.stats.data:
+        for prediction in self.stats.data:
             heading = (
                 query_df["heading"]
                 .loc[query_df["file_name"] == prediction["pano_id"]]
