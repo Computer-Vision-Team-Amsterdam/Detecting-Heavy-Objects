@@ -33,10 +33,10 @@ def get_permit_locations(
             start_date = permit.find("DATE6")
             end_date = permit.find("DATE7")
 
-            start_date = datetime.strptime(
+            start_date = datetime.strptime(  # type:ignore
                 start_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
             )
-            end_date = datetime.strptime(
+            end_date = datetime.strptime(  # type:ignore
                 end_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
             )
 
