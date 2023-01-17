@@ -1,4 +1,3 @@
-# type:ignore
 """
 Utility module containing shared code required to create visualizations,
 that may be used for more generic postprocessing tasks
@@ -34,12 +33,12 @@ def get_permit_locations(
             start_date = permit.find("DATE6")
             end_date = permit.find("DATE7")
 
-            start_date = datetime.strptime(  # type:ignore
+            start_date = datetime.strptime(
                 start_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
             )
             end_date = datetime.strptime(
-                end_date.text, "%Y-%m-%dT%H:%M:%S"
-            )  # type:ignore
+                end_date.text, "%Y-%m-%dT%H:%M:%S"  # type:ignore
+            )
 
             # Check if permit is valid
             if end_date >= date_to_check >= start_date:  # type:ignore
@@ -76,7 +75,7 @@ def get_permit_locations(
         try:
             if any(
                 get_close_matches(word, container_words)
-                for word in description.text.split(" ")
+                for word in description.text.split(" ")  # type:ignore
             ):
                 return True
         except Exception as e:
