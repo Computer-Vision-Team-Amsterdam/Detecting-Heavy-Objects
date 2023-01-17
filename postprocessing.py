@@ -180,12 +180,17 @@ class PostProcessing:
         """
         predictions_to_keep = []
         print("Filtering based on angle")
-        running_in_k8s = "KUBERNETES_SERVICE_HOST" in os.environ
-        for prediction in tqdm(self.stats.data, disable=running_in_k8s):
-            response = PanoramaClient.get_panorama(
-                prediction["pano_id"].rsplit(".", 1)[0]
-            )  # TODO: Not query, look at the database!
-            heading = response.heading
+
+        print(query_df["heading"])
+        for (
+            prediction
+        ) in self.stats.data:  # TODO why do we use self.stats.data and not pandas df
+            heading = (
+                query_df["heading"]
+                .loc[query_df["file_name"] == prediction["pano_id"]]
+                .values[0]
+            )
+
             height, width = prediction["segmentation"]["size"]
             mask = get_side_view_of_pano(width, height, heading, self.mask_degrees)[
                 :, :, 0
@@ -219,7 +224,9 @@ class PostProcessing:
 
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
-    def prioritize_notifications(self, panoramas: List[str]) -> Any:
+    def prioritize_notifications(
+        self, panoramas: List[str], clustered_intersections
+    ) -> Any:
 
         """
         Prioritize all found containers based on the permits and locations compared to the vulnerable bridges and
@@ -243,10 +250,12 @@ class PostProcessing:
             self.permits_file, self.date_to_check
         )
 
-        container_locations = get_container_locations(
-            self.output_folder / self.objects_file
-        )
+        # container_locations = get_container_locations(
+        #     self.output_folder / self.objects_file
+        # )
         bridge_locations = get_bridge_information(self.bridges_file)
+
+        container_locations = clustered_intersections[:, :2]
 
         container_locations_geom = [Point(location) for location in container_locations]
         permit_locations_geom = [
@@ -393,8 +402,12 @@ if __name__ == "__main__":
 
     # Get all prediction files where the mission day is the same the start_date
     all_blobs = azure_connection.list_container_content(cname=args.bucket_detections)
-    same_day_coco_jsons = [blob for blob in all_blobs if blob.split("/")[0].startswith(start_date_dag_ymd) and
-                           blob.split("/")[-1].endswith(".json")]
+    same_day_coco_jsons = [
+        blob
+        for blob in all_blobs
+        if blob.split("/")[0].startswith(start_date_dag_ymd)
+        and blob.split("/")[-1].endswith(".json")
+    ]
 
     # Download all coco_instances_results.json from the same day
     for blob in same_day_coco_jsons:
@@ -402,9 +415,9 @@ if __name__ == "__main__":
         local_file_path = Path(blob_date)
         if not local_file_path.exists():
             local_file_path.mkdir(exist_ok=True, parents=True)
-        azure_connection.download_blob(cname=args.bucket_detections,
-                                       blob_name=blob,
-                                       local_file_path=blob)
+        azure_connection.download_blob(
+            cname=args.bucket_detections, blob_name=blob, local_file_path=blob
+        )
         print(f"Downloaded {blob}")
 
     combined_predictions = []
@@ -441,22 +454,15 @@ if __name__ == "__main__":
         bridges_file=args.bridges_file,
     )
 
-    postprocess.filter_by_size()
-    postprocess.filter_by_angle()
-    clustered_intersections = postprocess.find_points_of_interest()
-    postprocess.write_output(
-        os.path.join(start_date_dag_ymd, "points_of_interest.csv"),
-        clustered_intersections,
-    )
-
     with upload_to_postgres.connect() as (conn, cur):
         table_name = "containers"
 
         # Get images with a detection
         # TODO: perform sanitizing inputs SQL. For now, code will break if start_date_dag_ymd is not a datetime.
         sql = (
-            f"SELECT * FROM detections A LEFT JOIN images B ON A.file_name = B.file_name WHERE "
-            f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
+            f"SELECT B.file_name, B.heading, B.camera_location_lat, B.camera_location_lon FROM detections A "
+            f"LEFT JOIN images B ON A.file_name = B.file_name WHERE "
+            f"date_trunc('day', taken_at) = '2023-01-11'::date;"
         )
 
         query_df = sqlio.read_sql_query(sql, conn)
@@ -467,6 +473,10 @@ if __name__ == "__main__":
                 "DataFrame is empty! No images with a detection are found for the provided date."
             )
         else:
+            postprocess.filter_by_size()
+            postprocess.filter_by_angle()
+            clustered_intersections = postprocess.find_points_of_interest()
+
             # Get columns
             sql = f"SELECT * FROM {table_name} LIMIT 0"
             cur.execute(sql)
@@ -475,12 +485,17 @@ if __name__ == "__main__":
 
             # Find a panorama closest to an intersection
             pano_match = get_closest_pano(query_df, clustered_intersections)
-            pano_match_prioritized = postprocess.prioritize_notifications(pano_match)
+
+            pano_match_prioritized = postprocess.prioritize_notifications(
+                pano_match, clustered_intersections
+            )
 
             vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
-            permit_locations, permit_keys, permit_locations_failed = get_permit_locations(
-                permits_file, postprocess.date_to_check
-            )
+            (
+                permit_locations,
+                permit_keys,
+                permit_locations_failed,
+            ) = get_permit_locations(permits_file, postprocess.date_to_check)
 
             # Create maps
             detections = []
