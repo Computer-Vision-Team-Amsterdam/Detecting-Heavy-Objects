@@ -1,3 +1,4 @@
+# type:ignore
 """
 Utility module containing shared code required to create visualizations,
 that may be used for more generic postprocessing tasks
@@ -10,7 +11,7 @@ import xml.etree.ElementTree as Xet
 from datetime import datetime
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import geojson
 import requests
