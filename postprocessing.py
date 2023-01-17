@@ -222,7 +222,7 @@ class PostProcessing:
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
     def prioritize_notifications(
-        self, panoramas: List[str], clustered_intersections
+        self, panoramas: List[str], container_locations: List[float]
     ) -> Any:
 
         """
@@ -247,8 +247,6 @@ class PostProcessing:
         )
 
         bridge_locations = get_bridge_information(self.bridges_file)
-
-        container_locations = clustered_intersections[:, :2]
 
         container_locations_geom = [Point(location) for location in container_locations]
         permit_locations_geom = [
@@ -476,7 +474,7 @@ if __name__ == "__main__":
             table_columns.pop(0)  # Remove the id column
 
             # Find a panorama closest to an intersection
-            pano_match = get_closest_pano(query_df, clustered_intersections)
+            pano_match = get_closest_pano(query_df, clustered_intersections[:, :2])
 
             pano_match_prioritized = postprocess.prioritize_notifications(
                 pano_match, clustered_intersections
