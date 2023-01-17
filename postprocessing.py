@@ -180,11 +180,8 @@ class PostProcessing:
         """
         predictions_to_keep = []
         print("Filtering based on angle")
-
-        print(query_df["heading"])
-        for (
-            prediction
-        ) in self.stats.data:  # TODO why do we use self.stats.data and not pandas df
+        # TODO why do we use self.stats.data and not pandas df
+        for (prediction) in self.stats.data:
             heading = (
                 query_df["heading"]
                 .loc[query_df["file_name"] == prediction["pano_id"]]
@@ -233,7 +230,6 @@ class PostProcessing:
         canals. This function returns a structured array (column based) with floats and strings inside.
         """
 
-        print(self.stats.data)
         def calculate_score(bridge_distance: float, permit_distance: float) -> float:
             """
             Calculate score for bridge and permit distance;
@@ -250,9 +246,6 @@ class PostProcessing:
             self.permits_file, self.date_to_check
         )
 
-        # container_locations = get_container_locations(
-        #     self.output_folder / self.objects_file
-        # )
         bridge_locations = get_bridge_information(self.bridges_file)
 
         container_locations = clustered_intersections[:, :2]
@@ -343,7 +336,6 @@ class PostProcessing:
                 ("permit_keys", "U64"),
             ],
         )
-
 
         write_to_csv(
             structured_array,
@@ -549,7 +541,6 @@ if __name__ == "__main__":
                 os.path.join(start_date_dag, combined_detection_results),
                 combined_detection_results,
             )
-    
 
             # Upload overview and prioritized maps to the Azure Blob Storage
             for html_file in ["Overview.html", "Prioritized.html"]:
