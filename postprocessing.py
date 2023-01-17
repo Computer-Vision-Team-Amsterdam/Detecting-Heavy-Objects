@@ -16,12 +16,10 @@ import numpy.typing as npt
 import pandas as pd
 import pandas.io.sql as sqlio
 import pycocotools.mask as mask_util
-from panorama.client import PanoramaClient
 from psycopg2.extras import execute_values
 from scipy.spatial.distance import cdist
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
-from tqdm import tqdm
 from triangulation.masking import get_side_view_of_pano
 from triangulation.triangulate import triangulate
 
@@ -140,7 +138,6 @@ class PostProcessing:
         self.bridges_file = bridges_file
         self.date_to_check = date_to_check
         self.output_folder.mkdir(exist_ok=True, parents=True)
-        self.objects_file = Path("points_of_interest.csv")
         self.data_file = Path("processed_predictions.json")
         self.prioritized_file = Path("prioritized_objects.csv")
 
@@ -229,6 +226,7 @@ class PostProcessing:
         canals. This function returns a structured array (column based) with floats and strings inside.
         """
 
+        print(self.stats.data)
         def calculate_score(bridge_distance: float, permit_distance: float) -> float:
             """
             Calculate score for bridge and permit distance;
@@ -336,6 +334,7 @@ class PostProcessing:
                 ("permit_keys", "U64"),
             ],
         )
+
 
         write_to_csv(
             structured_array,
