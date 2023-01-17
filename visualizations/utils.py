@@ -48,9 +48,8 @@ def get_permit_locations(
 
         return False
 
-    def split_dutch_street_address(address: str) -> List[str]:
+    def split_dutch_street_address(raw_address: str) -> List[str]:
         """
-        TODO use a function like this
         This function separates an address string (street name, house number, house number extension and zipcode)
         into parts.
         Regular expression quantifiers:
@@ -60,9 +59,9 @@ def get_permit_locations(
         """
 
         regex = "(\D+)\s+(\d+)\s?(.*)\s+(\d{4}\s*?[A-z]{2})"
-        return re.findall(regex, address)
+        return re.findall(regex, raw_address)
 
-    def is_container_permit(permit: Any) -> bool:
+    def is_container_permit(permit: xml.etree.ElementTree.Element) -> bool:
         """
         Check whether permit is for a container
         """
