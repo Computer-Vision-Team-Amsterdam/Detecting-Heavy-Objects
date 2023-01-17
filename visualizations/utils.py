@@ -73,11 +73,10 @@ def get_permit_locations(
         ]
         description = permit.find("TEXT8")
         try:
-            if any(
+            return any(
                 get_close_matches(word, container_words)
                 for word in description.text.split(" ")  # type:ignore
-            ):
-                return True
+            )
         except Exception as e:
             print(f"There was an exception in the is_container_permit function: {e}")
 
