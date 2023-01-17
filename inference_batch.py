@@ -16,6 +16,7 @@ from detectron2.data import MetadataCatalog
 from detectron2.modeling import build_model
 from detectron2.structures import BoxMode
 from psycopg2.extras import execute_values
+import psycopg2
 from torch.utils.data import DataLoader, Dataset
 
 import upload_to_postgres
@@ -241,7 +242,6 @@ if __name__ == "__main__":
 
     if data_results:
         with upload_to_postgres.connect() as (conn, cur):
-            print("Inserting data into database...")
             table_name = "detections"
 
             # Get columns
@@ -250,7 +250,15 @@ if __name__ == "__main__":
             table_columns = [desc[0] for desc in cur.description]
             table_columns.pop(0)  # Remove the id column
 
-            # Inserting data into database
-            query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-            execute_values(cur, query, data_results)
-            conn.commit()
+            try:
+                # Inserting data into database
+                print("Inserting data into database...")
+                query = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+                execute_values(cur, query, data_results)
+            except psycopg2.Error as e:
+                # This is the base class for all exceptions raised by psycopg2.
+                # It is a catch-all exception that can be raised for any error that
+                # occurs during the execution of a query.
+                raise e
+            finally:
+                conn.commit()

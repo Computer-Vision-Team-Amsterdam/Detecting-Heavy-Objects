@@ -535,8 +535,6 @@ if __name__ == "__main__":
                 # It is a catch-all exception that can be raised for any error that
                 # occurs during the execution of a query.
                 raise e
-            finally:
-                conn.commit()
 
             # Upload the file with found containers to the Azure Blob Storage
             for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:

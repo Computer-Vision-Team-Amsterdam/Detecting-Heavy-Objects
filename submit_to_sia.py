@@ -10,7 +10,7 @@ import argparse
 import json
 
 import pandas.io.sql as sqlio
-
+import psycopg2
 import upload_to_postgres
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from utils.date import get_start_date
@@ -242,7 +242,11 @@ if __name__ == "__main__":
 
     # Make a connection to the database
     with upload_to_postgres.connect() as (conn, _):
-        query_df = sqlio.read_sql_query(sql, conn)
+        # Catch any exceptions that may be raised by the psycopg2 library.
+        try:
+            query_df = sqlio.read_sql_query(sql, conn)
+        except psycopg2.Error as e:
+            raise e
 
     if query_df.empty:
         print(
