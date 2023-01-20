@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "Error: No argument provided. Please provide the path to the source directory as an argument. For example 2022/12/31"
+    echo "Error: No argument provided. Please provide the path to the source directory as an argument. For example 2022/12/31/"
     exit 1
 fi
 
@@ -60,26 +60,41 @@ for dir1 in $(rclone lsf --dirs-only $src_dir); do
         parent_dir_name=$(basename $dir2)
         input_folder=$src_dir/$dir1$dir2
         # Loop through all files in the equirectangular directory
-        for file in $(rclone ls $input_folder --include "equirectangular/panorama_8000.jpg"); do
-            # Try to copy the file using the parent directory name
-            retries=0
-            out_file_name=$dir_run_name"_"$parent_dir_name.jpg
-            # Maybe with --no-traverse 
-            while ! rclone copyto $input_folder$file $dst_dir$out_file_name; do
-                # Handle connection errors
-                if [ $? -eq 1 ]; then
-                    echo "Error: Connection failed. Retrying in 10 seconds..."
-                else
-                    echo "Error: Failed to download file ${out_file_name}. Retrying in 10 seconds..."
-                fi
-                # Check if the maximum number of retries has been reached
-                if [ "$retries" -ge "$MAX_RETRIES" ]; then
-                    echo "Error: Maximum number of retries reached. Exiting..."
-                    break 2
-                fi
-                retries=$((retries+1))
-                sleep 10
-            done
-        done
+
+        # Loop through all files in the equirectangular directory that are currently present in the server at that moment.
+        files=$(rclone lsl $input_folder --include "equirectangular/panorama_8000.jpg")
+
+        echo $files
+
+        if [[ -z "$files" ]]; then
+            echo "No files found"
+        else
+            while read -r file_date file_time file_name; do
+                # echo "Date: $file_date"
+                # echo "Time: $file_time"
+                # echo "File: $file_name"
+
+                # Try to copy the file using the parent directory name
+                retries=0
+                out_file_name=$dir_run_name"_"$parent_dir_name.jpg
+
+                # Maybe with --no-traverse and --transfers 
+                while ! rclone copyto $input_folder$file_name $dst_dir$out_file_name; do
+                    # Handle connection errors
+                    if [ $? -eq 1 ]; then
+                        echo "Error: Connection failed. Retrying in 10 seconds..."
+                    else
+                        echo "Error: Failed to download file ${out_file_name}. Retrying in 10 seconds..."
+                    fi
+                    # Check if the maximum number of retries has been reached
+                    if [ "$retries" -ge "$MAX_RETRIES" ]; then
+                        echo "Error: Maximum number of retries reached. Exiting..."
+                        break 2
+                    fi
+                    retries=$((retries+1))
+                    sleep 10
+                done
+            done < <(echo "$files" | awk '{print $2, $3, $4}')
+        fi
     done
 done
