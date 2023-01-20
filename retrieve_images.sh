@@ -5,31 +5,67 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Log in to Azure using a managed identity
+az login --identity --verbose --debug
+
+# Get the key vault URL from the environment variable
+keyVaultUrl=$(echo $AIRFLOW__SECRETS__BACKEND_KWARGS | jq -r 'vault_url')
+
+# Extract the key vault name from the URL
+keyVaultName=$(echo $keyVaultUrl | awk -F/ '{print $4}')
+
+echo keyVaultName
+
+# Set the secret name
+secretName="chris_test"
+
+# Retrieve the secret value
+secretValue=$(az keyvault secret show --vault-name $keyVaultName -n $secretName --query "value" -o tsv)
+
+# Use the secret value in your script
+echo "The secret value is: $secretValue"
+
+exit 1
+
+# Set the storage account name and container name
+storageAccountName=$secretValue
+containerName="unblurred"
+
+secretTenant="test"
+secretUser="test"
+secretKey="test"
+
+# Create the rclone configurations
+rclone config create azureblob_rclone azureblob \
+  --azureblob-account=$storageAccountName \
+  --azureblob-container=$containerName \
+  --azureblob-use-msi
+rclone config create objectstore_rclone swift auth https://identity.stack.cloudvps.com/v2.0 auth_version 2 tenant $secretTenant user $secretUser key $secretKey
+
+
 # Set the source and destination directories
 src_dir=objectstore_rclone:panorama/$1
-dst_dir=my_folder/
+dst_dir=azureblob_rclone:my_folder/
 
 # Set the maximum number of retries
 MAX_RETRIES=2
-# Define the config option
-RCLONE_CONF="--config rclone.conf"
 
 # Loop through all top-level directories in the source directory
-for dir1 in $(rclone lsf --dirs-only $src_dir $RCLONE_CONF); do
+for dir1 in $(rclone lsf --dirs-only $src_dir); do
     dir_run_name=$(basename $dir1)
 
     # Loop through all subdirectories in the source directory
-    for dir2 in $(rclone lsf --dirs-only $src_dir/$dir1 $RCLONE_CONF); do
+    for dir2 in $(rclone lsf --dirs-only $src_dir/$dir1); do
         # Get the parent directory name
         parent_dir_name=$(basename $dir2)
         input_folder=$src_dir/$dir1$dir2
         # Loop through all files in the equirectangular directory
-        for file in $(rclone ls $input_folder --include "equirectangular/panorama_8000.jpg" $RCLONE_CONF); do
+        for file in $(rclone ls $input_folder --include "equirectangular/panorama_8000.jpg"); do
             # Try to copy the file using the parent directory name
             retries=0
             out_file_name=$dir_run_name"_"$parent_dir_name.jpg
             # Maybe with --no-traverse 
-            while ! rclone copyto $input_folder$file $dst_dir$out_file_name $RCLONE_CONF; do
+            while ! rclone copyto $input_folder$file $dst_dir$out_file_name; do
                 # Handle connection errors
                 if [ $? -eq 1 ]; then
                     echo "Error: Connection failed. Retrying in 10 seconds..."
