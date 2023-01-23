@@ -9,38 +9,22 @@ fi
 az login --identity --username $USER_ASSIGNED_MANAGED_IDENTITY --verbose --debug
 
 # Get the key vault URL from the environment variable
-keyVaultUrl=$(echo $AIRFLOW__SECRETS__BACKEND_KWARGS | jq -r 'vault_url')
+keyVaultUrl=$(echo $AIRFLOW__SECRETS__BACKEND_KWARGS | jq -r '.vault_url')
 
 # Extract the key vault name from the URL
-keyVaultName=$(echo $keyVaultUrl | awk -F/ '{print $4}')
-
-echo keyVaultName
-
-# Set the secret name
-secretName="chris_test"
-
-# Retrieve the secret value
-secretValue=$(az keyvault secret show --vault-name $keyVaultName -n $secretName --query "value" -o tsv)
-
-# Use the secret value in your script
-echo "The secret value is: $secretValue"
-
-exit 1
+keyVaultName=$(echo $keyVaultUrl | grep -oP '(?<=https://)[^.]+(?=.vault)')
 
 # Set the storage account name and container name
-storageAccountName=$secretValue
+storageAccountName=$(az keyvault secret show --vault-name $keyVaultName -n "chris-test" --query "value" -o tsv)
 containerName="unblurred"
 
-secretTenant="test"
-secretUser="test"
-secretKey="test"
+secretTenant=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredTenant" --query "value" -o tsv)
+secretUser=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredUsernameShort" --query "value" -o tsv)
+secretKey=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredPassword" --query "value" -o tsv)
 
 # Create the rclone configurations
-rclone config create azureblob_rclone azureblob \
-  --azureblob-account=$storageAccountName \
-  --azureblob-container=$containerName \
-  --azureblob-use-msi
-rclone config create objectstore_rclone swift auth https://identity.stack.cloudvps.com/v2.0 auth_version 2 tenant $secretTenant user $secretUser key $secretKey
+rclone config create azureblob_rclone  azureblob storage_account_name=$storageAccountName container=$containerName --quiet > /dev/null
+rclone config create objectstore_rclone swift auth https://identity.stack.cloudvps.com/v2.0 auth_version 2 tenant $secretTenant user $secretUser key $secretKey --quiet > /dev/null
 
 
 # Set the source and destination directories
