@@ -1,5 +1,5 @@
 # Use the official Ubuntu 20.04 image as the base image
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Update the package manager and install the necessary dependencies
 RUN apt-get update && apt-get install -y \
@@ -9,9 +9,6 @@ RUN apt-get update && apt-get install -y \
 
 # Add the Rclone repository and install Rclone
 RUN curl https://rclone.org/install.sh | bash
-
-# Packages required to run the Azure CLI installation
-RUN	apt-get update && apt-get -y install curl
 
 # Azure installation command
 RUN	curl -sL https://aka.ms/InstallAzureCLIDeb | bash
