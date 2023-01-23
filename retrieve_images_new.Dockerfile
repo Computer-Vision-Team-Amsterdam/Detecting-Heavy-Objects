@@ -1,12 +1,14 @@
-# Use an official Alpine Linux as a parent image
+# Use the official Ubuntu 20.04 image as the base image
 FROM ubuntu:20.04
 
-# Install rclone
-RUN apk add --no-cache ca-certificates openssl unzip \
-    && wget -q https://downloads.rclone.org/rclone-current-linux-amd64.zip \
-    && unzip rclone-current-linux-amd64.zip \
-    && mv rclone-*-linux-amd64/rclone /usr/bin/ \
-    && rm -r rclone-*-linux-amd64*
+# Update the package manager and install the necessary dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    software-properties-common
+
+# Add the Rclone repository and install Rclone
+RUN curl https://rclone.org/install.sh | bash
 
 # Packages required to run the Azure CLI installation
 RUN	apt-get update && apt-get -y install curl
