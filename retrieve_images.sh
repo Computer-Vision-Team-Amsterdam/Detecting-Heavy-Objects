@@ -6,7 +6,7 @@ if [ -z "$1" ]; then
 fi
 
 # Log in to Azure using a managed identity
-az login --identity --verbose --debug
+az login --identity --username $USER_ASSIGNED_MANAGED_IDENTITY --verbose --debug
 
 # Get the key vault URL from the environment variable
 keyVaultUrl=$(echo $AIRFLOW__SECRETS__BACKEND_KWARGS | jq -r 'vault_url')

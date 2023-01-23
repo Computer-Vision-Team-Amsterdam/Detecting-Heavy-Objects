@@ -5,7 +5,8 @@ FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
     curl \
     unzip \
-    software-properties-common
+    software-properties-common \
+    jq
 
 # Add the Rclone repository and install Rclone
 RUN curl https://rclone.org/install.sh | bash
