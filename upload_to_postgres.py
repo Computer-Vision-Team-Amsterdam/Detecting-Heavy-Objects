@@ -129,7 +129,6 @@ def row_to_upload_from_panorama(
 
 def upload_images(cursor_: psycopg2.extensions.cursor, data: List[str]) -> None:
     keys = get_column_names("images", cursor_)  # column names from table in postgres
-    query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
 
     rows: List[Dict[str, Union[str, float, datetime]]] = [
         row_to_upload_from_panorama(element, keys)
@@ -137,13 +136,19 @@ def upload_images(cursor_: psycopg2.extensions.cursor, data: List[str]) -> None:
     ]
     values = [list(item.values()) for item in rows]
 
-    execute_values(cursor_, query, values)
+    try:
+        query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
+        execute_values(cursor_, query, values)
+    except psycopg2.Error as e:
+        # This is the base class for all exceptions raised by psycopg2.
+        # It is a catch-all exception that can be raised for any error that
+        # occurs during the execution of a query.
+        raise e
 
 
 def upload_detections(cursor_: psycopg2.extensions.cursor, data: List[Dict[str, Union[str, float, datetime]]]) -> None:
     object_fields = ["pano_id", "score", "bbox"]
     keys = get_column_names("detections", cursor_)  # column names from table in postgres
-    query = f"INSERT INTO detections ({','.join(keys)}) VALUES %s;"
 
     rows: List[Dict[str, Union[str, float, datetime]]] = [
         row_to_upload(element, object_fields, keys)  # type: ignore
@@ -151,7 +156,14 @@ def upload_detections(cursor_: psycopg2.extensions.cursor, data: List[Dict[str, 
     ]
     values = [list(item.values()) for item in rows]
 
-    execute_values(cursor_, query, values)
+    try:
+        query = f"INSERT INTO detections ({','.join(keys)}) VALUES %s;"
+        execute_values(cursor_, query, values)
+    except psycopg2.Error as e:
+        # This is the base class for all exceptions raised by psycopg2.
+        # It is a catch-all exception that can be raised for any error that
+        # occurs during the execution of a query.
+        raise e
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -194,7 +206,7 @@ if __name__ == "__main__":
                 local_file_path=local_file,
             )
             with open(local_file, "r") as f:
-                input_data_images = [line.rstrip("\n") for line in f]
+                input_data_images.extend([line.rstrip("\n") for line in f])
 
         with connect() as (_, cursor):
             upload_images(cursor, input_data_images)
