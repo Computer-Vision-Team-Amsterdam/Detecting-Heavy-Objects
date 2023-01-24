@@ -6,7 +6,7 @@ if [ -z "$1" ]; then
 fi
 
 # Log in to Azure using a managed identity
-az login --identity --username $USER_ASSIGNED_MANAGED_IDENTITY --verbose --debug
+az login --identity --username $USER_ASSIGNED_MANAGED_IDENTITY
 
 # Get the key vault URL from the environment variable
 keyVaultUrl=$(echo $AIRFLOW__SECRETS__BACKEND_KWARGS | jq -r '.vault_url')
@@ -15,7 +15,7 @@ keyVaultUrl=$(echo $AIRFLOW__SECRETS__BACKEND_KWARGS | jq -r '.vault_url')
 keyVaultName=$(echo $keyVaultUrl | grep -oP '(?<=https://)[^.]+(?=.vault)')
 
 # Set the storage account name and container name
-storageAccountName=$(az keyvault secret show --vault-name $keyVaultName -n "chris-test" --query "value" -o tsv)
+storageAccountName=$(az keyvault secret show --vault-name $keyVaultName -n "data-storage-account-url" --query "value" -o tsv)
 containerName="unblurred"
 
 secretTenant=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredTenant" --query "value" -o tsv)
@@ -23,16 +23,19 @@ secretUser=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlur
 secretKey=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredPassword" --query "value" -o tsv)
 
 # Create the rclone configurations
-rclone config create azureblob_rclone  azureblob storage_account_name=$storageAccountName container=$containerName --quiet > /dev/null
 rclone config create objectstore_rclone swift auth https://identity.stack.cloudvps.com/v2.0 auth_version 2 tenant $secretTenant user $secretUser key $secretKey --quiet > /dev/null
+rclone config create azureblob_rclone azureblob --azureblob-use-msi \
+    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY  --quiet > /dev/null
 
+# rclone config show 
 
 # Set the source and destination directories
 src_dir=objectstore_rclone:panorama/$1
-dst_dir=azureblob_rclone:my_folder/
+dst_dir=my_folder/
 
 # Set the maximum number of retries
 MAX_RETRIES=2
+counter=0
 
 # Loop through all top-level directories in the source directory
 for dir1 in $(rclone lsf --dirs-only $src_dir); do
@@ -48,7 +51,6 @@ for dir1 in $(rclone lsf --dirs-only $src_dir); do
         # Loop through all files in the equirectangular directory that are currently present in the server at that moment.
         files=$(rclone lsl $input_folder --include "equirectangular/panorama_8000.jpg")
 
-        echo $files
 
         if [[ -z "$files" ]]; then
             echo "No files found"
@@ -58,9 +60,15 @@ for dir1 in $(rclone lsf --dirs-only $src_dir); do
                 # echo "Time: $file_time"
                 # echo "File: $file_name"
 
+
                 # Try to copy the file using the parent directory name
                 retries=0
                 out_file_name=$dir_run_name"_"$parent_dir_name.jpg
+
+                counter=$((counter+1))
+                if [ $counter -eq 10 ]; then
+                    break
+                fi
 
                 # Maybe with --no-traverse and --transfers 
                 while ! rclone copyto $input_folder$file_name $dst_dir$out_file_name; do
@@ -80,5 +88,32 @@ for dir1 in $(rclone lsf --dirs-only $src_dir); do
                 done
             done < <(echo "$files" | awk '{print $2, $3, $4}')
         fi
+        break
     done
+
 done
+
+src_dir2=my_folder/
+dst_dir2=azureblob_rclone:unblurred/
+
+# List all files in the source folder
+files=$(rclone ls $src_dir2)
+
+if [[ -z "$files" ]]; then
+    echo "No files found"
+else
+    while read -r file_size file_name; do
+        # echo "Date: $file_date"
+        # echo "Time: $file_time"
+        # echo "File: $file_name"
+        echo $file_name
+
+        # Try to copy the file using the parent directory name
+        retries=0
+
+        # Maybe with --no-traverse and --transfers 
+        rclone copy $src_dir2$file_name $dst_dir2$file_name
+        echo "hallo"
+
+    done < <(echo "$files" | awk '{print $1, $2}')
+fi
