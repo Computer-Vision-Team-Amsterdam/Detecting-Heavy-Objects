@@ -60,10 +60,10 @@ def download_panorama_from_cloudvps(
             url, timeout=20, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD)
         )
         if response.status_code == 404:
-            raise FileNotFoundError(f"No resource found at {url}")
+            print(f"No resource found at {url}")
 
         if response.status_code != 200:
-            raise KeyError(f"Status code is {response.status_code}")
+            print(f"Status code is {response.status_code}")
 
         filename = Path(os.getcwd(), output_dir, f"{panorama_id}.jpg")
         with open(filename, "wb") as out_file:
