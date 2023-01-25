@@ -24,7 +24,6 @@ keyVaultName=$(echo $keyVaultUrl | grep -oP '(?<=https://)[^.]+(?=.vault)')
 
 # Set the storage account name and container name
 storageAccountUrl=$(az keyvault secret show --vault-name $keyVaultName -n "data-storage-account-url" --query "value" -o tsv)
-containerName="unblurred"
 storageAccountName=$(echo $storageAccountUrl | grep -oP '(?<=https://)[^.]+(?=.blob)')
 
 secretTenant=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredTenant" --query "value" -o tsv)
@@ -33,60 +32,89 @@ secretKey=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurr
 
 # Create the rclone configurations
 rclone config create objectstore_rclone swift auth https://identity.stack.cloudvps.com/v2.0 auth_version 2 tenant $secretTenant user $secretUser key $secretKey --quiet > /dev/null
+containerName="unblurred"
 rclone config create azureblob_rclone azureblob container=$containerName account=$storageAccountName --quiet > /dev/null
+containerNameTwee="retrieve-images-input"
+rclone config create azureblob_rclone_twee azureblob container=$containerNameTwee account=$storageAccountName --quiet > /dev/null
 
 # Set the source and destination directories
 src_dir=objectstore_rclone:panorama/$cloudvps_folder
 dst_dir=azureblob_rclone:unblurred/$azure_folder/
 
-# Set the maximum number of retries
-MAX_RETRIES=2
 
-# Loop through all top-level directories in the source directory
-for dir1 in $(rclone lsf --dirs-only $src_dir); do
-    dir_run_name=$(basename $dir1)
+# Get directory structure for source dir, and remove the first line ("/") and stripansi
+rclone tree $src_dir --noindent --include "equirectangular/panorama_8000.jpg" --noreport | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > files.txt
 
-    # Loop through all subdirectories in the source directory
-    for dir2 in $(rclone lsf --dirs-only $src_dir/$dir1); do
-        # Get the parent directory name
-        parent_dir_name=$(basename $dir2)
-        input_folder=$src_dir/$dir1$dir2
-        # Loop through all files in the equirectangular directory
+# Create paths from tree output
+# e.g. TMX7316010203-002927/pano_0015_000036/equirectangular/panorama_8000.jpg
+awk '{
+   if ($0 ~ /^TMX/) {
+     prefix = $0;
+   } else if ($0 ~ /^pano/) {
+     path = $0;
+   } else if ($0 ~ /^equirectangular/) {
+     print prefix "/" path "/" $0 "/panorama_8000.jpg";
+   }
+}' files.txt > paths.txt
 
-        # Loop through all files in the equirectangular directory that are currently present in the server at that moment.
-        files=$(rclone lsl $input_folder --include "equirectangular/panorama_8000.jpg")
+# Convert Cloud VPS paths to pano ids
+sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids.txt
 
+counter=0
+## Loop over the combined paths and panorama id files to get the source and destination file path pairs
+#paste paths.txt pano_ids.txt | while read path pano_id; do
+#   rclone copyto $src_dir/$path $dst_dir$pano_id.jpg \
+#      --azureblob-use-msi \
+#      --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY;
+#
+#      counter=$((counter+1))
+#      if [ $counter -eq 10 ]; then
+#          break
+#      fi
+#done
 
-        if [[ -z "$files" ]]; then
-            echo "No files found"
-        else
-            while read -r file_date file_time file_name; do
-                # echo "Date: $file_date"
-                # echo "Time: $file_time"
-                # echo "File: $file_name"
+while read line; do
+    # Convert Cloud VPS paths to pano ids
+    newline=$(echo "$line" | sed 's/\/equirectangular\/panorama_8000.jpg//' | tr '/' '_')
+    echo $newline
+    rclone copyto "$src_dir/$line" "$dst_dir$newline.jpg" \
+    --azureblob-use-msi \
+    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY;
 
+    # check the exit status of the rclone copyto command after every iteration
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to copy $line to $dst_dir$newline.jpg"
+    fi
 
-                # Try to copy the file using the parent directory name
-                retries=0
-                out_file_name=$dir_run_name"_"$parent_dir_name.jpg
+    counter=$((counter+1))
+    if [ $counter -eq 10 ]; then
+        break
+    fi
+done < paths.txt
 
-                # Maybe with --no-traverse and --transfers 
-                while ! rclone copyto $input_folder$file_name $dst_dir$out_file_name --azureblob-use-msi --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY; do
-                    # Handle connection errors
-                    if [ $? -eq 1 ]; then
-                        echo "Error: Connection failed. Retrying in 10 seconds..."
-                    else
-                        echo "Error: Failed to download file ${out_file_name}. Retrying in 10 seconds..."
-                    fi
-                    # Check if the maximum number of retries has been reached
-                    if [ "$retries" -ge "$MAX_RETRIES" ]; then
-                        echo "Error: Maximum number of retries reached. Exiting..."
-                        break 2
-                    fi
-                    retries=$((retries+1))
-                    sleep 10
-                done
-            done < <(echo "$files" | awk '{print $2, $3, $4}')
-        fi
-    done
+num_workers=8 # TODO
+chunk_folder="splits"
+mkdir $chunk_folder
+
+dst_dir2=azureblob_rclone_twee:retrieve-images-input/$azure_folder
+
+split -n $num_workers pano_ids.txt $chunk_folder/
+
+i=1
+for file in $chunk_folder/*; do
+    mv "$file" "$chunk_folder/$i.txt"
+    i=$((i+1))
+done
+
+for chunk_file in "$chunk_folder/*"
+do
+    base_name=$chunk_file
+    echo $base_name
+    rclone copyto $chunk_file $dst_dir2/$base_name \
+        --azureblob-use-msi \
+        --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY
+    # check the exit status of the rclone copyto command after every iteration
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to copy $chunk_file to $dst_dir2/$base_name"
+    fi
 done
