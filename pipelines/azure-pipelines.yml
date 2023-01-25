@@ -18,9 +18,9 @@ parameters:
   default:
     - name: 'Retrieve' #No spaces or special chars
       displayName: 'Retrieve Images'
-      dockerFileName: 'retrieve_images_new.Dockerfile'
+      dockerFileName: 'retrieve_images.Dockerfile'
       dockerFileRelativePath: ''
-      imageRepository: 'retrieve_images'
+      imageRepository: 'retrieve'
       tag: 'latest'
     - name: 'Blur' #No spaces or special chars
       displayName: 'Blur'
