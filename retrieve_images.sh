@@ -32,7 +32,7 @@ secretKey=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurr
 
 # Create the rclone configurations
 rclone config create objectstore_rclone swift auth https://identity.stack.cloudvps.com/v2.0 auth_version 2 tenant $secretTenant user $secretUser key $secretKey --quiet > /dev/null
-rclone config create azureblob_rclone azureblob storage_account_name=$storageAccountUrl container=$containerName account=$storageAccountName --quiet > /dev/null
+rclone config create azureblob_rclone azureblob container=$containerName account=$storageAccountName --quiet > /dev/null
 
 # Set the source and destination directories
 src_dir=objectstore_rclone:panorama/$cloudvps_folder
