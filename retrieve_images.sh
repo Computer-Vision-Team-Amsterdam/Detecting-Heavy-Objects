@@ -1,9 +1,16 @@
 #!/bin/bash
 
-if [ -z "$1" ]; then
-    echo "Error: No argument provided. Please provide the path to the source directory as an argument. For example 2022/12/31/"
+if [ $# -ne 2 ]; then
+    echo "Error: No two arguments provided. Please provide the path to the source directory as an argument. For example 2022-12-31 21:00:00.00"
     exit 1
 fi
+
+merged="$1 $2"
+azure_folder=$(date -d "$merged" +"%Y-%m-%d_%H-%M-%S")
+echo azure_folder
+
+cloudvps_folder=$(echo $1 | sed 's/-/\//g')
+echo cloudvps_folder
 
 # Log in to Azure using a managed identity
 az login --identity --username $USER_ASSIGNED_MANAGED_IDENTITY
@@ -15,8 +22,9 @@ keyVaultUrl=$(echo $AIRFLOW__SECRETS__BACKEND_KWARGS | jq -r '.vault_url')
 keyVaultName=$(echo $keyVaultUrl | grep -oP '(?<=https://)[^.]+(?=.vault)')
 
 # Set the storage account name and container name
-storageAccountName=$(az keyvault secret show --vault-name $keyVaultName -n "data-storage-account-url" --query "value" -o tsv)
+storageAccountUrl=$(az keyvault secret show --vault-name $keyVaultName -n "data-storage-account-url" --query "value" -o tsv)
 containerName="unblurred"
+storageAccountName=$(echo $storageAccountUrl | grep -oP '(?<=https://)[^.]+(?=.blob)')
 
 secretTenant=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredTenant" --query "value" -o tsv)
 secretUser=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurredUsernameShort" --query "value" -o tsv)
@@ -24,13 +32,10 @@ secretKey=$(az keyvault secret show --vault-name $keyVaultName -n "CloudVpsBlurr
 
 # Create the rclone configurations
 rclone config create objectstore_rclone swift auth https://identity.stack.cloudvps.com/v2.0 auth_version 2 tenant $secretTenant user $secretUser key $secretKey --quiet > /dev/null
-rclone config create azureblob_rclone azureblob --azureblob-use-msi \
-    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY  --quiet > /dev/null
-
-# rclone config show 
+rclone config create azureblob_rclone azureblob storage_account_name=$storageAccountUrl container=$containerName account=$storageAccountName --quiet > /dev/null
 
 # Set the source and destination directories
-src_dir=objectstore_rclone:panorama/$1
+src_dir=objectstore_rclone:panorama/$cloudvps_folder
 dst_dir=my_folder/
 
 # Set the maximum number of retries
@@ -94,7 +99,7 @@ for dir1 in $(rclone lsf --dirs-only $src_dir); do
 done
 
 src_dir2=my_folder/
-dst_dir2=azureblob_rclone:unblurred/
+dst_dir2=azureblob_rclone:unblurred/$azure_folder
 
 # List all files in the source folder
 files=$(rclone ls $src_dir2)
@@ -112,7 +117,7 @@ else
         retries=0
 
         # Maybe with --no-traverse and --transfers 
-        rclone copy $src_dir2$file_name $dst_dir2$file_name
+        rclone copy $src_dir2$file_name $dst_dir2 --azureblob-use-msi --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY
         echo "hallo"
 
     done < <(echo "$files" | awk '{print $1, $2}')
