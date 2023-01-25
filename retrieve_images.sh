@@ -1,16 +1,17 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
-    echo "Error: No two arguments provided. Please provide the path to the source directory as an argument. For example 2022-12-31 21:00:00.00"
+if [ -z "$1" ]; then
+    echo "Error: No argument provided. Please provide the path to the source directory as an argument. For example 2022/12/31/"
     exit 1
 fi
 
-merged="$1 $2"
-azure_folder=$(date -d "$merged" +"%Y-%m-%d_%H-%M-%S")
-echo azure_folder
+cloudvps_folder=$(echo $1 | cut -d ' ' -f1)
+cloudvps_folder=$(echo $cloudvps_folder | sed 's/-/\//g')
+echo "the Azure destination folder is: $cloudvps_folder"
 
-cloudvps_folder=$(echo $1 | sed 's/-/\//g')
-echo cloudvps_folder
+azure_folder=$(echo $1 | cut -d '.' -f1)
+azure_folder=$(echo $azure_folder | sed 's/ /_/g' | sed 's/-/:/g' | sed 's/:/-/g')
+echo "the Azure destination folder is: $azure_folder"
 
 # Log in to Azure using a managed identity
 az login --identity --username $USER_ASSIGNED_MANAGED_IDENTITY
