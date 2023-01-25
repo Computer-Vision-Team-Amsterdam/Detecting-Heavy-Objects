@@ -36,11 +36,10 @@ rclone config create azureblob_rclone azureblob container=$containerName account
 
 # Set the source and destination directories
 src_dir=objectstore_rclone:panorama/$cloudvps_folder
-dst_dir=my_folder/
+dst_dir=azureblob_rclone:unblurred/$azure_folder
 
 # Set the maximum number of retries
 MAX_RETRIES=2
-counter=0
 
 # Loop through all top-level directories in the source directory
 for dir1 in $(rclone lsf --dirs-only $src_dir); do
@@ -70,13 +69,8 @@ for dir1 in $(rclone lsf --dirs-only $src_dir); do
                 retries=0
                 out_file_name=$dir_run_name"_"$parent_dir_name.jpg
 
-                counter=$((counter+1))
-                if [ $counter -eq 10 ]; then
-                    break
-                fi
-
                 # Maybe with --no-traverse and --transfers 
-                while ! rclone copyto $input_folder$file_name $dst_dir$out_file_name; do
+                while ! rclone copyto $input_folder$file_name $dst_dir$out_file_name --azureblob-use-msi --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY; do
                     # Handle connection errors
                     if [ $? -eq 1 ]; then
                         echo "Error: Connection failed. Retrying in 10 seconds..."
@@ -93,32 +87,5 @@ for dir1 in $(rclone lsf --dirs-only $src_dir); do
                 done
             done < <(echo "$files" | awk '{print $2, $3, $4}')
         fi
-        break
     done
-
 done
-
-src_dir2=my_folder/
-dst_dir2=azureblob_rclone:unblurred/$azure_folder
-
-# List all files in the source folder
-files=$(rclone ls $src_dir2)
-
-if [[ -z "$files" ]]; then
-    echo "No files found"
-else
-    while read -r file_size file_name; do
-        # echo "Date: $file_date"
-        # echo "Time: $file_time"
-        # echo "File: $file_name"
-        echo $file_name
-
-        # Try to copy the file using the parent directory name
-        retries=0
-
-        # Maybe with --no-traverse and --transfers 
-        rclone copy $src_dir2$file_name $dst_dir2 --azureblob-use-msi --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY
-        echo "hallo"
-
-    done < <(echo "$files" | awk '{print $1, $2}')
-fi
