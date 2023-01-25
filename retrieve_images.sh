@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "Error: No argument provided. Please provide the path to the source directory as an argument. For example 2022/12/31/"
+    echo "Error: No argument provided. Please provide the path to the source directory as an argument. For example 2022-12-31 21:00:00.00"
     exit 1
 fi
 
@@ -37,7 +37,7 @@ rclone config create azureblob_rclone azureblob container=$containerName account
 
 # Set the source and destination directories
 src_dir=objectstore_rclone:panorama/$cloudvps_folder
-dst_dir=azureblob_rclone:unblurred/$azure_folder
+dst_dir=azureblob_rclone:unblurred/$azure_folder/
 
 # Set the maximum number of retries
 MAX_RETRIES=2
