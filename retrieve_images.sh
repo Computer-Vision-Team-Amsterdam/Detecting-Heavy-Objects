@@ -128,7 +128,7 @@ for chunk_file in $chunk_folder/*; do
         --verbose
     # check the exit status of the rclone copyto command after every iteration
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to copy $chunk_file to $dst_dir2/$base_name"
+        echo "Error: Failed to copy $chunk_file to $dst_dir2/$i"
     fi
     i=$((i+1))
 done
