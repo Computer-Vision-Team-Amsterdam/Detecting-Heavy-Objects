@@ -234,9 +234,11 @@ def download_panos():
     # Validate if all blobs are available
     pano_ids_txt = [f"{start_date_dag}/{item}.jpg" for item in pano_ids]
     if len(set(pano_ids_txt) - set(blobs)) != 0:
-        raise ValueError("Not all panoramic images are available in the storage account! Aborting...")
+        print("Not all panoramic images are available in the storage account! Finding the matching now...")
 
-    for blob in pano_ids_txt:
+    pano_ids_new = list(set(pano_ids_txt) & set(blobs))
+
+    for blob in pano_ids_new:
         filename = blob.split("/")[1]
         saClient.download_blob(
             cname="unblurred",

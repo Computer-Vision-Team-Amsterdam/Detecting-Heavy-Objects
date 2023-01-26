@@ -53,7 +53,7 @@ def download_panorama_from_cloudvps(
             f"{str(date.month).zfill(2)}/"
             f"{str(date.day).zfill(2)}/"
             f"{id_name}/{pano_name}/"
-            f"equirectangular/panorama_8000.jpg"
+            f"equirectangular/panorama_2000.jpg"
         )
 
         response = requests.get(
@@ -96,7 +96,6 @@ def get_pano_ids(start_date_dag_ymd: str) -> Any:
     """
     pano_ids_dict = defaultdict(list)
 
-    start_date_dag_ymd = "2023-01-11"  # TODO remove!!!
     my_format_ymd = "%Y-%m-%d"
     start_date = datetime.strptime(start_date_dag_ymd, my_format_ymd)
     end_date = start_date + timedelta(days=1)

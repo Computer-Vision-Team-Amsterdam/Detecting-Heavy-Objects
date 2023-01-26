@@ -18,6 +18,12 @@ parameters:
   default:
     - name: 'Retrieve' #No spaces or special chars
       displayName: 'Retrieve Images'
+      dockerFileName: 'retrieve_images_new.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'retrieve_images'
+      tag: 'latest'
+    - name: 'RetrieveOld' #No spaces or special chars
+      displayName: 'Retrieve Images Old'
       dockerFileName: 'retrieve_images.Dockerfile'
       dockerFileRelativePath: ''
       imageRepository: 'retrieve'
