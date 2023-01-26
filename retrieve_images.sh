@@ -1,7 +1,8 @@
 #!/bin/bash
 
-if [ -z "$1" ]; then
-    echo "Error: No argument provided. Please provide the path to the source directory as an argument. For example 2022-12-31 21:00:00.00"
+
+if [ $# -ne 2 ]; then
+    echo "Error: No two arguments provided. Please provide the path to the source directory as an argument. For example 2022-12-31 21:00:00.00"
     exit 1
 fi
 
@@ -114,7 +115,7 @@ while read line; do
     fi
 done < paths.txt
 
-num_workers=8 # TODO use arg
+num_workers=$2
 chunk_folder="splits"
 mkdir $chunk_folder
 
