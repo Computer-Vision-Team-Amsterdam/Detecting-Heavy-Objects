@@ -66,9 +66,7 @@ sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids
 processed_files="processed_files.txt"
 rclone tree $dst_dir3 --noindent --include ".jpg" --noreport \
     --azureblob-use-msi \
-    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > $processed_files
-
-cat $processed_files
+    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > processed_files.txt
 
 # check if a file is not empty
 if grep -q . $processed_files; then
@@ -78,8 +76,7 @@ if grep -q . $processed_files; then
     while read line; do
         rclone copyto "$dst_dir3/$line" "$chunk_folder_processed$line" \
         --azureblob-use-msi \
-        --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY \
-        --verbose
+        --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY
     done < $processed_files
 
     # Merge all processed pano ids to one file
@@ -118,8 +115,7 @@ i=1
 for chunk_file in $chunk_folder/*; do
     rclone copyto $chunk_file $dst_dir2/$i.txt \
         --azureblob-use-msi \
-        --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY \
-        --verbose
+        --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY
     # check the exit status of the rclone copyto command after every iteration
     if [ $? -ne 0 ]; then
         echo "Error: Failed to copy $chunk_file to $dst_dir2/$i.txt"
