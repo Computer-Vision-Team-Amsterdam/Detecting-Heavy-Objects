@@ -61,10 +61,21 @@ awk '{
 sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids.txt
 
 # Get processed pano ids from Azure
+# TODO list and download all files from retrieve-images-input
 
-## Merge all processed pano ids to one file
-#chunk_folder_processed="splits_processed/"
-#cat chunk_folder_processed/*/*.txt > pano_ids_processed.txt
+# TODO make an if statement, if no files are found dont do this check
+
+if [ TODO ]; then
+    # Merge all processed pano ids to one file
+    chunk_folder_processed="splits_processed/"
+    for file in chunk_folder_processed/*/*.txt
+    do
+        awk '{print}' "$file" >> pano_ids_processed.txt
+    done
+
+    # Get items to process. find lines only in the second file (pano_ids) and rename
+    comm -13 pano_ids_processed.txt pano_ids.txt > pano_ids.txt
+fi
 
 # Loop over the combined paths from Cloud VPS
 counter=0
