@@ -45,22 +45,22 @@ dst_dir2=azureblob_rclone_twee:retrieve-images-input/$azure_folder
 dst_dir3=azureblob_rclone_twee:retrieve-images-input/
 
 # Get directory structure for source dir, and remove the first line ("/") and stripansi
-rclone tree $src_dir --noindent --include "equirectangular/panorama_8000.jpg" --noreport | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > files.txt
+rclone tree $src_dir --noindent --include "equirectangular/panorama_2000.jpg" --noreport | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > files.txt
 
 # Create paths from tree output
-# e.g. TMX7316010203-002927/pano_0015_000036/equirectangular/panorama_8000.jpg
+# e.g. TMX7316010203-002927/pano_0015_000036/equirectangular/panorama_2000.jpg
 awk '{
    if ($0 ~ /^TMX/) {
      prefix = $0;
    } else if ($0 ~ /^pano/) {
      path = $0;
    } else if ($0 ~ /^equirectangular/) {
-     print prefix "/" path "/" $0 "/panorama_8000.jpg";
+     print prefix "/" path "/" $0 "/panorama_2000.jpg";
    }
 }' files.txt > paths.txt
 
 # Convert Cloud VPS paths to pano ids
-sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids.txt
+sed 's/\/equirectangular\/panorama_2000.jpg//' paths.txt | tr '/' '_' > pano_ids.txt
 
 # Get processed pano ids from Azure
 processed_files="processed_files.txt"
@@ -92,7 +92,7 @@ fi
 # Loop over the combined paths from Cloud VPS
 while read line; do
     # Convert Cloud VPS paths to pano ids
-    newline=$(echo "$line" | sed 's/\/equirectangular\/panorama_8000.jpg//' | tr '/' '_') # TODO already defined
+    newline=$(echo "$line" | sed 's/\/equirectangular\/panorama_2000.jpg//' | tr '/' '_') # TODO already defined
     echo $newline
     rclone copyto "$src_dir/$line" "$dst_dir$newline.jpg" \
     --azureblob-use-msi \
