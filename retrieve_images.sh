@@ -123,13 +123,13 @@ split -n $num_workers pano_ids.txt $chunk_folder/
 
 i=1
 for chunk_file in $chunk_folder/*; do
-    rclone copyto $chunk_file $dst_dir2/$i \
+    rclone copyto $chunk_file $dst_dir2/$i.txt \
         --azureblob-use-msi \
         --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY \
         --verbose
     # check the exit status of the rclone copyto command after every iteration
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to copy $chunk_file to $dst_dir2/$i"
+        echo "Error: Failed to copy $chunk_file to $dst_dir2/$i.txt"
     fi
     i=$((i+1))
 done
