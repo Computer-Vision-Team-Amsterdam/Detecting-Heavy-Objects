@@ -93,7 +93,6 @@ if grep -q . $processed_files; then
 fi
 
 # Loop over the combined paths from Cloud VPS
-counter=0
 while read line; do
     # Convert Cloud VPS paths to pano ids
     newline=$(echo "$line" | sed 's/\/equirectangular\/panorama_8000.jpg//' | tr '/' '_') # TODO already defined
@@ -106,12 +105,6 @@ while read line; do
     # check the exit status of the rclone copyto command after every iteration
     if [ $? -ne 0 ]; then
         echo "Error: Failed to copy $line to $dst_dir$newline.jpg"
-    fi
-
-    # TODO remove
-    counter=$((counter+1))
-    if [ $counter -eq 10 ]; then
-        break
     fi
 done < paths.txt
 
