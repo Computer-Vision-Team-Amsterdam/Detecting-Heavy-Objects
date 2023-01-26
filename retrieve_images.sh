@@ -60,13 +60,13 @@ awk '{
 # Convert Cloud VPS paths to pano ids
 sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids.txt
 
-## Loop over the combined paths and panorama id files to get the source and destination file path pairs
-#paste paths.txt pano_ids.txt | while read path pano_id; do
-#   rclone copyto $src_dir/$path $dst_dir$pano_id.jpg \
-#      --azureblob-use-msi \
-#      --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY;
-#done
+# Get processed pano ids from Azure
 
+## Merge all processed pano ids to one file
+#chunk_folder_processed="splits_processed/"
+#cat chunk_folder_processed/*/*.txt > pano_ids_processed.txt
+
+# Loop over the combined paths from Cloud VPS
 counter=0
 while read line; do
     # Convert Cloud VPS paths to pano ids
@@ -82,7 +82,8 @@ while read line; do
         echo "Error: Failed to copy $line to $dst_dir$newline.jpg"
     fi
 
-    counter=$((counter+1)) # TODO remove
+    # TODO remove
+    counter=$((counter+1))
     if [ $counter -eq 10 ]; then
         break
     fi
