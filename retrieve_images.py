@@ -53,7 +53,7 @@ def download_panorama_from_cloudvps(
             f"{str(date.month).zfill(2)}/"
             f"{str(date.day).zfill(2)}/"
             f"{id_name}/{pano_name}/"
-            f"equirectangular/panorama_8000.jpg"
+            f"equirectangular/panorama_2000.jpg"
         )
 
         response = requests.get(

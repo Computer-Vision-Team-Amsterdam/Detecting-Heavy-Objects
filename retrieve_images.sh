@@ -109,6 +109,7 @@ num_workers=$2
 chunk_folder="splits"
 mkdir $chunk_folder
 
+# TODO change split
 split -n $num_workers pano_ids.txt $chunk_folder/
 
 i=1

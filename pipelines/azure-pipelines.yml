@@ -22,6 +22,12 @@ parameters:
       dockerFileRelativePath: ''
       imageRepository: 'retrieve_images'
       tag: 'latest'
+    - name: 'RetrieveOld' #No spaces or special chars
+      displayName: 'Retrieve Images Old'
+      dockerFileName: 'retrieve_images.Dockerfile'
+      dockerFileRelativePath: ''
+      imageRepository: 'retrieve'
+      tag: 'latest'
     - name: 'Blur' #No spaces or special chars
       displayName: 'Blur'
       dockerFileName: 'blur.Dockerfile'
