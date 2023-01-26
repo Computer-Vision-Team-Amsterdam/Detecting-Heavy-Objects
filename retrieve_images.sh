@@ -41,6 +41,7 @@ rclone config create azureblob_rclone_twee azureblob container=$containerNameTwe
 src_dir=objectstore_rclone:panorama/$cloudvps_folder
 dst_dir=azureblob_rclone:unblurred/$azure_folder/
 dst_dir2=azureblob_rclone_twee:retrieve-images-input/$azure_folder
+dst_dir3=azureblob_rclone_twee:retrieve-images-input/
 
 # Get directory structure for source dir, and remove the first line ("/") and stripansi
 rclone tree $src_dir --noindent --include "equirectangular/panorama_8000.jpg" --noreport | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > files.txt
@@ -62,9 +63,9 @@ sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids
 
 # Get processed pano ids from Azure
 processed_files="processed_files.txt"
-rclone tree $dst_dir2 --noindent --include ".jpg" --noreport \
+rclone tree dst_dir3 --noindent --noreport \
     --azureblob-use-msi \
-    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > $processed_files.txt
+    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > $processed_files
 
 cat $processed_files
 
@@ -74,7 +75,7 @@ if grep -q . $processed_files; then
 
     chunk_folder_processed="splits_processed/"
     while read line; do
-        rclone copyto "$dst_dir2/$line" "$chunk_folder_processed$line" \
+        rclone copyto "dst_dir3/$line" "$chunk_folder_processed$line" \
         --azureblob-use-msi \
         --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY \
         --verbose
