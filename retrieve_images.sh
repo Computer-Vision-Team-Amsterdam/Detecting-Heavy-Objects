@@ -61,13 +61,26 @@ awk '{
 sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids.txt
 
 # Get processed pano ids from Azure
-# TODO list and download all files from retrieve-images-input
+processed_files="processed_files.txt"
+rclone tree $dst_dir2 --noindent --include ".jpg" --noreport \
+    --azureblob-use-msi \
+    --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > $processed_files.txt
 
-# TODO make an if statement, if no files are found dont do this check
+cat processed_files.txt
 
-if [ TODO ]; then
-    # Merge all processed pano ids to one file
+# check if a file is not empty
+if grep -q . $processed_files; then
+    echo "File is not empty"
+
     chunk_folder_processed="splits_processed/"
+    while read line; do
+        rclone copyto "$dst_dir2/$line" "$chunk_folder_processed$line" \
+        --azureblob-use-msi \
+        --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY \
+        --verbose
+    done < processed_files.txt
+
+    # Merge all processed pano ids to one file
     for file in chunk_folder_processed/*/*.txt
     do
         awk '{print}' "$file" >> pano_ids_processed.txt
