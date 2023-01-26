@@ -63,7 +63,7 @@ sed 's/\/equirectangular\/panorama_8000.jpg//' paths.txt | tr '/' '_' > pano_ids
 
 # Get processed pano ids from Azure
 processed_files="processed_files.txt"
-rclone tree $dst_dir3 --noindent --noreport \
+rclone tree $dst_dir3 --noindent --include ".jpg" --noreport \
     --azureblob-use-msi \
     --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > $processed_files
 
