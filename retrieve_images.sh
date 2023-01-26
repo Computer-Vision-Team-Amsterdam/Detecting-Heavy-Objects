@@ -66,7 +66,7 @@ rclone tree $dst_dir2 --noindent --include ".jpg" --noreport \
     --azureblob-use-msi \
     --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY | sed -e '1,1d' -e 's/\x1B\[[0-9;]*[JKmsu]//g' > $processed_files.txt
 
-cat processed_files.txt
+cat $processed_files
 
 # check if a file is not empty
 if grep -q . $processed_files; then
@@ -78,7 +78,7 @@ if grep -q . $processed_files; then
         --azureblob-use-msi \
         --azureblob-msi-client-id=$USER_ASSIGNED_MANAGED_IDENTITY \
         --verbose
-    done < processed_files.txt
+    done < $processed_files
 
     # Merge all processed pano ids to one file
     for file in chunk_folder_processed/*/*.txt
