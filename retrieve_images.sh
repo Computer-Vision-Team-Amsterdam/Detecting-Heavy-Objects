@@ -83,7 +83,7 @@ if grep -q . $processed_files; then
     done < $processed_files
 
     # Merge all processed pano ids to one file
-    for file in chunk_folder_processed/*/*.txt
+    for file in $chunk_folder_processed/*/*.txt
     do
         awk '{print}' "$file" >> pano_ids_processed.txt
     done
