@@ -452,7 +452,7 @@ if __name__ == "__main__":
         sql = (
             f"SELECT B.file_name, B.heading, B.camera_location_lat, B.camera_location_lon FROM detections A "
             f"LEFT JOIN images B ON A.file_name = B.file_name WHERE "
-            f"date_trunc('day', taken_at) = '2023-01-11'::date;"
+            f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
         )
 
         # Catch any exceptions that may be raised by the psycopg2 library.
