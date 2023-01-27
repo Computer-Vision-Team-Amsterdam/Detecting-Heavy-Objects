@@ -32,7 +32,7 @@ COPY configs/* /app/configs/
 COPY inference_batch.py evaluation.py utils_coco.py upload_to_postgres.py /app/
 COPY utils /app/utils
 # copy weights
-COPY model_final.pth /app
+COPY model_map076_large_segm.pth /app
 
 RUN useradd appuser
 RUN chown -R appuser /app
