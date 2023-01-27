@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, List, Tuple
+import multiprocessing
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -34,26 +35,24 @@ def split_pano_id(panorama_id: str) -> Tuple[str, str]:
 
     return id_name, img_name
 
-
-def download_panorama_from_cloudvps(
-    date: datetime, panorama_id: str, output_dir: str
-) -> str:
+def download_panorama_from_cloudvps(panorama_id: str) -> str:
     """
     Downloads panorama from cloudvps to local folder.
     """
+    local_retrieved_images_path_jm = "retrieved_images"
 
-    if Path(f"./{output_dir}/{panorama_id}.jpg").exists():
+    if Path(f"./{local_retrieved_images_path_jm}/{panorama_id}.jpg").exists():
         print(f"Panorama {panorama_id} is already downloaded.")
         return ""
     id_name, pano_name = split_pano_id(panorama_id)
 
     try:
         url = (
-            BASE_URL + f"{date.year}/"
-            f"{str(date.month).zfill(2)}/"
-            f"{str(date.day).zfill(2)}/"
+            BASE_URL + f"{datejm.year}/"
+            f"{str(datejm.month).zfill(2)}/"
+            f"{str(datejm.day).zfill(2)}/"
             f"{id_name}/{pano_name}/"
-            f"equirectangular/panorama_2000.jpg"
+            f"equirectangular/panorama_8000.jpg"
         )
 
         response = requests.get(
@@ -65,7 +64,7 @@ def download_panorama_from_cloudvps(
         if response.status_code != 200:
             print(f"Status code is {response.status_code}")
 
-        filename = Path(os.getcwd(), output_dir, f"{panorama_id}.jpg")
+        filename = Path(os.getcwd(), local_retrieved_images_path_jm, f"{panorama_id}.jpg")
         with open(filename, "wb") as out_file:
             shutil.copyfileobj(response.raw, out_file)
         del response
@@ -213,17 +212,16 @@ if __name__ == "__main__":
     if not len(pano_ids):
         raise ValueError("There are no new images to process. Aborting...")
 
+    datejm = datetime.strptime(start_date_dag_ymd, "%Y-%m-%d")
+
     # Download files from CloudVPS
     local_retrieved_images_path = "retrieved_images"
     dl_pano_ids = []
-    for pano_id in pano_ids:
-        dl_pano_id = download_panorama_from_cloudvps(
-            datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
-            pano_id,
-            local_retrieved_images_path,
-        )
-        if dl_pano_id:
-            dl_pano_ids.append(dl_pano_id)
+    with multiprocessing.Pool() as pool:
+        results = pool.map(download_panorama_from_cloudvps, dl_pano_ids)
+        for dl_pano_id in results:
+            if dl_pano_id:
+                dl_pano_ids.append(dl_pano_id)
 
     # Upload images to Cloud
     for file in os.listdir(local_retrieved_images_path):  # type: ignore
