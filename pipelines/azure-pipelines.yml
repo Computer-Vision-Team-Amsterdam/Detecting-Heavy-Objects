@@ -334,4 +334,3 @@ stages :
               docker load -i $(Pipeline.Workspace)/ContainerImage_${{ dockerFile.Name }}/${{ dockerFile.imageRepository }}.image.tar
               docker tag ${{ dockerFile.imageRepository }}:$(Build.BuildId) $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
               docker push $(containerRegistryName.prod).azurecr.io/${{ dockerFile.imageRepository }}:${{ dockerFile.tag }}
-              docker system prune -af
