@@ -280,21 +280,30 @@ class PostProcessing:
         permit_distances = []
         closest_permits = []
         for container_location in container_locations_geom:
-            closest_bridge_distance = min(
-                [
-                    calculate_distance_in_meters(bridge_location, container_location)
-                    for bridge_location in bridge_locations_geom
-                ]
-            )
+            bridge_container_distances = []
+            for bridge_location in bridge_locations_geom:
+                try:
+                    bridge_dist = calculate_distance_in_meters(bridge_location, container_location)
+                except:
+                    bridge_dist = 100
+                    print("Error occured:")
+                    print(f"Container location: {container_location}, {container_location.coords}")
+                    print(f"Bridge location: {bridge_location}")
+                bridge_container_distances.append(bridge_dist)
+            closest_bridge_distance = min(bridge_container_distances)
             bridges_distances.append(round(closest_bridge_distance, 2))
 
-            closest_permit_distances = [
-                geopy.distance.distance(
-                    container_location.coords, permit_location.coords
-                ).meters
-                for permit_location in permit_locations_geom
-            ]
-
+            closest_permit_distances = []
+            for permit_location in permit_locations:
+                try:
+                    permit_dist = [
+                        geopy.distance.distance(container_location.coords, permit_location.coords).meters
+                except:
+                    permit_dist = 0
+                    print("Error occured:")
+                    print(f"Container location: {container_location}, {container_location.coords}")
+                    print(f"Permit location: {permit_location}, {permit_location.coords}")
+                closest_permit_distances.append(permit_dist)
             permit_distances.append(np.amin(closest_permit_distances))
             closest_permits.append(permit_keys[np.argmin(closest_permit_distances)])
         scores = [
