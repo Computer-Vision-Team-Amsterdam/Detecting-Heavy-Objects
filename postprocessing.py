@@ -309,7 +309,7 @@ class PostProcessing:
             bridges_distances.append(round(closest_bridge_distance, 2))
 
             closest_permit_distances = []
-            for permit_location in permit_locations:
+            for permit_location in permit_locations_geom:
                 try:
                     permit_dist = geopy.distance.distance(container_location.coords, permit_location.coords).meters
                 except:
