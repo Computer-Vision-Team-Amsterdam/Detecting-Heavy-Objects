@@ -60,8 +60,23 @@ def get_closest_pano(df: Any, clustered_intersections: Any) -> Any:
     pano_match = [match_value(df, "point", x, "file_name") for x in closest_points]
 
     # Flatten the list
-    return pano_match
+    return np.concatenate(pano_match).ravel()
 
+def get_closest_pano2(df: Any, clustered_intersections: Any) -> Any:
+    """
+    Find a panorama closest to a found container (intersection point).
+    """
+    df["point"] = [
+        (x, y) for x, y in zip(df["camera_location_lat"], df["camera_location_lon"])
+    ]
+
+    closest_points = [
+        closest_point(x, list(df["point"])) for x in clustered_intersections[:, :2]
+    ]
+    pano_match = [match_value(df, "point", x, "file_name") for x in closest_points]
+
+    # Flatten the list
+    return pano_match
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
     """
@@ -482,7 +497,11 @@ if __name__ == "__main__":
             table_columns.pop(0)  # Remove the id column
 
             # Find a panorama closest to an intersection
-            pano_match = get_closest_pano(query_df, clustered_intersections[:, :2])
+            clustered_intersections = clustered_intersections[:, :2]
+            try:
+                pano_match = get_closest_pano(query_df, clustered_intersections)
+            except:
+                pano_match = get_closest_pano2(query_df, clustered_intersections)
 
             pano_match_prioritized = postprocess.prioritize_notifications(
                 pano_match, clustered_intersections
