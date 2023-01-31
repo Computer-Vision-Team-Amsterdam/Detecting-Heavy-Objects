@@ -60,7 +60,7 @@ def get_closest_pano(df: Any, clustered_intersections: Any) -> Any:
     pano_match = [match_value(df, "point", x, "file_name") for x in closest_points]
 
     # Flatten the list
-    return np.concatenate(pano_match).ravel()
+    return pano_match
 
 def get_closest_pano2(df: Any, clustered_intersections: Any) -> Any:
     """
@@ -76,7 +76,7 @@ def get_closest_pano2(df: Any, clustered_intersections: Any) -> Any:
     pano_match = [match_value(df, "point", x, "file_name") for x in closest_points]
 
     # Flatten the list
-    return pano_match
+    return np.concatenate(pano_match).ravel()
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
     """
