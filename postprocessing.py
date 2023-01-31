@@ -17,7 +17,6 @@ import pandas as pd
 import pandas.io.sql as sqlio
 import pycocotools.mask as mask_util
 from psycopg2.extras import execute_values
-import psycopg2
 from scipy.spatial.distance import cdist
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
@@ -61,7 +60,7 @@ def get_closest_pano(df: Any, clustered_intersections: Any) -> Any:
     pano_match = [match_value(df, "point", x, "file_name") for x in closest_points]
 
     # Flatten the list
-    return pano_match
+    return np.concatenate(pano_match).ravel()
 
 
 def calculate_distance_in_meters(line: LineString, point: Point) -> float:
@@ -452,15 +451,10 @@ if __name__ == "__main__":
         sql = (
             f"SELECT B.file_name, B.heading, B.camera_location_lat, B.camera_location_lon FROM detections A "
             f"LEFT JOIN images B ON A.file_name = B.file_name WHERE "
-            f"date_trunc('day', taken_at) = '{start_date_dag_ymd}'::date;"
+            f"date_trunc('day', taken_at) = '2023-01-11'::date;"
         )
 
-        # Catch any exceptions that may be raised by the psycopg2 library.
-        try:
-            query_df = sqlio.read_sql_query(sql, conn)
-        except psycopg2.Error as e:
-            raise e
-
+        query_df = sqlio.read_sql_query(sql, conn)
         query_df = pd.DataFrame(query_df)
 
         if query_df.empty:
@@ -524,17 +518,12 @@ if __name__ == "__main__":
                 name="Prioritized",
             )
 
-            try:
-                # Insert the values in the database
-                sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-                # we don't want permit_keys in the database.
-                cols_to_insert = list(pano_match_prioritized.dtype.names)[:-1]
-                execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
-            except psycopg2.Error as e:
-                # This is the base class for all exceptions raised by psycopg2.
-                # It is a catch-all exception that can be raised for any error that
-                # occurs during the execution of a query.
-                raise e
+            # Insert the values in the database
+            sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
+            # we don't want permit_keys in the database.
+            cols_to_insert = list(pano_match_prioritized.dtype.names)[:-1]
+            execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
+            conn.commit()
 
             # Upload the file with found containers to the Azure Blob Storage
             for csv_file in ["prioritized_objects.csv", "permit_locations_failed.csv"]:
