@@ -491,6 +491,7 @@ if __name__ == "__main__":
             postprocess.filter_by_size()
             postprocess.filter_by_angle()
             clustered_intersections = postprocess.find_points_of_interest()
+            print(clustered_intersections)
 
             # Get columns
             sql = f"SELECT * FROM {table_name} LIMIT 0"
