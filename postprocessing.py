@@ -285,7 +285,7 @@ class PostProcessing:
                 try:
                     bridge_dist = calculate_distance_in_meters(bridge_location, container_location)
                 except:
-                    bridge_dist = 100
+                    bridge_dist = 10000
                     print("Error occured:")
                     print(f"Container location: {container_location}, {container_location.coords}")
                     print(f"Bridge location: {bridge_location}")
@@ -296,8 +296,7 @@ class PostProcessing:
             closest_permit_distances = []
             for permit_location in permit_locations:
                 try:
-                    permit_dist = [
-                        geopy.distance.distance(container_location.coords, permit_location.coords).meters
+                    permit_dist = geopy.distance.distance(container_location.coords, permit_location.coords).meters
                 except:
                     permit_dist = 0
                     print("Error occured:")
