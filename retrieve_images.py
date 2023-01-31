@@ -11,8 +11,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, List, Tuple
-import glob
-import csv
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -160,50 +158,25 @@ if __name__ == "__main__":
 
     saClient = StorageAzureClient(secret_key="data-storage-account-url")
 
-    all_panorama1_files = saClient.list_container_content(cname="temp")
-    # Upload images to Cloud
-    for blob in all_panorama1_files:
-        local_file_path = Path("temp_dir")
-        if not local_file_path.exists():
-            local_file_path.mkdir(exist_ok=True, parents=True)
-        saClient.download_blob(
-            cname="temp", blob_name=blob, local_file_path=os.path.join(local_file_path, blob)
-        )
-        print(f"Downloaded {blob}")
-
-    txtfiles = []
-    pano_ids = []
-    for file in glob.glob("temp_dir/*.csv"):
-        txtfiles.append(file)
-        scanname = file.split("_")[2].split(".csv")[0]
-        with open(file) as f:
-
-            csvreaded = csv.reader(f, delimiter='\t')
-            header = next(csvreaded)
-
-            for row in csvreaded:
-                pano_ids.append(scanname + "_" + row[1])
-
-
-    # development = False
-    # if development:
-    #     # TODO only works for date {"date":"2020-05-08 00:00:00.00"}
-    #     pano_ids = [
-    #         "TMX7316010203-001697_pano_0000_000170",
-    #         "TMX7316010203-001697_pano_0000_000190",
-    #         "TMX7316010203-001697_pano_0000_000200",
-    #         "TMX7316010203-001697_pano_0000_000220",
-    #         "TMX7316010203-001697_pano_0000_000215",
-    #         "TMX7316010203-001697_pano_0000_000216",
-    #         "TMX7316010203-001697_pano_0000_000217",
-    #     ]
-    # else:
-    #     # Get pano ids from API that we want to download from CloudVPS
-    #     pano_ids_dict = get_pano_ids(start_date_dag_ymd)
-    #     # Pano ids to a flat list (you can also exclude pano keys in pano_ids_dict.keys()).
-    #     pano_ids = []
-    #     for pano_id_item in pano_ids_dict.keys():
-    #         pano_ids += pano_ids_dict[pano_id_item]
+    development = False
+    if development:
+        # TODO only works for date {"date":"2020-05-08 00:00:00.00"}
+        pano_ids = [
+            "TMX7316010203-001697_pano_0000_000170",
+            "TMX7316010203-001697_pano_0000_000190",
+            "TMX7316010203-001697_pano_0000_000200",
+            "TMX7316010203-001697_pano_0000_000220",
+            "TMX7316010203-001697_pano_0000_000215",
+            "TMX7316010203-001697_pano_0000_000216",
+            "TMX7316010203-001697_pano_0000_000217",
+        ]
+    else:
+        # Get pano ids from API that we want to download from CloudVPS
+        pano_ids_dict = get_pano_ids(start_date_dag_ymd)
+        # Pano ids to a flat list (you can also exclude pano keys in pano_ids_dict.keys()).
+        pano_ids = []
+        for pano_id_item in pano_ids_dict.keys():
+            pano_ids += pano_ids_dict[pano_id_item]
 
     # Check if pano ids are already processed today
     # The IDs of the panoramas that are previously processed are saved in retrieve-images-input
