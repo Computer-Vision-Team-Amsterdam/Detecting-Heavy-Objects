@@ -11,7 +11,6 @@ RUN pip install \
     azure-cli==2.39.0 \
     azure-identity==1.10.0 \
     azure-keyvault-secrets==4.5.1 \
-    glob \
     azure-storage-blob==12.13.1
 
 RUN mkdir -p /opt/retrieved_images
