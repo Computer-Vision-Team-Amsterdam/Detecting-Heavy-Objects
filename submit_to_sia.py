@@ -15,7 +15,6 @@ import upload_to_postgres
 from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from utils.date import get_start_date
 
-BASE_URL = "https://acc.api.meldingen.amsterdam.nl/signals/v1/private/signals"
 API_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB = 20*1024*1024
 
 TEXT = (
@@ -136,7 +135,7 @@ def _get_access_token(client_id: str, client_secret: str) -> Any:
 
 
 def _get_signals_page(auth_headers: Dict[str, str], page: str = "?page_size=1") -> Any:
-    response = requests.get(BASE_URL + page, headers=auth_headers)
+    response = requests.get(base_url + page, headers=auth_headers)
 
     if response.status_code == 200:
         print("The server successfully performed the GET request.")
@@ -146,7 +145,7 @@ def _get_signals_page(auth_headers: Dict[str, str], page: str = "?page_size=1") 
 
 
 def _post_signal(auth_headers: Dict[str, str], json_content: Any) -> Any:
-    response = requests.post(BASE_URL, json=json_content, headers=auth_headers)
+    response = requests.post(base_url, json=json_content, headers=auth_headers)
 
     if response.status_code == 201:
         print("The server successfully performed the POST request.")
@@ -159,7 +158,7 @@ def _patch_signal(auth_headers: Dict[str, str], sig_id: str, text_note: str) -> 
     json_content = {"notes": [{"text": text_note}]}
 
     response = requests.patch(
-        BASE_URL + f"/{sig_id}", json=json_content, headers=auth_headers
+        base_url + f"/{sig_id}", json=json_content, headers=auth_headers
     )
 
     if response.status_code == 200:
@@ -177,7 +176,7 @@ def _image_upload(auth_headers: Dict[str, str], filename: str, sig_id: str) -> A
     files = {"file": (filename, open(filename, "rb"))}
 
     response = requests.post(
-        BASE_URL + f"/{sig_id}/attachments/", files=files, headers=auth_headers
+        base_url + f"/{sig_id}/attachments/", files=files, headers=auth_headers
     )
 
     if response.status_code == 201:
@@ -223,6 +222,7 @@ if __name__ == "__main__":
 
     # Get API data
     sia_password = BaseAzureClient().get_secret_value(secret_key="sia-password-acc")
+    base_url = BaseAzureClient().get_secret_value(secret_key="sia-url")
     access_token = _get_access_token("sia-cvt", sia_password)
     headers = {"Authorization": "Bearer {}".format(access_token)}
     # Get access to the Azure Storage account.
