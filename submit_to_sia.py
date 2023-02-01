@@ -120,7 +120,7 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Optional
 
 
 def _get_access_token(client_id: str, client_secret: str) -> Any:
-    token_url = "https://iam.amsterdam.nl/auth/realms/datapunt-ad-acc/protocol/openid-connect/token"
+    token_url = BaseAzureClient().get_secret_value(secret_key="token-url")
     payload = {
         "client_id": client_id,
         "client_secret": client_secret,
@@ -266,11 +266,10 @@ if __name__ == "__main__":
     for index, row in query_df.iterrows():
         # Get panoramic image closest to the found container
         closest_image = row["closest_image"]
-        indices = [i for i, s in enumerate(all_blurred_images) if closest_image in s]
-        if indices:
-            blob_name = all_blurred_images[0]  # Get first item
-        else:
-            raise ValueError("The image is not found in the Azure Storage Account. Aborting...")
+        try:
+            blob_name = [s for s in all_blurred_images if closest_image in s][0]
+        except IndexError as e:
+            raise IndexError("The image is not found in the Azure Storage Account. Aborting...")
 
         # Download files to the WORKDIR of the Docker container
         azure_connection.download_blob(
