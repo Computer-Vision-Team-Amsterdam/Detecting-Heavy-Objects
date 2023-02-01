@@ -120,7 +120,7 @@ def _get_bag_address_in_range(location_point: Dict[str, float]) -> List[Optional
 
 
 def _get_access_token(client_id: str, client_secret: str) -> Any:
-    token_url = "https://iam.amsterdam.nl/auth/realms/datapunt-ad-acc/protocol/openid-connect/token"
+    token_url = BaseAzureClient().get_secret_value(secret_key="token-url")
     payload = {
         "client_id": client_id,
         "client_secret": client_secret,
