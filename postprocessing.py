@@ -513,7 +513,7 @@ if __name__ == "__main__":
             start_index = result["nextval"]
 
             pano_match_prioritized = postprocess.prioritize_notifications(
-                pano_match, clustered_intersections, int(start_index) + 1
+                pano_match, clustered_intersections, int(start_index[0]) + 1
             )
 
             vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
