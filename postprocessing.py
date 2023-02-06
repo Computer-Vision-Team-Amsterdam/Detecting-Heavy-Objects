@@ -236,7 +236,7 @@ class PostProcessing:
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
     def prioritize_notifications(
-        self, panoramas: List[str], container_locations: List[float]
+        self, panoramas: List[str], container_locations: List[float], start_index: int
     ) -> Any:
 
         """
@@ -326,6 +326,7 @@ class PostProcessing:
         ]
 
         print(f"Closest permits: {closest_permits}")
+        indexes = list(range(start_index, start_index + len(container_locations)))
         sorted_indices = np.argsort([score * -1 for score in scores])
         prioritized_containers = np.array(container_locations)[sorted_indices]
         permit_distances_sorted = np.array(permit_distances)[sorted_indices]
@@ -337,6 +338,7 @@ class PostProcessing:
         structured_array = np.array(
             list(
                 zip(
+                    indexes,
                     prioritized_containers[:, 0],
                     prioritized_containers[:, 1],
                     sorted_scores,
@@ -347,6 +349,7 @@ class PostProcessing:
                 )
             ),
             dtype=[
+                ("indexes", int),
                 ("lat", float),
                 ("lon", float),
                 ("score", float),
@@ -488,7 +491,6 @@ if __name__ == "__main__":
             postprocess.filter_by_size()
             postprocess.filter_by_angle()
             clustered_intersections = postprocess.find_points_of_interest()
-            print(clustered_intersections)
 
             # Get columns
             sql = f"SELECT * FROM {table_name} LIMIT 0"
@@ -503,8 +505,14 @@ if __name__ == "__main__":
             except:
                 pano_match = get_closest_pano2(query_df, clustered_intersections)
 
+            # Determine next auto_increment value
+            sql = "SELECT nextval('containers_container_id_seq');"
+            cur.execute(sql)
+            result = cur.fetchone()
+            start_index = result["count"] + 1
+
             pano_match_prioritized = postprocess.prioritize_notifications(
-                pano_match, clustered_intersections
+                pano_match, clustered_intersections, start_index
             )
 
             vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
