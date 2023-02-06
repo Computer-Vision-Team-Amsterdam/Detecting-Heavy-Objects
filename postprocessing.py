@@ -509,10 +509,10 @@ if __name__ == "__main__":
             sql = "SELECT nextval('containers_container_id_seq');"
             cur.execute(sql)
             result = cur.fetchone()
-            start_index = result["count"] + 1
+            start_index = result["count"]
 
             pano_match_prioritized = postprocess.prioritize_notifications(
-                pano_match, clustered_intersections, start_index
+                pano_match, clustered_intersections, int(start_index) + 1
             )
 
             vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
@@ -525,7 +525,7 @@ if __name__ == "__main__":
             # Create maps
             detections = []
             for row in pano_match_prioritized:
-                lat, lon, score, _, _, closest_image, permit_key = row
+                _, lat, lon, score, _, _, closest_image, permit_key = row
                 closest_permit = permit_locations[permit_keys.index(permit_key)]
                 detections.append(
                     PointOfInterest(
@@ -557,7 +557,7 @@ if __name__ == "__main__":
             # Insert the values in the database
             sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
             # we don't want permit_keys in the database.
-            cols_to_insert = list(pano_match_prioritized.dtype.names)[:-1]
+            cols_to_insert = list(pano_match_prioritized.dtype.names)[1:-1]  # Ignore first and last items
             execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
             conn.commit()
 
