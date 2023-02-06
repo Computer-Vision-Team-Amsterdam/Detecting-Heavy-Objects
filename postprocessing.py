@@ -510,6 +510,7 @@ if __name__ == "__main__":
             cur.execute(sql)
             result = cur.fetchone()
             start_index = result["count"]
+            start_index = result["nextval"]
 
             pano_match_prioritized = postprocess.prioritize_notifications(
                 pano_match, clustered_intersections, int(start_index) + 1
