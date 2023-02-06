@@ -365,6 +365,27 @@ class PostProcessing:
         return structured_array
 
 
+def copy_images_to_blob(closest_images):
+    for image_filename in closest_images:
+        try:
+            blob_path = [s for s in all_blurred_images if image_filename in s][0]
+        except IndexError as e:
+            raise IndexError("The image is not found in the Azure Storage Account. Aborting...")
+
+        blob_name = blob_path.split("/")[-1]  # only get filename
+
+        azure_connection.download_blob(
+            cname="blurred",
+            blob_name=blob_path,
+            local_file_path=blob_name,
+        )
+        azure_connection.upload_blob(
+            cname="postprocessing-output",
+            blob_name=f"{start_date_dag}/images/{blob_name}",
+            local_file_path=blob_name,
+        )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run postprocessing for container detection pipeline"
@@ -466,6 +487,8 @@ if __name__ == "__main__":
         bridges_file=args.bridges_file,
     )
 
+    all_blurred_images = azure_connection.list_container_content(cname="blurred")
+
     with upload_to_postgres.connect() as (conn, cur):
         table_name = "containers"
 
@@ -516,9 +539,14 @@ if __name__ == "__main__":
 
             # Create maps
             detections = []
+            closest_images = []
             for row in pano_match_prioritized:
                 lat, lon, score, _, _, closest_image, permit_key = row
                 closest_permit = permit_locations[permit_keys.index(permit_key)]
+
+                if closest_image not in closest_images:
+                    closest_images.append(closest_image)
+
                 detections.append(
                     PointOfInterest(
                         pano_id=closest_image.split(".")[0],  # remove .jpg
@@ -527,6 +555,9 @@ if __name__ == "__main__":
                         score=score,
                     )
                 )
+
+            # Copy images to blob container
+            copy_images_to_blob(closest_images)
 
             # Create overview map
             generate_map(

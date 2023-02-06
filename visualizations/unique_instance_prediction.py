@@ -124,8 +124,8 @@ def generate_map(
 
             pano_id = detections[i].pano_id
             if pano_id:
-                image = PanoramaClient.get_panorama(pano_id)
-                image_link = image.links.equirectangular_small.href
+                # image = PanoramaClient.get_panorama(pano_id)
+                image_link = f"images/{pano_id}.jpg"
                 detection_score = float(detections[i].score)
 
                 # create HTML with more info
