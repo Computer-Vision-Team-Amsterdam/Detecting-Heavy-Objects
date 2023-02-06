@@ -556,8 +556,9 @@ if __name__ == "__main__":
 
             # Insert the values in the database
             sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-            # we don't want permit_keys in the database.
-            cols_to_insert = list(pano_match_prioritized.dtype.names)[1:-1]  # Ignore first and last items
+            # We don't want to insert values for the columns "indexes" (as the DB employs an auto-increment mechanism)
+            # and "permit_key" into the database.
+            cols_to_insert = list(pano_match_prioritized.dtype.names)[1:-1]
             execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
             conn.commit()
 
