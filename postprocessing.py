@@ -115,7 +115,7 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
         filename,
         data,
         header=",".join(data.dtype.names),
-        fmt="%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
+        fmt="%i,%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
         delimiter=",",
         comments="",
     )
@@ -500,20 +500,20 @@ if __name__ == "__main__":
 
             # Find a panorama closest to an intersection
             clustered_intersections = clustered_intersections[:, :2]
-            try:
-                pano_match = get_closest_pano(query_df, clustered_intersections)
-            except:
-                pano_match = get_closest_pano2(query_df, clustered_intersections)
+            pano_match = get_closest_pano(query_df, clustered_intersections)
 
             # Determine next auto_increment value
-            sql = "SELECT nextval('containers_container_id_seq');"
-            cur.execute(sql)
-            result = cur.fetchone()
-            start_index = result["count"]
-            start_index = result["nextval"]
+            try:
+                sql = "SELECT nextval('containers_container_id_seq');"
+                cur.execute(sql)
+                result = cur.fetchone()
+                start_index = int(result[0]) + 1
+            except:
+                print("Something went wrong determining next auto_increment value!")
+                start_index = 1
 
             pano_match_prioritized = postprocess.prioritize_notifications(
-                pano_match, clustered_intersections, int(start_index[0]) + 1
+                pano_match, clustered_intersections, start_index
             )
 
             vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
