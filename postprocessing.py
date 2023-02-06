@@ -115,7 +115,7 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
         filename,
         data,
         header=",".join(data.dtype.names),
-        fmt="%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
+        fmt="%i,%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
         delimiter=",",
         comments="",
     )
@@ -236,7 +236,7 @@ class PostProcessing:
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
     def prioritize_notifications(
-        self, panoramas: List[str], container_locations: List[float]
+        self, panoramas: List[str], container_locations: List[float], start_index: int
     ) -> Any:
 
         """
@@ -326,6 +326,7 @@ class PostProcessing:
         ]
 
         print(f"Closest permits: {closest_permits}")
+        indexes = list(range(start_index, start_index + len(container_locations)))
         sorted_indices = np.argsort([score * -1 for score in scores])
         prioritized_containers = np.array(container_locations)[sorted_indices]
         permit_distances_sorted = np.array(permit_distances)[sorted_indices]
@@ -337,6 +338,7 @@ class PostProcessing:
         structured_array = np.array(
             list(
                 zip(
+                    indexes,
                     prioritized_containers[:, 0],
                     prioritized_containers[:, 1],
                     sorted_scores,
@@ -347,6 +349,7 @@ class PostProcessing:
                 )
             ),
             dtype=[
+                ("indexes", int),
                 ("lat", float),
                 ("lon", float),
                 ("score", float),
@@ -488,7 +491,6 @@ if __name__ == "__main__":
             postprocess.filter_by_size()
             postprocess.filter_by_angle()
             clustered_intersections = postprocess.find_points_of_interest()
-            print(clustered_intersections)
 
             # Get columns
             sql = f"SELECT * FROM {table_name} LIMIT 0"
@@ -498,13 +500,20 @@ if __name__ == "__main__":
 
             # Find a panorama closest to an intersection
             clustered_intersections = clustered_intersections[:, :2]
+            pano_match = get_closest_pano(query_df, clustered_intersections)
+
+            # Determine next auto_increment value
             try:
-                pano_match = get_closest_pano(query_df, clustered_intersections)
+                sql = "SELECT nextval('containers_container_id_seq');"
+                cur.execute(sql)
+                result = cur.fetchone()
+                start_index = int(result[0]) + 1
             except:
-                pano_match = get_closest_pano2(query_df, clustered_intersections)
+                print("Something went wrong determining next auto_increment value!")
+                start_index = 1
 
             pano_match_prioritized = postprocess.prioritize_notifications(
-                pano_match, clustered_intersections
+                pano_match, clustered_intersections, start_index
             )
 
             vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
@@ -517,7 +526,7 @@ if __name__ == "__main__":
             # Create maps
             detections = []
             for row in pano_match_prioritized:
-                lat, lon, score, _, _, closest_image, permit_key = row
+                _, lat, lon, score, _, _, closest_image, permit_key = row
                 closest_permit = permit_locations[permit_keys.index(permit_key)]
                 detections.append(
                     PointOfInterest(
@@ -548,8 +557,9 @@ if __name__ == "__main__":
 
             # Insert the values in the database
             sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
-            # we don't want permit_keys in the database.
-            cols_to_insert = list(pano_match_prioritized.dtype.names)[:-1]
+            # We don't want to insert values for the columns "indexes" (as the DB employs an auto-increment mechanism)
+            # and "permit_key" into the database.
+            cols_to_insert = list(pano_match_prioritized.dtype.names)[1:-1]
             execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
             conn.commit()
 
