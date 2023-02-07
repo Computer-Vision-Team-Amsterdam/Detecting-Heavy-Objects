@@ -132,7 +132,7 @@ class PostProcessing:
         date_to_check: datetime,
         permits_file: str,
         bridges_file: str,
-        threshold: float = 5000,
+        threshold: float = 1000,
         mask_degrees: float = 90,
         output_folder: Path = Path.cwd(),
     ) -> None:
