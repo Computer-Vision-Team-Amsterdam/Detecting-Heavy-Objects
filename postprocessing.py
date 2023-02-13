@@ -251,8 +251,10 @@ class PostProcessing:
             medium score --> Permit big, bridge big or permit small, bridge big
             low score --> permit small, bridge big
             """
-            if permit_distance >= 25:
+            if permit_distance >= 25 and bridge_distance < 25:
                 return 1 + max([(25 - bridge_distance) / 25, 0])
+            elif permit_distance >= 25 and bridge_distance >= 25:
+                return min(1.0, permit_distance / 100.0)
             else:
                 return 0
 
