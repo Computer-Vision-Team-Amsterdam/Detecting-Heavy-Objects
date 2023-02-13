@@ -115,7 +115,7 @@ def write_to_csv(data: npt.NDArray[Any], filename: Path) -> None:
         filename,
         data,
         header=",".join(data.dtype.names),
-        fmt="%i,%1.6f,%1.6f,%1.6f,%1.6f,%1.6f,%s,%s",
+        fmt="%i,%1.6f,%1.6f,%i,%1.6f,%1.6f,%1.6f,%s,%s",
         delimiter=",",
         comments="",
     )
@@ -133,7 +133,7 @@ class PostProcessing:
         permits_file: str,
         bridges_file: str,
         threshold: float = 5000,
-        mask_degrees: float = 90,
+        mask_degrees: float = 360,
         output_folder: Path = Path.cwd(),
     ) -> None:
         """
@@ -236,7 +236,7 @@ class PostProcessing:
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
     def prioritize_notifications(
-        self, panoramas: List[str], container_locations: List[float], start_index: int
+        self, panoramas: List[str], container_locations: List[float], clustered_intersections_score, start_index: int
     ) -> Any:
 
         """
@@ -334,6 +334,7 @@ class PostProcessing:
         permit_keys = np.array(closest_permits)[sorted_indices]
         sorted_scores = np.array(scores)[sorted_indices]
         sorted_panoramas = np.array(panoramas)[sorted_indices]
+        sorted_clustered_intersections_score = np.array(clustered_intersections_score)[sorted_indices]
 
         structured_array = np.array(
             list(
@@ -341,6 +342,7 @@ class PostProcessing:
                     indexes,
                     prioritized_containers[:, 0],
                     prioritized_containers[:, 1],
+                    sorted_clustered_intersections_score,
                     sorted_scores,
                     permit_distances_sorted,
                     bridges_distances_sorted,
@@ -352,6 +354,7 @@ class PostProcessing:
                 ("indexes", int),
                 ("lat", float),
                 ("lon", float),
+                ("score_intersections", int),
                 ("score", float),
                 ("permit_distance", float),
                 ("bridge_distance", float),
@@ -499,6 +502,10 @@ if __name__ == "__main__":
             table_columns = [desc[0] for desc in cur.description]
             table_columns.pop(0)  # Remove the id column
 
+            # Min number of intersections
+            clustered_intersections = clustered_intersections[clustered_intersections[:, -1] > 2]
+            # Get last column
+            clustered_intersections_score = clustered_intersections[:, -1]
             # Find a panorama closest to an intersection
             clustered_intersections = clustered_intersections[:, :2]
             pano_match = get_closest_pano(query_df, clustered_intersections)
@@ -514,7 +521,7 @@ if __name__ == "__main__":
                 start_index = 1
 
             pano_match_prioritized = postprocess.prioritize_notifications(
-                pano_match, clustered_intersections, start_index
+                pano_match, clustered_intersections, clustered_intersections_score, start_index
             )
 
             vulnerable_bridges = get_bridge_information(postprocess.bridges_file)
@@ -527,7 +534,7 @@ if __name__ == "__main__":
             # Create maps
             detections = []
             for row in pano_match_prioritized:
-                _, lat, lon, score, _, _, closest_image, permit_key = row
+                _, lat, lon, _, score, _, _, closest_image, permit_key = row
                 closest_permit = permit_locations[permit_keys.index(permit_key)]
                 detections.append(
                     PointOfInterest(
