@@ -569,7 +569,10 @@ if __name__ == "__main__":
             sql = f"INSERT INTO {table_name} ({','.join(table_columns)}) VALUES %s"
             # We don't want to insert values for the columns "indexes" (as the DB employs an auto-increment mechanism)
             # and "permit_key" into the database.
-            cols_to_insert = list(pano_match_prioritized.dtype.names)[1:-1]
+            cols_to_insert = list(pano_match_prioritized.dtype.names)
+            del cols_to_insert[0]  # remove first element
+            del cols_to_insert[2]  # remove this element (which was originally at index 2)
+            del cols_to_insert[-1]  # remove last element
             execute_values(cur, sql, pano_match_prioritized[cols_to_insert])
             conn.commit()
 
