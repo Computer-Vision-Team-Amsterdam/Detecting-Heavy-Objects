@@ -236,7 +236,8 @@ class PostProcessing:
         self.stats.update([self.stats.data[idx] for idx in indices_to_keep])
 
     def prioritize_notifications(
-        self, panoramas: List[str], container_locations: List[float], clustered_intersections_score, start_index: int
+        self, panoramas: List[str], container_locations: List[float], clustered_intersections_score: List[int],
+            start_index: int
     ) -> Any:
 
         """
