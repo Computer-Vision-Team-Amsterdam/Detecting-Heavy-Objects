@@ -36,6 +36,8 @@ def connect() -> Generator[Tuple[psycopg2.extensions.connection, psycopg2.extens
             host=f"{HOST}.postgres.database.azure.com",
             port=PORT,
             database=DATABASE,
+            keepalives=1,
+            keepalives_idle=60,  # Sends a keepalive message after 60 seconds of inactivity
         )
         conn.autocommit = True
         cur: psycopg2.extensions.cursor = conn.cursor()
