@@ -210,11 +210,11 @@ if __name__ == "__main__":
             with open(local_file, "r") as f:
                 input_data_images.extend([line.rstrip("\n") for line in f])
 
-        with connect() as (_, cursor):
-            try:
+        try:
+            with connect() as (_, cursor):
                 upload_images(cursor, input_data_images)
-            except Exception as e:
-                raise Exception("Error in upload_images: " + str(e))
+        except Exception as e:
+            raise Exception("Error in upload_images or with connect(): " + str(e))
 
     if opt.table == "detections":
         # download detections file from the storage account
