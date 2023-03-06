@@ -43,7 +43,7 @@ def connect() -> Generator[Tuple[psycopg2.extensions.connection, psycopg2.extens
         cur: psycopg2.extensions.cursor = conn.cursor()
         yield conn, cur
     except Exception as error:
-        print("Error while connecting to PostgreSQL", error)
+        raise Exception("Error while connecting to PostgreSQL: " + str(error))
     finally:
         cur.close()
         conn.close()
@@ -210,11 +210,11 @@ if __name__ == "__main__":
             with open(local_file, "r") as f:
                 input_data_images.extend([line.rstrip("\n") for line in f])
 
-        with connect() as (_, cursor):
-            try:
+        try:
+            with connect() as (_, cursor):
                 upload_images(cursor, input_data_images)
-            except Exception as e:
-                raise Exception("Error in upload_images: " + str(e))
+        except Exception as e:
+            raise Exception("Error in upload_images or with connect(): " + str(e))
 
     if opt.table == "detections":
         # download detections file from the storage account
