@@ -43,7 +43,7 @@ def connect() -> Generator[Tuple[psycopg2.extensions.connection, psycopg2.extens
         cur: psycopg2.extensions.cursor = conn.cursor()
         yield conn, cur
     except Exception as error:
-        print("Error while connecting to PostgreSQL", error)
+        raise Exception("Error while connecting to PostgreSQL: " + str(error))
     finally:
         cur.close()
         conn.close()
