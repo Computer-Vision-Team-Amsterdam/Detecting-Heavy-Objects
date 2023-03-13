@@ -248,13 +248,10 @@ class PostProcessing:
         def calculate_score(bridge_distance: float, permit_distance: float) -> float:
             """
             Calculate score for bridge and permit distance;
-            High score --> Permit big, bridge  small
-            medium score --> Permit big, bridge big or permit small, bridge big
-            low score --> permit small, bridge big
             """
-            if permit_distance >= 25 and bridge_distance < 25:
+            if permit_distance >= 40 and bridge_distance < 25:
                 return 1 + max([(25 - bridge_distance) / 25, 0])
-            elif permit_distance >= 25 and bridge_distance >= 25:
+            elif permit_distance >= 40 and bridge_distance >= 25:
                 return min(1.0, permit_distance / 100.0)
             else:
                 return 0
@@ -506,7 +503,7 @@ if __name__ == "__main__":
             table_columns.pop(0)  # Remove the id column
 
             # Min number of intersections
-            clustered_intersections = clustered_intersections[clustered_intersections[:, -1] > 2]
+            clustered_intersections = clustered_intersections[clustered_intersections[:, -1] > 1]
             # Get last column
             clustered_intersections_score = clustered_intersections[:, -1]
             # Find a panorama closest to an intersection
