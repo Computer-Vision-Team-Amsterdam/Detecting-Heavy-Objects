@@ -62,6 +62,8 @@ The output files are stored on Azure in the ```outputs``` folder and contain the
 - *events.out.tfevents* -- output summary used for plotting by tensorboard
 - *last_checkpoint* -- stores reference to name of the last trained model.
 
+A trained weights file on the class "container" can be found here: [Google Drive](https://drive.google.com/drive/folders/1IaUpt4c2uzZTIdrCGjr0hvyaGrqsG_qV?usp=sharing).
+
 The output files are also downloaded locally in ```outputs/TRAIN_${MODEL_NAME}_${MODEL_VERSION}``` folder.
 
 Once you have a trained model, you can visualize the training loss curves, accuracies and other metrics by running:
