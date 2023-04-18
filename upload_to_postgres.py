@@ -21,7 +21,18 @@ PASSWORD = azClient.get_secret_value("postgresPassword")
 HOST = azClient.get_secret_value("postgresHostname")
 PORT = "5432"
 DATABASE = "container-detection-database"
+from datetime import datetime, timedelta
+import pandas as pd
+import shutil
 
+import requests
+from requests.auth import HTTPBasicAuth
+import os
+from pathlib import Path
+
+BASE_URL = azClient.get_secret_value("CloudVpsRawUrlTwee")
+USERNAMEtwee = azClient.get_secret_value("CloudVpsRawUsername")
+PASSWORDtwee = azClient.get_secret_value("CloudVpsRawPassword")
 
 @contextmanager
 def connect() -> Generator[Tuple[psycopg2.extensions.connection, psycopg2.extensions.cursor], None, None]:
@@ -129,18 +140,18 @@ def row_to_upload_from_panorama(
     return row
 
 
-def upload_images(cursor_: psycopg2.extensions.cursor, data: List[str]) -> None:
+def upload_images(cursor_: psycopg2.extensions.cursor, all_rows) -> None:
     keys = get_column_names("images", cursor_)  # column names from table in postgres
 
-    rows: List[Dict[str, Union[str, float, datetime]]] = [
-        row_to_upload_from_panorama(element, keys)
-        for element in data
-    ]
-    values = [list(item.values()) for item in rows]
+    # rows: List[Dict[str, Union[str, float, datetime]]] = [
+    #     row_to_upload_from_panorama(element, keys)
+    #     for element in data
+    # ]
+    print(all_rows)
 
     try:
         query = f"INSERT INTO images ({','.join(keys)}) VALUES %s ON CONFLICT DO NOTHING;"
-        execute_values(cursor_, query, values)
+        execute_values(cursor_, query, all_rows)
     except psycopg2.Error as e:
         # This is the base class for all exceptions raised by psycopg2.
         # It is a catch-all exception that can be raised for any error that
@@ -166,6 +177,71 @@ def upload_detections(cursor_: psycopg2.extensions.cursor, data: List[Dict[str, 
         # It is a catch-all exception that can be raised for any error that
         # occurs during the execution of a query.
         raise e
+
+def download_csv_from_cloudvps(
+    date: datetime, tja) -> str:
+    """
+    Downloads panorama from cloudvps to local folder.
+    """
+
+    all_rows = []
+    for run in tja:
+        try:
+            url = (
+                BASE_URL + f"{date.year}/"
+                f"{str(date.month).zfill(2)}/"
+                f"{str(date.day).zfill(2)}/"
+                f"{run}/panorama1.csv"
+            )
+
+            response = requests.get(
+                url, timeout=20, stream=True, auth=HTTPBasicAuth(USERNAMEtwee, PASSWORDtwee)
+            )
+            if response.status_code == 404:
+                print(f"No resource found at {url}")
+
+            if response.status_code != 200:
+                print(f"Status code is {response.status_code}")
+
+            filename = Path(os.getcwd(), f"{run}.csv")
+            with open(filename, "wb") as out_file:
+                shutil.copyfileobj(response.raw, out_file)
+            del response
+
+            # print(f"{panorama_id} completed.")
+
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: Failed for panorama {run}:\n{e}")
+            return ""
+        except requests.exceptions.Timeout as e:
+            print(f"Timeout Error: Failed for panorama {run}:\n{e}")
+            return ""
+        except requests.exceptions.ConnectionError as e:
+            # In the event of a network problem (e.g. DNS failure, refused connection, etc),
+            # Requests will raise a ConnectionError exception.
+            print(f"Connection error: Failed for panorama {run}:\n{e}")
+            return ""
+        except requests.exceptions.RequestException as e:
+            print(f"Unknown Error: Failed for panorama {run}:\n{e}")
+            return ""
+
+        df = pd.read_csv(filename, sep='\t')
+        print(filename)
+        print(os.path.isfile(filename))
+        print(df)
+        df["panorama_file_name"] = df["panorama_file_name"].apply(lambda x: run + "_" + x + ".jpg")
+        # Get yesterday's date
+        yesterday = datetime.now() - timedelta(days=1)
+        yesterday_with_time = datetime.combine(yesterday, datetime.min.time())
+
+        # Add a new column with yesterday's date
+        df = df.assign(yesterday_date=yesterday_with_time)
+        print(df)
+        nested_list = df[["panorama_file_name", "latitude[deg]", "longitude[deg]", "heading[deg]", "yesterday_date"]].values.tolist()
+
+        all_rows.extend(nested_list)
+
+    return all_rows
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -198,21 +274,26 @@ if __name__ == "__main__":
             f"Found {len(input_files)} file(s) in container {cname_input} on date {start_date_dag_ymd}."
         )
 
-        # Download files from CloudVPS
-        input_data_images = []
-        for input_file in input_files:
-            local_file = input_file.split("/")[1]  # only get file name, without prefix
-            saClient.download_blob(
-                cname=cname_input,
-                blob_name=input_file,
-                local_file_path=local_file,
-            )
-            with open(local_file, "r") as f:
-                input_data_images.extend([line.rstrip("\n") for line in f])
+        # # Download files from CloudVPS
+        # input_data_images = []
+        # for input_file in input_files:
+        #     local_file = input_file.split("/")[1]  # only get file name, without prefix
+        #     saClient.download_blob(
+        #         cname=cname_input,
+        #         blob_name=input_file,
+        #         local_file_path=local_file,
+        #     )
+        #     with open(local_file, "r") as f:
+        #         input_data_images.extend([line.rstrip("\n") for line in f])
+
+        tja = ["TMX7316010203-003044", "TMX7316010203-003045", "TMX7316010203-003046", "TMX7316010203-003047"]
+
+        all_rows = download_csv_from_cloudvps(datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
+                                              tja)
 
         try:
             with connect() as (_, cursor):
-                upload_images(cursor, input_data_images)
+                upload_images(cursor, all_rows)
         except Exception as e:
             raise Exception("Error in upload_images or with connect(): " + str(e))
 

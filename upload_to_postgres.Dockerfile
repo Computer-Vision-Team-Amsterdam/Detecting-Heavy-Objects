@@ -10,6 +10,7 @@ RUN pip install \
     azure-keyvault-secrets==4.5.1 \
     azure-storage-blob==12.13.1 \
     psycopg2==2.8.6 \
+    pandas \
     git+https://git@github.com/Computer-Vision-Team-Amsterdam/panorama.git@v0.2.3
 
 WORKDIR /opt

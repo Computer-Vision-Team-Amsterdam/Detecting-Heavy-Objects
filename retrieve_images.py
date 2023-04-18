@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, List, Tuple
+import pandas as pd
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -19,9 +20,9 @@ from utils.azure_storage import BaseAzureClient, StorageAzureClient
 from utils.date import get_start_date
 
 azClient = BaseAzureClient()
-BASE_URL = azClient.get_secret_value("CloudVpsBlurredUrl")
-USERNAME = azClient.get_secret_value("CloudVpsBlurredUsername")
-PASSWORD = azClient.get_secret_value("CloudVpsBlurredPassword")
+BASE_URL = azClient.get_secret_value("CloudVpsRawUrlTwee")
+USERNAME = azClient.get_secret_value("CloudVpsRawUsername")
+PASSWORD = azClient.get_secret_value("CloudVpsRawPassword")
 
 
 def split_pano_id(panorama_id: str) -> Tuple[str, str]:
@@ -45,15 +46,14 @@ def download_panorama_from_cloudvps(
     if Path(f"./{output_dir}/{panorama_id}.jpg").exists():
         print(f"Panorama {panorama_id} is already downloaded.")
         return ""
-    id_name, pano_name = split_pano_id(panorama_id)
+    id_name, img_name = split_pano_id(panorama_id)
 
     try:
         url = (
             BASE_URL + f"{date.year}/"
             f"{str(date.month).zfill(2)}/"
             f"{str(date.day).zfill(2)}/"
-            f"{id_name}/{pano_name}/"
-            f"equirectangular/panorama_2000.jpg"
+            f"{id_name}/{img_name}.jpg"
         )
 
         response = requests.get(
@@ -89,6 +89,62 @@ def download_panorama_from_cloudvps(
         print(f"Unknown Error: Failed for panorama {panorama_id}:\n{e}")
         return ""
 
+def download_csv_from_cloudvps(
+    date: datetime, tja, output_dir: str
+) -> str:
+    """
+    Downloads panorama from cloudvps to local folder.
+    """
+
+    pano_ids = []
+    for run in tja:
+        try:
+            url = (
+                BASE_URL + f"{date.year}/"
+                f"{str(date.month).zfill(2)}/"
+                f"{str(date.day).zfill(2)}/"
+                f"{run}/panorama1.csv"
+            )
+
+            response = requests.get(
+                url, timeout=20, stream=True, auth=HTTPBasicAuth(USERNAME, PASSWORD)
+            )
+            if response.status_code == 404:
+                print(f"No resource found at {url}")
+
+            if response.status_code != 200:
+                print(f"Status code is {response.status_code}")
+
+            filename = Path(os.getcwd(), f"{run}.csv")
+            with open(filename, "wb") as out_file:
+                shutil.copyfileobj(response.raw, out_file)
+            del response
+
+            # print(f"{panorama_id} completed.")
+
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: Failed for panorama {run}:\n{e}")
+            return ""
+        except requests.exceptions.Timeout as e:
+            print(f"Timeout Error: Failed for panorama {run}:\n{e}")
+            return ""
+        except requests.exceptions.ConnectionError as e:
+            # In the event of a network problem (e.g. DNS failure, refused connection, etc),
+            # Requests will raise a ConnectionError exception.
+            print(f"Connection error: Failed for panorama {run}:\n{e}")
+            return ""
+        except requests.exceptions.RequestException as e:
+            print(f"Unknown Error: Failed for panorama {run}:\n{e}")
+            return ""
+
+        df = pd.read_csv(filename, sep='\t')
+        print(filename)
+        print(os.path.isfile(filename))
+        print(df)
+        df["panorama_file_name"] = df["panorama_file_name"].apply(lambda x: run + "_" + x)
+        pano_ids.extend(df['panorama_file_name'].tolist())
+
+    return pano_ids
 
 def get_pano_ids(start_date_dag_ymd: str) -> Any:
     """
@@ -171,12 +227,12 @@ if __name__ == "__main__":
             "TMX7316010203-001697_pano_0000_000217",
         ]
     else:
-        # Get pano ids from API that we want to download from CloudVPS
-        pano_ids_dict = get_pano_ids(start_date_dag_ymd)
-        # Pano ids to a flat list (you can also exclude pano keys in pano_ids_dict.keys()).
-        pano_ids = []
-        for pano_id_item in pano_ids_dict.keys():
-            pano_ids += pano_ids_dict[pano_id_item]
+
+        tja = ["TMX7316010203-003044", "TMX7316010203-003045", "TMX7316010203-003046", "TMX7316010203-003047"]
+
+        pano_ids = download_csv_from_cloudvps(datetime.strptime(start_date_dag_ymd, "%Y-%m-%d"),
+                                              tja,
+                                              "jmm")
 
     # Check if pano ids are already processed today
     # The IDs of the panoramas that are previously processed are saved in retrieve-images-input
