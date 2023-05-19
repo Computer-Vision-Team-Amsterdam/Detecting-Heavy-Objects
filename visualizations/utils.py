@@ -67,9 +67,14 @@ def get_permit_locations(
         """
         container_words = [
             "puinbak",
+            "puincontainer",
             "container",
+            "afvalcontainer",
+            "zeecontainer",
             "keet",
             "cabin",
+            "schaftkeet",
+            "vuilcontainer",
         ]
         description = permit.find("TEXT8")
         try:
